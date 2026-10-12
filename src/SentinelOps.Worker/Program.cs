@@ -5,6 +5,8 @@ using SentinelOps.Worker.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 // Serilog configuration
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -19,7 +21,6 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Background Services
-builder.Services.AddHostedService<TelemetryConsumerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
 
 var host = builder.Build();

@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using SentinelOps.Application.Common.Interfaces;
 using SentinelOps.Contracts.Ingestion;
 using SentinelOps.Domain.Entities;
 using SentinelOps.Domain.Enums;
 
-namespace SentinelOps.Worker.Services;
+namespace SentinelOps.Infrastructure.Services;
 
 public class TelemetryConsumerService : BackgroundService
 {
@@ -36,19 +39,66 @@ public class TelemetryConsumerService : BackgroundService
     private async Task ProcessLogsLoopAsync(CancellationToken stoppingToken)
     {
         var batch = new List<LogIngestionMessage>();
-        var lastFlush = DateTime.UtcNow;
+        var sync = new SemaphoreSlim(1, 1);
+
+        using var flushCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        var flushTimerTask = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(flushCts.Token))
+                {
+                    List<LogIngestionMessage>? toFlush = null;
+                    await sync.WaitAsync(flushCts.Token);
+                    try
+                    {
+                        if (batch.Count > 0)
+                        {
+                            toFlush = new List<LogIngestionMessage>(batch);
+                            batch.Clear();
+                        }
+                    }
+                    finally
+                    {
+                        sync.Release();
+                    }
+
+                    if (toFlush is { Count: > 0 })
+                    {
+                        await PersistLogsBatchAsync(toFlush, flushCts.Token);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal timer shutdown
+            }
+        }, flushCts.Token);
 
         try
         {
             await foreach (var msg in _buffer.ReadLogsAsync(stoppingToken))
             {
-                batch.Add(msg);
-
-                if (batch.Count >= 100 || (DateTime.UtcNow - lastFlush).TotalMilliseconds >= 500)
+                List<LogIngestionMessage>? toFlush = null;
+                await sync.WaitAsync(stoppingToken);
+                try
                 {
-                    await PersistLogsBatchAsync(batch, stoppingToken);
-                    batch.Clear();
-                    lastFlush = DateTime.UtcNow;
+                    batch.Add(msg);
+                    if (batch.Count >= 100)
+                    {
+                        toFlush = new List<LogIngestionMessage>(batch);
+                        batch.Clear();
+                    }
+                }
+                finally
+                {
+                    sync.Release();
+                }
+
+                if (toFlush is { Count: > 0 })
+                {
+                    await PersistLogsBatchAsync(toFlush, stoppingToken);
                 }
             }
         }
@@ -62,9 +112,27 @@ public class TelemetryConsumerService : BackgroundService
         }
         finally
         {
-            if (batch.Count > 0)
+            await flushCts.CancelAsync();
+            try { await flushTimerTask; } catch { /* ignore */ }
+
+            List<LogIngestionMessage>? remaining = null;
+            await sync.WaitAsync(CancellationToken.None);
+            try
             {
-                await PersistLogsBatchAsync(batch, CancellationToken.None);
+                if (batch.Count > 0)
+                {
+                    remaining = new List<LogIngestionMessage>(batch);
+                    batch.Clear();
+                }
+            }
+            finally
+            {
+                sync.Release();
+            }
+
+            if (remaining is { Count: > 0 })
+            {
+                await PersistLogsBatchAsync(remaining, CancellationToken.None);
             }
         }
     }
@@ -105,7 +173,7 @@ public class TelemetryConsumerService : BackgroundService
 
             await dbContext.LogEntries.AddRangeAsync(entities, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogDebug("Persisted batch of {Count} log entries to database", entities.Count);
+            _logger.LogInformation("Persisted batch of {Count} log entries to database", entities.Count);
         }
         catch (Exception ex)
         {
@@ -116,19 +184,66 @@ public class TelemetryConsumerService : BackgroundService
     private async Task ProcessTracesLoopAsync(CancellationToken stoppingToken)
     {
         var batch = new List<TraceIngestionMessage>();
-        var lastFlush = DateTime.UtcNow;
+        var sync = new SemaphoreSlim(1, 1);
+
+        using var flushCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        var flushTimerTask = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(flushCts.Token))
+                {
+                    List<TraceIngestionMessage>? toFlush = null;
+                    await sync.WaitAsync(flushCts.Token);
+                    try
+                    {
+                        if (batch.Count > 0)
+                        {
+                            toFlush = new List<TraceIngestionMessage>(batch);
+                            batch.Clear();
+                        }
+                    }
+                    finally
+                    {
+                        sync.Release();
+                    }
+
+                    if (toFlush is { Count: > 0 })
+                    {
+                        await PersistTracesBatchAsync(toFlush, flushCts.Token);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal timer shutdown
+            }
+        }, flushCts.Token);
 
         try
         {
             await foreach (var msg in _buffer.ReadTracesAsync(stoppingToken))
             {
-                batch.Add(msg);
-
-                if (batch.Count >= 50 || (DateTime.UtcNow - lastFlush).TotalMilliseconds >= 500)
+                List<TraceIngestionMessage>? toFlush = null;
+                await sync.WaitAsync(stoppingToken);
+                try
                 {
-                    await PersistTracesBatchAsync(batch, stoppingToken);
-                    batch.Clear();
-                    lastFlush = DateTime.UtcNow;
+                    batch.Add(msg);
+                    if (batch.Count >= 50)
+                    {
+                        toFlush = new List<TraceIngestionMessage>(batch);
+                        batch.Clear();
+                    }
+                }
+                finally
+                {
+                    sync.Release();
+                }
+
+                if (toFlush is { Count: > 0 })
+                {
+                    await PersistTracesBatchAsync(toFlush, stoppingToken);
                 }
             }
         }
@@ -142,9 +257,27 @@ public class TelemetryConsumerService : BackgroundService
         }
         finally
         {
-            if (batch.Count > 0)
+            await flushCts.CancelAsync();
+            try { await flushTimerTask; } catch { /* ignore */ }
+
+            List<TraceIngestionMessage>? remaining = null;
+            await sync.WaitAsync(CancellationToken.None);
+            try
             {
-                await PersistTracesBatchAsync(batch, CancellationToken.None);
+                if (batch.Count > 0)
+                {
+                    remaining = new List<TraceIngestionMessage>(batch);
+                    batch.Clear();
+                }
+            }
+            finally
+            {
+                sync.Release();
+            }
+
+            if (remaining is { Count: > 0 })
+            {
+                await PersistTracesBatchAsync(remaining, CancellationToken.None);
             }
         }
     }
@@ -165,7 +298,15 @@ public class TelemetryConsumerService : BackgroundService
                 .Where(t => traceIds.Contains(t.TraceId))
                 .ToDictionaryAsync(t => t.TraceId, cancellationToken);
 
+            var spanIds = traceGroups.SelectMany(g => g.SelectMany(t => t.Spans.Select(s => s.SpanId))).Distinct().ToList();
+            var existingSpanIds = await dbContext.SpanRecords
+                .Where(s => traceIds.Contains(s.TraceId) && spanIds.Contains(s.SpanId))
+                .Select(s => s.SpanId)
+                .ToListAsync(cancellationToken);
+            var existingSpanIdSet = new HashSet<string>(existingSpanIds);
+
             var spansToInsert = new List<SpanRecord>();
+            var seenInBatch = new HashSet<string>();
 
             foreach (var group in traceGroups)
             {
@@ -173,6 +314,10 @@ public class TelemetryConsumerService : BackgroundService
                 var groupTraces = group.ToList();
 
                 var combinedSpans = groupTraces.SelectMany(t => t.Spans).ToList();
+                var newSpans = combinedSpans
+                    .Where(s => !existingSpanIdSet.Contains(s.SpanId) && seenInBatch.Add(s.SpanId))
+                    .ToList();
+
                 var totalDurationMs = groupTraces.Max(t => t.DurationMs);
                 var hasErrors = groupTraces.Any(t => t.HasErrors);
                 var firstMsg = groupTraces[0];
@@ -180,7 +325,7 @@ public class TelemetryConsumerService : BackgroundService
                 if (existingTraces.TryGetValue(traceId, out var existing))
                 {
                     existing.Duration = TimeSpan.FromMilliseconds(Math.Max(existing.Duration.TotalMilliseconds, totalDurationMs));
-                    existing.SpanCount += combinedSpans.Count;
+                    existing.SpanCount += newSpans.Count;
                     existing.HasErrors = existing.HasErrors || hasErrors;
                     existing.UpdatedAtUtc = DateTime.UtcNow;
                 }
@@ -194,7 +339,7 @@ public class TelemetryConsumerService : BackgroundService
                         EnvironmentName = firstMsg.EnvironmentName,
                         RootSpanName = firstMsg.RootSpanName,
                         Duration = TimeSpan.FromMilliseconds(totalDurationMs),
-                        SpanCount = combinedSpans.Count,
+                        SpanCount = newSpans.Count,
                         HasErrors = hasErrors,
                         StartedAtUtc = firstMsg.StartedAtUtc,
                         CreatedAtUtc = DateTime.UtcNow
@@ -203,7 +348,7 @@ public class TelemetryConsumerService : BackgroundService
                     existingTraces[traceId] = newTrace;
                 }
 
-                foreach (var s in combinedSpans)
+                foreach (var s in newSpans)
                 {
                     spansToInsert.Add(new SpanRecord
                     {
@@ -227,7 +372,7 @@ public class TelemetryConsumerService : BackgroundService
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogDebug("Persisted {TraceCount} traces and {SpanCount} spans", traceGroups.Count, spansToInsert.Count);
+            _logger.LogInformation("Persisted {TraceCount} traces and {SpanCount} spans", traceGroups.Count, spansToInsert.Count);
         }
         catch (Exception ex)
         {
@@ -238,19 +383,66 @@ public class TelemetryConsumerService : BackgroundService
     private async Task ProcessMetricsLoopAsync(CancellationToken stoppingToken)
     {
         var batch = new List<MetricIngestionMessage>();
-        var lastFlush = DateTime.UtcNow;
+        var sync = new SemaphoreSlim(1, 1);
+
+        using var flushCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        var flushTimerTask = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(flushCts.Token))
+                {
+                    List<MetricIngestionMessage>? toFlush = null;
+                    await sync.WaitAsync(flushCts.Token);
+                    try
+                    {
+                        if (batch.Count > 0)
+                        {
+                            toFlush = new List<MetricIngestionMessage>(batch);
+                            batch.Clear();
+                        }
+                    }
+                    finally
+                    {
+                        sync.Release();
+                    }
+
+                    if (toFlush is { Count: > 0 })
+                    {
+                        await PersistMetricsBatchAsync(toFlush, flushCts.Token);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal timer shutdown
+            }
+        }, flushCts.Token);
 
         try
         {
             await foreach (var msg in _buffer.ReadMetricsAsync(stoppingToken))
             {
-                batch.Add(msg);
-
-                if (batch.Count >= 100 || (DateTime.UtcNow - lastFlush).TotalMilliseconds >= 500)
+                List<MetricIngestionMessage>? toFlush = null;
+                await sync.WaitAsync(stoppingToken);
+                try
                 {
-                    await PersistMetricsBatchAsync(batch, stoppingToken);
-                    batch.Clear();
-                    lastFlush = DateTime.UtcNow;
+                    batch.Add(msg);
+                    if (batch.Count >= 100)
+                    {
+                        toFlush = new List<MetricIngestionMessage>(batch);
+                        batch.Clear();
+                    }
+                }
+                finally
+                {
+                    sync.Release();
+                }
+
+                if (toFlush is { Count: > 0 })
+                {
+                    await PersistMetricsBatchAsync(toFlush, stoppingToken);
                 }
             }
         }
@@ -264,9 +456,27 @@ public class TelemetryConsumerService : BackgroundService
         }
         finally
         {
-            if (batch.Count > 0)
+            await flushCts.CancelAsync();
+            try { await flushTimerTask; } catch { /* ignore */ }
+
+            List<MetricIngestionMessage>? remaining = null;
+            await sync.WaitAsync(CancellationToken.None);
+            try
             {
-                await PersistMetricsBatchAsync(batch, CancellationToken.None);
+                if (batch.Count > 0)
+                {
+                    remaining = new List<MetricIngestionMessage>(batch);
+                    batch.Clear();
+                }
+            }
+            finally
+            {
+                sync.Release();
+            }
+
+            if (remaining is { Count: > 0 })
+            {
+                await PersistMetricsBatchAsync(remaining, CancellationToken.None);
             }
         }
     }
@@ -303,7 +513,7 @@ public class TelemetryConsumerService : BackgroundService
 
             await dbContext.MetricRecords.AddRangeAsync(entities, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogDebug("Persisted batch of {Count} metric records to database", entities.Count);
+            _logger.LogInformation("Persisted batch of {Count} metric records to database", entities.Count);
         }
         catch (Exception ex)
         {

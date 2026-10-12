@@ -163,6 +163,11 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                while (_fallbackLogChannel.Reader.TryRead(out var fallbackMsg))
+                {
+                    yield return fallbackMsg;
+                }
+
                 StreamEntry[]? entries = null;
                 try
                 {
@@ -230,6 +235,11 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                while (_fallbackTraceChannel.Reader.TryRead(out var fallbackMsg))
+                {
+                    yield return fallbackMsg;
+                }
+
                 StreamEntry[]? entries = null;
                 try
                 {
@@ -296,6 +306,11 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                while (_fallbackMetricChannel.Reader.TryRead(out var fallbackMsg))
+                {
+                    yield return fallbackMsg;
+                }
+
                 StreamEntry[]? entries = null;
                 try
                 {

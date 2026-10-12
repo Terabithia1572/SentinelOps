@@ -144,10 +144,10 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests
+# Backend tests (60 tests: Domain, Application, API Integration, OTLP Ingestion, Security)
 dotnet test SentinelOps.slnx
 
-# Frontend tests
+# Frontend tests (10 tests: Auth, Overview, Applications, API Keys)
 cd src/SentinelOps.Web
 npm run test:run
 ```

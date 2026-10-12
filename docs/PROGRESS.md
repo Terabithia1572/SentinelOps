@@ -99,15 +99,26 @@
 - [x] OTLP HTTP ingestion controller (`OtlpIngestionController`) supporting `/v1/logs`, `/v1/traces`, `/v1/metrics` and `/api/v1/...` aliases with 10MB payload size guards
 - [x] Telemetry authentication filter (`ApiKeyAuthFilter`, `[RequireApiKey]`) verifying `X-API-Key` or `Authorization: Bearer <key>`, checking application active status, and throttling metadata updates
 - [x] Production Redis Streams telemetry buffer (`RedisTelemetryBuffer`, `ITelemetryBuffer`) with consumer groups, bounded buffer limits (`MAXLEN 100,000`), dead-letter stream (`sentinelops:stream:dead-letter`), and resilient in-memory channel fallback
-- [x] Telemetry worker consumer service (`TelemetryConsumerService`) with batch persistence (up to 100 items / 500ms timeout) for PostgreSQL `LogEntry`, `TraceRecord`, `SpanRecord`, and `MetricRecord`
-- [x] Trace root summary calculation, duplicate detection, and idempotent duration/span-count merging
+- [x] Telemetry worker consumer service (`TelemetryConsumerService`) with batch persistence (up to 100 items / 500ms periodic flush timer) for PostgreSQL `LogEntry`, `TraceRecord`, `SpanRecord`, and `MetricRecord`
+- [x] Trace root summary calculation, duplicate detection, and idempotent duration/span-count merging with span deduplication
 - [x] Dynamic dashboard telemetry calculation in `GetDashboardSummaryQueryHandler` directly aggregating live ingested traces, service counts, and duration metrics
 - [x] Sample .NET 10 API (`samples/SentinelOps.SampleApi`) instrumented with OpenTelemetry SDK (traces, metrics, logs, slow queries, simulated errors) exporting to SentinelOps
 - [x] Synthetic telemetry generator CLI tool (`tools/SentinelOps.TelemetryGenerator`) producing realistic distributed traces, logs, gauges, counters, and high-latency requests
 - [x] OpenTelemetry Collector pipeline and Docker Compose configuration with collector API key trust boundary
+- [x] Real Local Runtime Ingestion Verification:
+  - Verified Docker Compose configuration and diagnosed headless desktop engine constraints.
+  - Successfully executed real end-to-end ingestion run against local PostgreSQL 17.
+  - Created application `runtime-verification-app` and generated live API key via authenticated API endpoints.
+  - Generated real synthetic telemetry bursts using `SentinelOps.TelemetryGenerator`.
+  - Confirmed batch persistence to PostgreSQL (`LogEntries`, `TraceRecords`, `SpanRecords`, `MetricRecords`).
+  - Verified `/api/dashboard/summary` computes live values from real persisted telemetry (12 logs, 10 traces, 402ms avg response time, 16.67% error rate).
+- [x] Architectural Hardening & Reliability Documentation:
+  - Documented in-memory channel fallback data-loss constraints (unpersisted items in volatile RAM lost if process crashes before flush).
+  - Enforced strict tenant boundary isolation: authenticated API key strictly determines application ownership; payload-injected application attributes are untrusted and discarded.
+  - Documented Collector single-key attribution vs direct SDK multi-tenant ingestion architecture.
 - [x] Automated test coverage:
-  - 13 new backend tests (7 OTLP ingestion integration tests, 3 payload mapper unit tests, 3 Redis buffer unit tests)
-  - Total backend tests: 57 passed (0 failures)
+  - 16 OTLP ingestion integration tests, including anti-spoofing tenant isolation, offline fallback channel buffering, and span deduplication.
+  - Total backend tests: 60 passed (0 failures)
   - Total frontend tests: 10 passed (0 failures)
 - [x] Build validation: .NET 10 (0 errors, 0 warnings), React/TypeScript (0 errors, 0 warnings)
 

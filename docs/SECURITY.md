@@ -75,3 +75,14 @@ Security behaviors are validated by automated integration tests in [`SecurityHar
 2. `DashboardSummaryEndpoint_WhenAnonymous_ShouldReturnUnauthorized`: Verifies anonymous requests to `/api/dashboard/summary` return `401 Unauthorized`.
 3. `HttpResponses_ShouldContainOwaspSecurityHeaders`: Verifies presence and values of OWASP security headers.
 4. `RefreshTokenReplayAttack_ShouldDetectBreachAndInvalidateTokenFamily`: Verifies replay attack detection and user session invalidation.
+
+---
+
+## 6. Telemetry Ingestion Security & Tenant Boundaries
+
+- **Strict Identity Derivation**: Ingestion endpoints (`/v1/logs`, `/v1/traces`, `/v1/metrics`) require valid application API keys via `X-API-Key` or `Authorization: Bearer <key>`.
+- **Anti-Spoofing & Cross-App Isolation**: Any application identifier submitted inside the OTLP payload body (`Resource.Attributes`) is untrusted and discarded. Telemetry records are bound exclusively to the application identified by the authenticated API key hash in PostgreSQL.
+- **Payload Size Limits**: Enforced `[RequestSizeLimit(10 * 1024 * 1024)]` (10 MB) prevents memory exhaustion and denial-of-service through excessive payload batches.
+- **Collector Trust Boundary**: Central collector pipelines must use separate exporter pipelines or pass-through auth headers if multi-tenant workload isolation is required. Forwarding via a single static API key aggregates all workloads under the key owner.
+- **Telemetry Anti-Spoofing Test**: Validated by `IngestLogs_WithSpoofedApplicationAttributes_StrictlyAttributedToKeyOwner` in `OtlpIngestionIntegrationTests.cs`.
+

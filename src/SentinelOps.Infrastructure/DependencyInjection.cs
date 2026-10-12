@@ -58,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
 
+        services.AddHostedService<TelemetryConsumerService>();
+
         return services;
     }
 }
