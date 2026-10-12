@@ -5,6 +5,7 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 WORKDIR /src
 
+COPY ["src/Directory.Build.props", "src/"]
 COPY ["src/SentinelOps.Domain/SentinelOps.Domain.csproj", "src/SentinelOps.Domain/"]
 COPY ["src/SentinelOps.Contracts/SentinelOps.Contracts.csproj", "src/SentinelOps.Contracts/"]
 COPY ["src/SentinelOps.Application/SentinelOps.Application.csproj", "src/SentinelOps.Application/"]

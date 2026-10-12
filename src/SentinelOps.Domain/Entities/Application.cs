@@ -12,4 +12,5 @@ public class Application : AggregateRoot
 
     public ICollection<Environment> Environments { get; set; } = new List<Environment>();
     public ICollection<Service> Services { get; set; } = new List<Service>();
+    public ICollection<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();
 }

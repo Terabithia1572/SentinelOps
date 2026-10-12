@@ -18,9 +18,13 @@ import {
   Shield,
   Moon,
   Sun,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
+import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -43,6 +47,9 @@ const navigation = [
 
 export function Sidebar() {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
+
+  const primaryRole = user?.roles?.[0] || "Viewer";
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]">
@@ -77,21 +84,62 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Theme Toggle */}
-      <div className="border-t border-[hsl(var(--border))] p-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          {theme === "dark" ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
+      {/* User & Settings Footer */}
+      <div className="border-t border-[hsl(var(--border))] p-3 space-y-2">
+        {user && (
+          <div className="flex items-center gap-3 rounded-md bg-[hsl(var(--accent)/0.5)] p-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))]">
+              <UserIcon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="truncate text-xs font-semibold leading-none">{user.fullName || user.userName}</p>
+                <Badge
+                  variant={
+                    primaryRole === "Admin"
+                      ? "danger"
+                      : primaryRole === "Operator"
+                      ? "warning"
+                      : "secondary"
+                  }
+                  className="text-[10px] px-1.5 py-0 h-4"
+                >
+                  {primaryRole}
+                </Badge>
+              </div>
+              <p className="truncate text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">{user.email}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start gap-2 text-xs"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-3.5 w-3.5" />
+            ) : (
+              <Moon className="h-3.5 w-3.5" />
+            )}
+            {theme === "dark" ? "Light" : "Dark"}
+          </Button>
+
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+              onClick={logout}
+              title="Sign Out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Exit</span>
+            </Button>
           )}
-          {theme === "dark" ? "Light Mode" : "Dark Mode"}
-        </Button>
+        </div>
       </div>
     </aside>
   );

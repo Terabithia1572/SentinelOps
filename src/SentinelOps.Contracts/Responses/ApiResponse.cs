@@ -18,6 +18,8 @@ public record ApiResponse<T>
         };
     }
 
+    public static ApiResponse<T> SuccessResponse(T data, string message = "") => Ok(data, message);
+
     public static ApiResponse<T> Fail(string message, IEnumerable<string>? errors = null)
     {
         return new ApiResponse<T>
@@ -28,4 +30,6 @@ public record ApiResponse<T>
             Errors = errors?.ToList() ?? []
         };
     }
+
+    public static ApiResponse<T> FailureResponse(string message, IEnumerable<string>? errors = null) => Fail(message, errors);
 }

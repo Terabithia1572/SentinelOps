@@ -128,3 +128,46 @@ Use the MIT License.
 - Compatible with all listed dependencies
 - Suitable for portfolio projects
 - No copyleft restrictions
+
+---
+
+## ADR-007: Cryptographically Secure API Key Lifecycle
+**Date:** 2026-10-12  
+**Status:** Accepted
+
+### Context
+Monitored applications and OpenTelemetry SDKs require a secure, long-lived ingestion mechanism that avoids transmitting user credentials while defending against database leak credential extraction.
+
+### Decision
+Implement a prefix-and-hash API key architecture:
+- Format: `sent_{environment}_{randomBase64Url}` (e.g. `sent_live_abc123...`)
+- Database stores only `KeyPrefix` (first 16 characters for index lookup) and `KeyHash` (SHA-256 digest of raw key)
+- The raw key secret is returned to the user exactly once during creation or rotation and cannot be retrieved thereafter
+- Ingestion authentication performs constant-time comparison against the SHA-256 hash
+- Full support for rotation, explicit revocation, and optional expiration dates
+
+### Rationale
+- Zero plaintext credential persistence ensures compromised database dumps cannot be used to forge telemetry
+- Constant-time verification mitigates side-channel timing attacks
+- Prefix matching ensures efficient indexed database querying without scanning full tables
+
+---
+
+## ADR-008: JWT Access Tokens with Refresh Token Rotation (RTR)
+**Date:** 2026-10-12  
+**Status:** Accepted
+
+### Context
+Browser and client sessions require stateless authentication with minimal latency while preserving immediate revocation capability for compromised credentials.
+
+### Decision
+Employ short-lived JWT access tokens alongside cryptographically secure refresh token rotation (RTR):
+- JWT access tokens (HMAC-SHA256, 15-minute expiration) encapsulate user ID, username, email, and roles
+- Refresh tokens are 64-byte cryptographically random values, stored exclusively as SHA-256 hashes in PostgreSQL
+- Each refresh request rotates the token: the presented token is invalidated, and a new refresh token is issued
+- If a revoked or already-replaced refresh token is presented, the token family is revoked to mitigate replay attacks
+
+### Rationale
+- Balances high-performance stateless authorization with real-time revocation guarantees
+- Single-use refresh token semantics protect against stolen token replay
+

@@ -29,12 +29,42 @@
 - Telemetry ingestion pipelines (OTLP gRPC/HTTP endpoints and collector pipeline) will be activated in Phase 3.
 
 ### Next Steps
-- Begin Phase 2: Identity and Application Management (User registration, JWT token generation, API key lifecycle, and RBAC authorization).
+- Complete Phase 2: Identity and Application Management (Done)
+- Proceed to Phase 3: Telemetry Ingestion (OTLP gRPC/HTTP endpoints and collector pipelines)
 
 ---
 
 ## Phase 2 — Identity and Application Management
-**Status:** ⏳ Pending
+**Status:** ✅ Completed  
+**Completed:** 2026-10-12
+
+### Completed
+- [x] ASP.NET Core Identity integration with `ApplicationUser` (`FullName`, `CreatedAtUtc`, `IsActive`)
+- [x] Role-based access control (RBAC): `Admin`, `Operator`, `Viewer` roles and policies
+- [x] Secure registration and login endpoints with input validation (`RegisterCommand`, `LoginCommand`)
+- [x] JWT token generation (HMAC-SHA256, 15m expiration) with claims
+- [x] Refresh token rotation (RTR) with cryptographic random bytes and SHA-256 hash storage (`RefreshToken` entity)
+- [x] Token revocation endpoint (`/api/auth/revoke`) and replay attack prevention
+- [x] Application and environment management (full CRUD, environments, services)
+- [x] API Key architecture: high-entropy format `sent_{env}_{secret}`, SHA-256 hashing, prefix indexing (`ApiKey` entity)
+- [x] API Key lifecycle: generation, one-time raw secret exposure, rotation, and revocation (`ApiKeysController`)
+- [x] EF Core database migration (`20261012190115_AddIdentityAndApiKeys`) applied to PostgreSQL
+- [x] Frontend Auth Context (`AuthContext`, token persistence, automatic session restore & refresh)
+- [x] Frontend Protected Routes (`ProtectedRoute` with role authorization enforcement)
+- [x] Frontend Login page (`LoginPage`) with credential validation and redirect preservation
+- [x] Frontend Registration page (`RegisterPage`) with password complexity requirements
+- [x] Frontend Application Management page (`ApplicationsPage`) with environment/service modals
+- [x] Frontend API Key Management page (`ApiKeysPage`) with secure one-time key revelation dialog and rotation
+- [x] Sidebar user profile badge and logout integration
+- [x] Comprehensive test coverage:
+  - 40 backend tests (Domain, Application validators, Identity & API Key integration tests)
+  - 10 frontend tests (Vitest + React Testing Library)
+- [x] Build validation: .NET 10 (0 errors, 0 warnings), React/TypeScript (0 errors, 0 warnings)
+
+### Next Steps
+- Begin Phase 3: Telemetry Ingestion (OTLP gRPC/HTTP receivers, raw telemetry storage, Redis stream buffering, and worker ingestion pipeline).
+
+---
 
 ## Phase 3 — Telemetry Ingestion
 **Status:** ⏳ Pending

@@ -9,4 +9,6 @@ public record ApplicationDto
     public bool IsActive { get; init; }
     public DateTime CreatedAtUtc { get; init; }
     public DateTime? UpdatedAtUtc { get; init; }
+    public IReadOnlyList<EnvironmentDto> Environments { get; init; } = [];
+    public IReadOnlyList<ServiceDto> Services { get; init; } = [];
 }

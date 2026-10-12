@@ -18,6 +18,8 @@ public interface IApplicationDbContext
     DbSet<AlertIncident> AlertIncidents { get; }
     DbSet<HealthCheckResult> HealthCheckResults { get; }
     DbSet<AuditEvent> AuditEvents { get; }
+    DbSet<ApiKey> ApiKeys { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -19,8 +19,9 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/register")) {
       localStorage.removeItem("sentinelops_token");
+      localStorage.removeItem("sentinelops_refresh_token");
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -63,6 +64,70 @@ export interface ApplicationDto {
   description: string;
   isActive: boolean;
   createdAtUtc: string;
+  environments?: EnvironmentDto[];
+  services?: ServiceDto[];
+}
+
+export interface EnvironmentDto {
+  id: string;
+  applicationId: string;
+  name: string;
+  environmentType: string;
+  isActive: boolean;
+  createdAtUtc: string;
+}
+
+export interface ServiceDto {
+  id: string;
+  applicationId: string;
+  name: string;
+  displayName: string;
+  isActive: boolean;
+  createdAtUtc: string;
+}
+
+export interface AuthResponse {
+  userId: string;
+  token: string;
+  refreshToken: string;
+  expiration: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+}
+
+export interface UserProfileDto {
+  id: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  isActive: boolean;
+  createdAtUtc: string;
+  roles: string[];
+}
+
+export interface ApiKeyDto {
+  id: string;
+  applicationId: string;
+  name: string;
+  keyPrefix: string;
+  createdAtUtc: string;
+  expiresAtUtc: string | null;
+  revokedAtUtc: string | null;
+  lastUsedAtUtc: string | null;
+  createdBy: string;
+  isActive: boolean;
+}
+
+export interface ApiKeyCreatedResponse {
+  id: string;
+  applicationId: string;
+  name: string;
+  keyPrefix: string;
+  rawApiKey: string;
+  createdAtUtc: string;
+  expiresAtUtc: string | null;
 }
 
 export interface HealthCheckDto {

@@ -1,4 +1,5 @@
 using ApplicationEntity = SentinelOps.Domain.Entities.Application;
+using EnvironmentEntity = SentinelOps.Domain.Entities.Environment;
 using SentinelOps.Contracts.DTOs;
 using SentinelOps.Domain.Entities;
 
@@ -16,7 +17,52 @@ public static class MappingExtensions
             Description = entity.Description,
             IsActive = entity.IsActive,
             CreatedAtUtc = entity.CreatedAtUtc,
-            UpdatedAtUtc = entity.UpdatedAtUtc
+            UpdatedAtUtc = entity.UpdatedAtUtc,
+            Environments = entity.Environments?.Select(e => e.ToDto()).ToList() ?? [],
+            Services = entity.Services?.Select(s => s.ToDto()).ToList() ?? []
+        };
+    }
+
+    public static EnvironmentDto ToDto(this EnvironmentEntity entity)
+    {
+        return new EnvironmentDto
+        {
+            Id = entity.Id,
+            ApplicationId = entity.ApplicationId,
+            Name = entity.Name,
+            EnvironmentType = entity.EnvironmentType.ToString(),
+            IsActive = entity.IsActive,
+            CreatedAtUtc = entity.CreatedAtUtc
+        };
+    }
+
+    public static ServiceDto ToDto(this Service entity)
+    {
+        return new ServiceDto
+        {
+            Id = entity.Id,
+            ApplicationId = entity.ApplicationId,
+            Name = entity.Name,
+            DisplayName = entity.DisplayName,
+            IsActive = entity.IsActive,
+            CreatedAtUtc = entity.CreatedAtUtc
+        };
+    }
+
+    public static ApiKeyDto ToDto(this ApiKey entity)
+    {
+        return new ApiKeyDto
+        {
+            Id = entity.Id,
+            ApplicationId = entity.ApplicationId,
+            Name = entity.Name,
+            KeyPrefix = entity.KeyPrefix,
+            CreatedAtUtc = entity.CreatedAtUtc,
+            ExpiresAtUtc = entity.ExpiresAtUtc,
+            RevokedAtUtc = entity.RevokedAtUtc,
+            LastUsedAtUtc = entity.LastUsedAtUtc,
+            CreatedBy = entity.CreatedBy,
+            IsActive = entity.IsActive
         };
     }
 

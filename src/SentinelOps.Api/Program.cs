@@ -5,11 +5,15 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Microsoft.AspNetCore.Identity;
 using SentinelOps.Api.Middleware;
 using SentinelOps.Application;
+using SentinelOps.Domain.Constants;
 using SentinelOps.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -88,7 +92,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole(Roles.Admin));
+    options.AddPolicy("RequireOperator", policy => policy.RequireRole(Roles.Admin, Roles.Operator));
+    options.AddPolicy("RequireViewer", policy => policy.RequireRole(Roles.Admin, Roles.Operator, Roles.Viewer));
+});
 
 // CORS configuration
 var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
@@ -161,6 +170,22 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.MapControllers();
+
+// Seed Identity Roles on startup
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+    if (roleManager != null)
+    {
+        foreach (var role in Roles.All)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole(role));
+            }
+        }
+    }
+}
 
 app.Run();
 

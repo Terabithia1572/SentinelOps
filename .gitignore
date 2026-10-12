@@ -48,7 +48,10 @@ jspm_packages/
 .env.*
 !.env.example
 *.local.json
+*.Local.json
 appsettings.*.local.json
+appsettings.*.Local.json
+appsettings.Local.json
 
 ## Test Results
 [Tt]est[Rr]esult*/

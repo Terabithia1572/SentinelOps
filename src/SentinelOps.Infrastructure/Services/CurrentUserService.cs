@@ -21,4 +21,8 @@ public class CurrentUserService : ICurrentUserService
 
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+
+    public string? IpAddress =>
+        _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString()
+        ?? _httpContextAccessor.HttpContext?.Request?.Headers["X-Forwarded-For"].FirstOrDefault();
 }
