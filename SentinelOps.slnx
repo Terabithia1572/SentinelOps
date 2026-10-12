@@ -12,4 +12,10 @@
     <Project Path="tests/SentinelOps.Application.Tests/SentinelOps.Application.Tests.csproj" />
     <Project Path="tests/SentinelOps.Api.IntegrationTests/SentinelOps.Api.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/SentinelOps.SampleApi/SentinelOps.SampleApi.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/SentinelOps.TelemetryGenerator/SentinelOps.TelemetryGenerator.csproj" />
+  </Folder>
 </Solution>

@@ -21,23 +21,47 @@ public class RedisCacheService : ICacheService
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        var value = await _database.StringGetAsync(key);
-        if (value.IsNullOrEmpty)
+        if (!_redis.IsConnected) return default;
+        try
+        {
+            var value = await _database.StringGetAsync(key);
+            if (value.IsNullOrEmpty)
+            {
+                return default;
+            }
+
+            return JsonSerializer.Deserialize<T>((string)value!, JsonOptions);
+        }
+        catch
         {
             return default;
         }
-
-        return JsonSerializer.Deserialize<T>((string)value!, JsonOptions);
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
     {
-        var serialized = JsonSerializer.Serialize(value, JsonOptions);
-        await _database.StringSetAsync(key, serialized, expiry);
+        if (!_redis.IsConnected) return;
+        try
+        {
+            var serialized = JsonSerializer.Serialize(value, JsonOptions);
+            await _database.StringSetAsync(key, serialized, expiry);
+        }
+        catch
+        {
+            // Silently degrade if cache server is unavailable
+        }
     }
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        await _database.KeyDeleteAsync(key);
+        if (!_redis.IsConnected) return;
+        try
+        {
+            await _database.KeyDeleteAsync(key);
+        }
+        catch
+        {
+            // Silently degrade if cache server is unavailable
+        }
     }
 }

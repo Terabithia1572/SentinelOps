@@ -20,6 +20,8 @@ processors:
 exporters:
   otlphttp:
     endpoint: http://sentinelops-api:8080
+    headers:
+      X-API-Key: ${SENTINELOPS_API_KEY:-sent_live_collector_internal_key}
     tls:
       insecure: true
 

@@ -42,9 +42,15 @@ public static class DependencyInjection
             ?? "localhost:6379,abortConnect=false";
 
         services.AddSingleton<IConnectionMultiplexer>(_ =>
-            ConnectionMultiplexer.Connect(redisConnection));
+        {
+            var options = ConfigurationOptions.Parse(redisConnection);
+            options.AbortOnConnectFail = false;
+            options.ConnectTimeout = 3000;
+            return ConnectionMultiplexer.Connect(options);
+        });
 
         services.AddSingleton<ICacheService, RedisCacheService>();
+        services.AddSingleton<ITelemetryBuffer, RedisTelemetryBuffer>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();

@@ -31,6 +31,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 // Add Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<SentinelOps.Api.Authentication.ApiKeyAuthFilter>();
 
 // Swagger/OpenAPI configuration
 builder.Services.AddSwaggerGen(c =>
@@ -51,6 +52,14 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
 
+    c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Description = "API Key header for telemetry ingestion. Example: \"X-API-Key: sent_live_...\"",
+        Name = "X-API-Key",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey
+    });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -60,6 +69,17 @@ builder.Services.AddSwaggerGen(c =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
                 }
             },
             Array.Empty<string>()

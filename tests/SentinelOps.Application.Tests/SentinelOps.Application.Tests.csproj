@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SentinelOps.Application\SentinelOps.Application.csproj" />
+    <ProjectReference Include="..\..\src\SentinelOps.Infrastructure\SentinelOps.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

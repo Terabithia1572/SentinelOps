@@ -94,6 +94,8 @@ services:
     image: otel/opentelemetry-collector-contrib:0.120.0
     container_name: sentinelops-otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
+    environment:
+      - SENTINELOPS_API_KEY=${SENTINELOPS_COLLECTOR_API_KEY:-sent_live_collector_internal_key}
     volumes:
       - ./deploy/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:

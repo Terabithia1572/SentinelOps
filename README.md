@@ -152,6 +152,16 @@ cd src/SentinelOps.Web
 npm run test:run
 ```
 
+### Generating Telemetry & Running Sample App
+
+```bash
+# 1. Start the instrumented Sample .NET API
+dotnet run --project samples/SentinelOps.SampleApi
+
+# 2. Run the Synthetic Telemetry Generator CLI tool
+dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://localhost:5100 --api-key sent_live_your_key --count 50
+```
+
 ## Environment Variables
 
 | Variable | Description | Default |
@@ -166,13 +176,14 @@ npm run test:run
 
 - [Architecture Overview](docs/architecture/overview.md)
 - [Architecture Decisions](docs/DECISIONS.md)
+- [Security Policy & Hardening](docs/SECURITY.md)
 - [Development Progress](docs/PROGRESS.md)
 
 ## Roadmap
 
 - [x] **Phase 1** — Foundation (solution structure, Docker, CI/CD)
-- [ ] **Phase 2** — Identity & Application Management
-- [ ] **Phase 3** — Telemetry Ingestion (OpenTelemetry)
+- [x] **Phase 2** — Identity & Application Management (JWT, RBAC, API Keys, Frontend Auth)
+- [x] **Phase 3** — Telemetry Ingestion (OpenTelemetry OTLP HTTP/gRPC, Redis Streams, Worker Batch Persistence, Sample API)
 - [ ] **Phase 4** — Observability Explorer (Logs, Traces, Metrics)
 - [ ] **Phase 5** — Alerting Engine
 - [ ] **Phase 6** — Advanced Analytics

@@ -19,6 +19,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Background Services
+builder.Services.AddHostedService<TelemetryConsumerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
 
 var host = builder.Build();

@@ -90,7 +90,29 @@
 ---
 
 ## Phase 3 — Telemetry Ingestion
-**Status:** ⏳ Pending
+**Status:** ✅ Completed  
+**Completed:** 2026-10-12
+
+### Completed
+- [x] OpenTelemetry standard OTLP schemas (`OtlpLogsPayload`, `OtlpTracesPayload`, `OtlpMetricsPayload`) conforming to OTLP JSON specification
+- [x] High-performance OTLP payload mapper (`OtlpPayloadMapper`) extracting resource metadata, service names, environments, nanosecond timestamps, and error/exception stack traces
+- [x] OTLP HTTP ingestion controller (`OtlpIngestionController`) supporting `/v1/logs`, `/v1/traces`, `/v1/metrics` and `/api/v1/...` aliases with 10MB payload size guards
+- [x] Telemetry authentication filter (`ApiKeyAuthFilter`, `[RequireApiKey]`) verifying `X-API-Key` or `Authorization: Bearer <key>`, checking application active status, and throttling metadata updates
+- [x] Production Redis Streams telemetry buffer (`RedisTelemetryBuffer`, `ITelemetryBuffer`) with consumer groups, bounded buffer limits (`MAXLEN 100,000`), dead-letter stream (`sentinelops:stream:dead-letter`), and resilient in-memory channel fallback
+- [x] Telemetry worker consumer service (`TelemetryConsumerService`) with batch persistence (up to 100 items / 500ms timeout) for PostgreSQL `LogEntry`, `TraceRecord`, `SpanRecord`, and `MetricRecord`
+- [x] Trace root summary calculation, duplicate detection, and idempotent duration/span-count merging
+- [x] Dynamic dashboard telemetry calculation in `GetDashboardSummaryQueryHandler` directly aggregating live ingested traces, service counts, and duration metrics
+- [x] Sample .NET 10 API (`samples/SentinelOps.SampleApi`) instrumented with OpenTelemetry SDK (traces, metrics, logs, slow queries, simulated errors) exporting to SentinelOps
+- [x] Synthetic telemetry generator CLI tool (`tools/SentinelOps.TelemetryGenerator`) producing realistic distributed traces, logs, gauges, counters, and high-latency requests
+- [x] OpenTelemetry Collector pipeline and Docker Compose configuration with collector API key trust boundary
+- [x] Automated test coverage:
+  - 13 new backend tests (7 OTLP ingestion integration tests, 3 payload mapper unit tests, 3 Redis buffer unit tests)
+  - Total backend tests: 57 passed (0 failures)
+  - Total frontend tests: 10 passed (0 failures)
+- [x] Build validation: .NET 10 (0 errors, 0 warnings), React/TypeScript (0 errors, 0 warnings)
+
+### Next Steps
+- Proceed to Phase 4: Observability Explorer (Log search and filtering, Trace waterfall visualization, Metric charting, Service health monitoring, and exception grouping).
 
 ## Phase 4 — Observability Explorer
 **Status:** ⏳ Pending
