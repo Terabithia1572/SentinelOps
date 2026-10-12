@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>SentinelOps.Api</RootNamespace>
     <AssemblyName>SentinelOps.Api</AssemblyName>
+    <UserSecretsId>8710c335-68c3-44af-bfe1-4219bc6750e5</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

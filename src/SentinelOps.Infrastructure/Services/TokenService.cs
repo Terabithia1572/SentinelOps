@@ -24,6 +24,10 @@ public class TokenService : ITokenService
         IEnumerable<string> roles)
     {
         var jwtKey = _configuration["JwtSettings:Key"] ?? "PLACEHOLDER_DEV_SECRET_KEY_AT_LEAST_32_CHARS_LONG";
+        if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+        {
+            throw new InvalidOperationException("JwtSettings:Key must be configured with a minimum of 32 characters (256 bits).");
+        }
         var jwtIssuer = _configuration["JwtSettings:Issuer"] ?? "SentinelOps";
         var jwtAudience = _configuration["JwtSettings:Audience"] ?? "SentinelOpsUsers";
         var expirationMinutes = int.TryParse(_configuration["JwtSettings:ExpirationMinutes"], out var exp) ? exp : 60;

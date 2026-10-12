@@ -69,6 +69,13 @@ builder.Services.AddSwaggerGen(c =>
 
 // JWT Authentication
 var jwtKey = builder.Configuration["JwtSettings:Key"] ?? "PLACEHOLDER_DEV_SECRET_KEY_AT_LEAST_32_CHARS_LONG";
+if (builder.Environment.IsProduction())
+{
+    if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Contains("PLACEHOLDER") || jwtKey.Length < 32)
+    {
+        throw new InvalidOperationException("CRITICAL SECURITY VIOLATION: Production requires a secure, non-placeholder JwtSettings:Key with at least 32 characters.");
+    }
+}
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "SentinelOps";
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "SentinelOpsUsers";
 
@@ -131,6 +138,7 @@ if (!string.IsNullOrEmpty(redisConn))
 var app = builder.Build();
 
 // Middleware pipeline
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 

@@ -16,6 +16,7 @@ using SentinelOps.Domain.Enums;
 namespace SentinelOps.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ApplicationsController : BaseApiController
 {

@@ -35,6 +35,34 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
         var ipAddress = _currentUserService.IpAddress ?? "unknown";
 
+        if (existingToken != null && existingToken.RevokedAtUtc != null)
+        {
+            // Breach detection: A revoked token is being reused. Revoke all active tokens for this user.
+            var activeTokens = await _context.RefreshTokens
+                .Where(t => t.UserId == existingToken.UserId && t.RevokedAtUtc == null && t.ExpiresAtUtc > DateTime.UtcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeTokens)
+            {
+                token.Revoke(ipAddress, "Revoked due to token replay attack detection");
+            }
+
+            _context.AuditEvents.Add(new AuditEvent
+            {
+                UserId = existingToken.UserId,
+                UserName = "System",
+                Action = "RefreshTokenReuseBreachDetected",
+                EntityType = "RefreshToken",
+                EntityId = existingToken.Id.ToString(),
+                Details = "A previously revoked refresh token was submitted. All active sessions invalidated.",
+                IpAddress = ipAddress,
+                Timestamp = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Refresh token reuse detected. All active sessions have been invalidated.");
+        }
+
         if (existingToken == null || !existingToken.IsActive)
         {
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");

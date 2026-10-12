@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SentinelOps.Application.Dashboard.Queries.GetDashboardSummary;
 using SentinelOps.Contracts.DTOs;
@@ -5,6 +6,7 @@ using SentinelOps.Contracts.Responses;
 
 namespace SentinelOps.Api.Controllers;
 
+[Authorize]
 public class DashboardController : BaseApiController
 {
     [HttpGet("summary")]

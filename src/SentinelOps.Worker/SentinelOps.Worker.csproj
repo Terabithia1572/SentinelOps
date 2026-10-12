@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>SentinelOps.Worker</RootNamespace>
     <AssemblyName>SentinelOps.Worker</AssemblyName>
+    <UserSecretsId>cc2b7df9-c8ea-455e-8b46-8adf3d0532f1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

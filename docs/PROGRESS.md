@@ -62,7 +62,30 @@
 - [x] Build validation: .NET 10 (0 errors, 0 warnings), React/TypeScript (0 errors, 0 warnings)
 
 ### Next Steps
-- Begin Phase 3: Telemetry Ingestion (OTLP gRPC/HTTP receivers, raw telemetry storage, Redis stream buffering, and worker ingestion pipeline).
+- Security and Runtime Hardening Checkpoint (Completed)
+- Proceed to Phase 3: Telemetry Ingestion (OTLP gRPC/HTTP receivers, raw telemetry storage, Redis stream buffering, and worker ingestion pipeline).
+
+---
+
+## Security & Runtime Hardening Checkpoint
+**Status:** ✅ Completed  
+**Completed:** 2026-10-12
+
+### Completed
+- [x] Full Git history & codebase secret audit: verified zero credentials committed
+- [x] Initialized .NET User Secrets for `SentinelOps.Api` and `SentinelOps.Worker`
+- [x] Superuser removal: replaced default database connection strings with dedicated least-privilege `sentinelops_app` role placeholders
+- [x] Database role provisioning script created ([`scripts/setup-db-user.sql`](file:///c:/Users/Yunus/Desktop/SentinelOps/scripts/setup-db-user.sql))
+- [x] Fail-fast production security: verified minimum 32-char / 256-bit requirement and rejected dev placeholders in production
+- [x] Refresh token rotation hardening: implemented token replay breach detection with user session family invalidation
+- [x] Controller authorization hardening: added `[Authorize]` attribute to `ApplicationsController` and `DashboardController`
+- [x] OWASP security headers middleware added (`SecurityHeadersMiddleware` with CSP, HSTS, X-Content-Type-Options, X-Frame-Options)
+- [x] Docker Desktop diagnosis: confirmed `com.docker.service` is healthy while GUI engine is stopped; documented launch requirements without resetting WSL data
+- [x] Comprehensive security regression tests added in [`SecurityHardeningIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/SecurityHardeningIntegrationTests.cs)
+- [x] Created [`docs/SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/SECURITY.md) documenting security policy
+- [x] Verified builds & test suites:
+  - Backend: 44 tests passing (4 new security tests)
+  - Frontend: 10 tests passing
 
 ---
 
