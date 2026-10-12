@@ -1,0 +1,116 @@
+services:
+  sentinelops-api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: sentinelops-api
+    ports:
+      - "5100:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=sentinelops;Username=sentinelops;Password=${POSTGRES_PASSWORD:-SentinelOps_Dev_2026!}
+      - ConnectionStrings__Redis=redis:6379
+      - JwtSettings__Key=${JWT_SECRET_KEY:-SentinelOps-Development-Secret-Key-Min-32-Characters-Long!!}
+      - JwtSettings__Issuer=SentinelOps
+      - JwtSettings__Audience=SentinelOps
+      - JwtSettings__ExpirationMinutes=60
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+  sentinelops-worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.worker
+    container_name: sentinelops-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=sentinelops;Username=sentinelops;Password=${POSTGRES_PASSWORD:-SentinelOps_Dev_2026!}
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+  sentinelops-web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+    container_name: sentinelops-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - sentinelops-api
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: sentinelops-postgres
+    environment:
+      POSTGRES_DB: sentinelops
+      POSTGRES_USER: sentinelops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SentinelOps_Dev_2026!}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinelops -d sentinelops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sentinelops-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    container_name: sentinelops-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./deploy/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Prometheus metrics (collector)
+      - "8889:8889"   # Prometheus exporter
+    depends_on:
+      - sentinelops-api
+    networks:
+      - sentinelops
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sentinelops:
+    driver: bridge

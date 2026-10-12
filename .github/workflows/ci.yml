@@ -1,0 +1,152 @@
+name: SentinelOps CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '22.x'
+
+jobs:
+  backend-build-test:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sentinelops_test
+          POSTGRES_USER: sentinelops
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sentinelops -d sentinelops_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore SentinelOps.slnx
+
+      - name: Build
+        run: dotnet build SentinelOps.slnx --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test SentinelOps.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=sentinelops_test;Username=sentinelops;Password=test_password"
+          ConnectionStrings__Redis: "localhost:6379"
+          JwtSettings__Key: "CI-Test-Secret-Key-Must-Be-At-Least-32-Characters-Long!!"
+          JwtSettings__Issuer: "SentinelOps"
+          JwtSettings__Audience: "SentinelOps"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: '**/test-results.trx'
+
+  frontend-build-test:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/SentinelOps.Web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/SentinelOps.Web
+        run: npm ci
+
+      - name: Lint
+        working-directory: src/SentinelOps.Web
+        run: npm run lint
+
+      - name: Type check
+        working-directory: src/SentinelOps.Web
+        run: npm run typecheck
+
+      - name: Run tests
+        working-directory: src/SentinelOps.Web
+        run: npm run test -- --run
+
+      - name: Build
+        working-directory: src/SentinelOps.Web
+        run: npm run build
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-build-test, frontend-build-test]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f deploy/docker/Dockerfile.api -t sentinelops-api:ci .
+
+      - name: Build Worker image
+        run: docker build -f deploy/docker/Dockerfile.worker -t sentinelops-worker:ci .
+
+      - name: Build Web image
+        run: docker build -f deploy/docker/Dockerfile.web -t sentinelops-web:ci .
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore SentinelOps.slnx
+
+      - name: Check for vulnerable packages
+        run: dotnet list SentinelOps.slnx package --vulnerable --include-transitive 2>&1 | tee vulnerability-report.txt
+        continue-on-error: true
+
+      - name: Upload vulnerability report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulnerability-report
+          path: vulnerability-report.txt

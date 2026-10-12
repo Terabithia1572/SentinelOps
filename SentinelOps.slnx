@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SentinelOps.Domain/SentinelOps.Domain.csproj" />
+    <Project Path="src/SentinelOps.Contracts/SentinelOps.Contracts.csproj" />
+    <Project Path="src/SentinelOps.Application/SentinelOps.Application.csproj" />
+    <Project Path="src/SentinelOps.Infrastructure/SentinelOps.Infrastructure.csproj" />
+    <Project Path="src/SentinelOps.Api/SentinelOps.Api.csproj" />
+    <Project Path="src/SentinelOps.Worker/SentinelOps.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SentinelOps.Domain.Tests/SentinelOps.Domain.Tests.csproj" />
+    <Project Path="tests/SentinelOps.Application.Tests/SentinelOps.Application.Tests.csproj" />
+    <Project Path="tests/SentinelOps.Api.IntegrationTests/SentinelOps.Api.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
