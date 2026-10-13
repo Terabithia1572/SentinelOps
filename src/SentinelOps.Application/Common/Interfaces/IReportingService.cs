@@ -18,4 +18,8 @@ public interface IReportingService
     Task<(byte[] Content, string ContentType, string FileName)> ExportPrintableReportAsync(
         ExportReportRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<(byte[] Content, string ContentType, string FileName)> ExportPdfAsync(
+        ExportReportRequest request,
+        CancellationToken cancellationToken = default);
 }

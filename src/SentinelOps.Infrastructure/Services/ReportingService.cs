@@ -5,6 +5,8 @@ using SentinelOps.Application.Common.Interfaces;
 using SentinelOps.Application.Common.Security;
 using SentinelOps.Contracts.DTOs;
 using SentinelOps.Contracts.Requests;
+using SentinelOps.Domain.Enums;
+using SentinelOps.Infrastructure.Services.Reporting;
 
 namespace SentinelOps.Infrastructure.Services;
 
@@ -23,45 +25,45 @@ public class ReportingService : IReportingService
         [
             new()
             {
-                Id = "Performance",
-                Name = "Service Performance & Latency",
-                Description = "Throughput, response times, p95/p99 percentiles, and error rate breakdowns by service.",
-                Category = "Telemetry"
+                Id = "ExecutiveSummary",
+                Name = "Executive Summary & SLOs",
+                Description = "High-level SLO compliance, open incidents, MTTR, overall error rate, and throughput.",
+                Category = "Executive"
             },
             new()
             {
-                Id = "ErrorsAndExceptions",
-                Name = "Errors & Exceptions Analysis",
-                Description = "Top exception types, error frequencies, affected services, and stack trace fingerprints.",
-                Category = "Quality"
-            },
-            new()
-            {
-                Id = "IncidentHistory",
-                Name = "Incident History & MTTA/MTTR",
-                Description = "Comprehensive record of operational incidents, resolution times, and severity distributions.",
+                Id = "IncidentPostmortem",
+                Name = "Incident Postmortem & Timeline",
+                Description = "Incident timeline, root cause patterns, MTTA/MTTR metrics, and resolution history.",
                 Category = "Reliability"
-            },
-            new()
-            {
-                Id = "AlertActivity",
-                Name = "Alert Activity & Breach Trends",
-                Description = "Frequency of firing alerts, noisy alert rules, and threshold breach patterns.",
-                Category = "Alerting"
             },
             new()
             {
                 Id = "SloCompliance",
                 Name = "SLO Compliance & Error Budget",
-                Description = "Status of Service Level Objectives, compliance percentages, and error budget burn rates.",
+                Description = "Service Level Objectives status, error budget burn rates, and breach events.",
                 Category = "Reliability"
             },
             new()
             {
-                Id = "ApplicationHealth",
-                Name = "Application & Service Health",
-                Description = "Service availability status, latency health checks, and cross-application uptime.",
+                Id = "InfrastructureHealth",
+                Name = "Infrastructure & Service Health",
+                Description = "Service availability, latency health checks, host responsiveness, and uptime history.",
                 Category = "Operations"
+            },
+            new()
+            {
+                Id = "SecurityAudit",
+                Name = "Enterprise Security & Audit",
+                Description = "Failed logins, administrative mutations, policy changes, and API key lifecycles.",
+                Category = "Security"
+            },
+            new()
+            {
+                Id = "TelemetryVolume",
+                Name = "Cost & Telemetry Volume",
+                Description = "Ingested spans, logs, metric points by service/application, and projected storage.",
+                Category = "FinOps"
             }
         ];
     }
@@ -74,13 +76,16 @@ public class ReportingService : IReportingService
 
         return request.ReportType.ToLowerInvariant() switch
         {
+            "executivesummary" => await GenerateExecutiveSummaryReportAsync(request, startUtc, endUtc, cancellationToken),
+            "incidentpostmortem" or "incidenthistory" => await GenerateIncidentsReportAsync(request, startUtc, endUtc, cancellationToken),
+            "slocompliance" => await GenerateSloReportAsync(request, startUtc, endUtc, cancellationToken),
+            "infrastructurehealth" or "applicationhealth" => await GenerateHealthReportAsync(request, startUtc, endUtc, cancellationToken),
+            "securityaudit" => await GenerateSecurityAuditReportAsync(request, startUtc, endUtc, cancellationToken),
+            "telemetryvolume" or "costandvolume" => await GenerateTelemetryVolumeReportAsync(request, startUtc, endUtc, cancellationToken),
             "performance" => await GeneratePerformanceReportAsync(request, startUtc, endUtc, cancellationToken),
             "errorsandexceptions" => await GenerateErrorsReportAsync(request, startUtc, endUtc, cancellationToken),
-            "incidenthistory" => await GenerateIncidentsReportAsync(request, startUtc, endUtc, cancellationToken),
             "alertactivity" => await GenerateAlertActivityReportAsync(request, startUtc, endUtc, cancellationToken),
-            "slocompliance" => await GenerateSloReportAsync(request, startUtc, endUtc, cancellationToken),
-            "applicationhealth" => await GenerateHealthReportAsync(request, startUtc, endUtc, cancellationToken),
-            _ => await GeneratePerformanceReportAsync(request, startUtc, endUtc, cancellationToken)
+            _ => await GenerateExecutiveSummaryReportAsync(request, startUtc, endUtc, cancellationToken)
         };
     }
 
@@ -208,6 +213,17 @@ public class ReportingService : IReportingService
         var fileName = $"SentinelOps_{request.ReportType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.html";
 
         return (bytes, "text/html; charset=utf-8", fileName);
+    }
+
+    public async Task<(byte[] Content, string ContentType, string FileName)> ExportPdfAsync(
+        ExportReportRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var preview = await GenerateReportPreviewAsync(request, cancellationToken);
+        var bytes = PdfReportGenerator.Generate(preview);
+        var fileName = $"SentinelOps_{request.ReportType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
+
+        return (bytes, "application/pdf", fileName);
     }
 
 
@@ -544,6 +560,174 @@ public class ReportingService : IReportingService
                 { "Degraded/Unhealthy", healthChecks.Count(h => h.LatestStatus != "Healthy") }
             },
             ColumnHeaders = ["Service Name", "Application", "Registration Status", "Health Status", "Avg Latency", "Last Check (UTC)"],
+            Rows = rows
+        };
+    }
+
+    private async Task<ReportPreviewDto> GenerateExecutiveSummaryReportAsync(
+        GenerateReportRequest req, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var logsQuery = _context.LogEntries.AsNoTracking().Where(l => l.Timestamp >= start && l.Timestamp <= end);
+        var tracesQuery = _context.TraceRecords.AsNoTracking().Where(t => t.StartedAtUtc >= start && t.StartedAtUtc <= end);
+        var slosQuery = _context.ServiceLevelObjectives.AsNoTracking();
+        var incidentsQuery = _context.AlertIncidents.AsNoTracking().Where(i => i.FiredAtUtc >= start && i.FiredAtUtc <= end);
+
+        if (req.ApplicationId.HasValue)
+        {
+            logsQuery = logsQuery.Where(l => l.ApplicationId == req.ApplicationId.Value);
+            tracesQuery = tracesQuery.Where(t => t.ApplicationId == req.ApplicationId.Value);
+            slosQuery = slosQuery.Where(s => s.ApplicationId == req.ApplicationId.Value);
+        }
+
+        var totalLogs = await logsQuery.CountAsync(ct);
+        var errorLogs = await logsQuery.CountAsync(l => l.Severity == Severity.Error || l.Severity == Severity.Critical, ct);
+        var totalTraces = await tracesQuery.CountAsync(ct);
+        var avgDurationMs = totalTraces > 0 ? (await tracesQuery.AverageAsync(t => t.Duration.TotalMilliseconds, ct)) : 0.0;
+
+        var totalSlos = await slosQuery.CountAsync(ct);
+        var compliantSlos = await slosQuery.CountAsync(s => !s.IsBreached, ct);
+        var openIncidents = await incidentsQuery.CountAsync(i => i.Status == AlertStatus.Firing || i.Status == AlertStatus.Acknowledged, ct);
+
+        double errorRate = totalLogs > 0 ? ((double)errorLogs / totalLogs * 100.0) : 0.0;
+        double sloRate = totalSlos > 0 ? ((double)compliantSlos / totalSlos * 100.0) : 100.0;
+
+        var services = await _context.Services.AsNoTracking().Include(s => s.Application).Take(50).ToListAsync(ct);
+        var rows = new List<List<string>>();
+
+        foreach (var svc in services)
+        {
+            var svcLogs = await logsQuery.CountAsync(l => l.ServiceName == svc.Name, ct);
+            var svcErrors = await logsQuery.CountAsync(l => l.ServiceName == svc.Name && (l.Severity == Severity.Error || l.Severity == Severity.Critical), ct);
+            var svcRate = svcLogs > 0 ? $"{(double)svcErrors / svcLogs * 100.0:F2}%" : "0.00%";
+            var appName = svc.Application != null && !string.IsNullOrEmpty(svc.Application.DisplayName) ? svc.Application.DisplayName : (svc.Application?.Name ?? "App");
+
+            rows.Add([
+                svc.Name,
+                appName,
+                svc.IsActive ? "Online" : "Offline",
+                $"{svcLogs:N0}",
+                svcRate,
+                $"{avgDurationMs:F1}ms",
+                svcErrors == 0 ? "Compliant" : "Degraded"
+            ]);
+        }
+
+        return new ReportPreviewDto
+        {
+            ReportType = "ExecutiveSummary",
+            Title = "Executive Summary & SLO Compliance Report",
+            Description = "High-level operational overview including SLO health, active incidents, error rates, and throughput.",
+            StartUtc = start,
+            EndUtc = end,
+            SummaryMetrics = new Dictionary<string, object>
+            {
+                { "SLO Compliance", $"{sloRate:F1}%" },
+                { "Open Incidents", openIncidents },
+                { "Error Rate", $"{errorRate:F2}%" },
+                { "Total Telemetry", $"{totalLogs + totalTraces:N0}" }
+            },
+            ColumnHeaders = ["Service Name", "Application", "Status", "Request Volume", "Error Rate", "Avg Latency", "SLO Health"],
+            Rows = rows
+        };
+    }
+
+    private async Task<ReportPreviewDto> GenerateSecurityAuditReportAsync(
+        GenerateReportRequest req, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var auditQuery = _context.AuditEvents.AsNoTracking()
+            .Where(a => a.Timestamp >= start && a.Timestamp <= end);
+
+        var totalEvents = await auditQuery.CountAsync(ct);
+        var failedLogins = await auditQuery.CountAsync(a => a.Action.Contains("Failed"), ct);
+        var adminActions = await auditQuery.CountAsync(a => a.Action.StartsWith("User") || a.Action.StartsWith("Role") || a.Action.StartsWith("Application"), ct);
+        var activeKeys = await _context.ApiKeys.AsNoTracking().CountAsync(k => k.RevokedAtUtc == null, ct);
+
+        var recentEvents = await auditQuery
+            .OrderByDescending(a => a.Timestamp)
+            .Take(100)
+            .ToListAsync(ct);
+
+        var rows = recentEvents.Select(a => new List<string>
+        {
+            a.Timestamp.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            a.UserName ?? "system",
+            a.Action,
+            a.EntityType ?? "General",
+            a.EntityId ?? "-",
+            a.IpAddress ?? "internal",
+            a.Action.Contains("Failed") ? "FAILED" : "SUCCESS"
+        }).ToList();
+
+        return new ReportPreviewDto
+        {
+            ReportType = "SecurityAudit",
+            Title = "Enterprise Security & Audit Compliance Report",
+            Description = "Detailed trail of authentication attempts, administrative mutations, and API key lifecycles.",
+            StartUtc = start,
+            EndUtc = end,
+            SummaryMetrics = new Dictionary<string, object>
+            {
+                { "Total Audit Events", totalEvents },
+                { "Failed Logins", failedLogins },
+                { "Admin Mutations", adminActions },
+                { "Active API Keys", activeKeys }
+            },
+            ColumnHeaders = ["Timestamp (UTC)", "Actor", "Action", "Target Type", "Entity ID", "IP Address", "Outcome"],
+            Rows = rows
+        };
+    }
+
+    private async Task<ReportPreviewDto> GenerateTelemetryVolumeReportAsync(
+        GenerateReportRequest req, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var logsQuery = _context.LogEntries.AsNoTracking().Where(l => l.Timestamp >= start && l.Timestamp <= end);
+        var tracesQuery = _context.TraceRecords.AsNoTracking().Where(t => t.StartedAtUtc >= start && t.StartedAtUtc <= end);
+        var metricsQuery = _context.MetricRecords.AsNoTracking().Where(m => m.Timestamp >= start && m.Timestamp <= end);
+
+        var totalLogs = await logsQuery.CountAsync(ct);
+        var totalTraces = await tracesQuery.CountAsync(ct);
+        var totalMetrics = await metricsQuery.CountAsync(ct);
+
+        var services = await _context.Services.AsNoTracking().Include(s => s.Application).Take(50).ToListAsync(ct);
+        var rows = new List<List<string>>();
+
+        foreach (var svc in services)
+        {
+            var svcLogs = await logsQuery.CountAsync(l => l.ServiceName == svc.Name, ct);
+            var svcTraces = await tracesQuery.CountAsync(l => l.ServiceName == svc.Name, ct);
+            var svcMetrics = await metricsQuery.CountAsync(l => l.ServiceName == svc.Name, ct);
+
+            double estKb = (svcLogs * 1.0) + (svcTraces * 2.0) + (svcMetrics * 0.5);
+            string estStr = estKb > 1024 ? $"{estKb / 1024.0:F2} MB" : $"{estKb:F0} KB";
+
+            rows.Add([
+                svc.Name,
+                svc.Application?.DisplayName ?? svc.Application?.Name ?? "App",
+                $"{svcLogs:N0}",
+                $"{svcTraces:N0}",
+                $"{svcMetrics:N0}",
+                estStr,
+                "Standard (30d)"
+            ]);
+        }
+
+        double totalMb = ((totalLogs * 1.0) + (totalTraces * 2.0) + (totalMetrics * 0.5)) / 1024.0;
+
+        return new ReportPreviewDto
+        {
+            ReportType = "TelemetryVolume",
+            Title = "Cost & Telemetry Volume Ingestion Report",
+            Description = "Ingestion statistics, span counts, log volumes, metric frequencies, and projected storage footprint.",
+            StartUtc = start,
+            EndUtc = end,
+            SummaryMetrics = new Dictionary<string, object>
+            {
+                { "Total Logs", totalLogs },
+                { "Total Traces", totalTraces },
+                { "Total Metrics", totalMetrics },
+                { "Est. Ingestion", $"{totalMb:F1} MB" }
+            },
+            ColumnHeaders = ["Service Name", "Application", "Log Records", "Span Count", "Metric Points", "Est. Volume", "Retention Tier"],
             Rows = rows
         };
     }

@@ -72,4 +72,38 @@ public class ReportsController : BaseApiController
 
         return File(content, contentType, fileName);
     }
+
+    [HttpGet("export/pdf")]
+    [HttpPost("export/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ExportPdf(
+        [FromQuery] string? type,
+        [FromQuery] string? timeRange,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? appId,
+        [FromBody] ExportReportRequest? bodyRequest,
+        CancellationToken cancellationToken)
+    {
+        var request = bodyRequest ?? new ExportReportRequest
+        {
+            ReportType = type ?? "ExecutiveSummary",
+            TimeRange = timeRange ?? "Last24Hours",
+            StartUtc = from,
+            EndUtc = to,
+            ApplicationId = appId
+        };
+
+        var (content, contentType, fileName) = await _reportingService.ExportPdfAsync(request, cancellationToken);
+
+        await _auditService.RecordAsync(
+            action: "Report.ExportedPdf",
+            targetEntityType: "Report",
+            targetEntityId: request.ReportType,
+            details: $"Exported PDF report for {request.ReportType}",
+            metadata: new { request.ReportType, request.TimeRange, request.ApplicationId },
+            cancellationToken: cancellationToken);
+
+        return File(content, contentType, fileName);
+    }
 }

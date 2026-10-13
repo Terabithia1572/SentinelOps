@@ -25,12 +25,12 @@ public class ReportingServiceTests
 
         types.Should().HaveCount(6);
         types.Select(t => t.Id).Should().Contain([
-            "Performance",
-            "ErrorsAndExceptions",
-            "IncidentHistory",
-            "AlertActivity",
+            "ExecutiveSummary",
+            "IncidentPostmortem",
             "SloCompliance",
-            "ApplicationHealth"
+            "InfrastructureHealth",
+            "SecurityAudit",
+            "TelemetryVolume"
         ]);
     }
 

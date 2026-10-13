@@ -4,6 +4,7 @@ import {
   previewReport,
   exportReportCsv,
   exportReportPrint,
+  exportReportPdf,
   type ReportTypeOptionDto,
   type ReportPreviewDto,
 } from "@/lib/api-client";
@@ -15,6 +16,7 @@ import {
   BarChart3,
   Printer,
   FileSpreadsheet,
+  FileText,
   RefreshCw,
   Clock,
   ShieldCheck,
@@ -28,7 +30,7 @@ import {
 
 export function ReportsPage() {
   const [reportTypes, setReportTypes] = useState<ReportTypeOptionDto[]>([]);
-  const [selectedType, setSelectedType] = useState<string>("Performance");
+  const [selectedType, setSelectedType] = useState<string>("ExecutiveSummary");
   const [timeRange, setTimeRange] = useState<string>("24h");
   const [serviceName, setServiceName] = useState<string>("");
 
@@ -36,6 +38,7 @@ export function ReportsPage() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isExportingPrint, setIsExportingPrint] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Load available report types
@@ -116,13 +119,42 @@ export function ReportsPage() {
     }
   };
 
+  const handleExportPdf = async () => {
+    try {
+      setIsExportingPdf(true);
+      setErrorMessage(null);
+      const blob = await exportReportPdf({
+        reportType: selectedType,
+        timeRange,
+        serviceName: serviceName.trim() || undefined,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SentinelOps_${selectedType}_${timeRange}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to export PDF report");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const getReportIcon = (id: string) => {
     switch (id) {
+      case "ExecutiveSummary": return <Zap className="w-5 h-5 text-amber-400" />;
+      case "IncidentPostmortem": return <Clock className="w-5 h-5 text-purple-400" />;
+      case "SloCompliance": return <Target className="w-5 h-5 text-emerald-400" />;
+      case "InfrastructureHealth": return <HeartPulse className="w-5 h-5 text-teal-400" />;
+      case "SecurityAudit": return <ShieldCheck className="w-5 h-5 text-rose-400" />;
+      case "TelemetryVolume": return <BarChart3 className="w-5 h-5 text-indigo-400" />;
       case "Performance": return <Zap className="w-5 h-5 text-amber-400" />;
       case "ErrorsAndExceptions": return <AlertTriangle className="w-5 h-5 text-rose-400" />;
       case "IncidentHistory": return <Clock className="w-5 h-5 text-purple-400" />;
       case "AlertActivity": return <Activity className="w-5 h-5 text-sky-400" />;
-      case "SloCompliance": return <Target className="w-5 h-5 text-emerald-400" />;
       case "ApplicationHealth": return <HeartPulse className="w-5 h-5 text-teal-400" />;
       default: return <BarChart3 className="w-5 h-5 text-sky-400" />;
     }
@@ -142,6 +174,17 @@ export function ReportsPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf || !preview}
+            className="flex items-center gap-1.5 border-sky-800/60 bg-sky-950/30 text-sky-300 hover:bg-sky-900/50 hover:text-white"
+          >
+            <FileText className="w-4 h-4 text-sky-400" />
+            {isExportingPdf ? "Generating PDF..." : "Export PDF"}
+          </Button>
+
           <Button
             variant="outline"
             size="sm"

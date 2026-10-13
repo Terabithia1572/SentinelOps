@@ -835,6 +835,11 @@ export async function exportReportPrint(req: GenerateReportRequest): Promise<Blo
   return res.data;
 }
 
+export async function exportReportPdf(req: GenerateReportRequest): Promise<Blob> {
+  const res = await apiClient.post("/reports/export/pdf", { ...req, format: "pdf" }, { responseType: "blob" });
+  return res.data;
+}
+
 // Retention & System API methods
 export async function getRetentionPolicy(): Promise<RetentionPolicyDto> {
   const res = await apiClient.get<ApiResponse<RetentionPolicyDto>>("/retention/policy");
