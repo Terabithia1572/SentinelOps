@@ -17,7 +17,8 @@ public class AuditService : IAuditService
     private static readonly HashSet<string> SensitiveKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         "password", "newpassword", "confirmpassword", "token", "accesstoken",
-        "refreshtoken", "secret", "apikey", "key", "authorization", "rawtoken"
+        "refreshtoken", "secret", "apikey", "key", "authorization", "rawtoken",
+        "privatekey", "clientsecret", "connectionstring", "bearer", "cookie", "credentials"
     };
 
     public AuditService(

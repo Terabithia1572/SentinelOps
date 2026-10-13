@@ -19,5 +19,6 @@
     <Project Path="tools/SentinelOps.TelemetryGenerator/SentinelOps.TelemetryGenerator.csproj" />
     <Project Path="tools/SentinelOps.PerformanceBenchmark/SentinelOps.PerformanceBenchmark.csproj" />
     <Project Path="tools/SentinelOps.RecoveryValidator/SentinelOps.RecoveryValidator.csproj" />
+    <Project Path="tools/SentinelOps.SecurityRemediator/SentinelOps.SecurityRemediator.csproj" />
   </Folder>
 </Solution>

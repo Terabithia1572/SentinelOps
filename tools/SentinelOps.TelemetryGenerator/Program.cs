@@ -11,7 +11,7 @@ Console.WriteLine("=========================================================");
 Console.ResetColor();
 
 var endpoint = GetArg(args, "--endpoint", "http://localhost:5100");
-var apiKey = GetArg(args, "--api-key", "sent_live_default_key");
+var apiKey = GetArg(args, "--api-key", Environment.GetEnvironmentVariable("SENTINELOPS_API_KEY") ?? "");
 var serviceName = GetArg(args, "--service", "PaymentProcessingService");
 var environment = GetArg(args, "--environment", "Production");
 var count = int.TryParse(GetArg(args, "--count", "25"), out var c) ? c : 25;

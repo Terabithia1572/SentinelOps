@@ -59,4 +59,72 @@ public class AuditServiceSanitizationTests
         capturedEvent.MetadataJson.Should().NotContain("eyJhbGciOi...");
         capturedEvent.MetadataJson.Should().Contain("[REDACTED]");
     }
+
+    [Fact]
+    public async Task RecordAsync_WhenMetadataContainsExtendedSensitiveKeys_ShouldRedactAll()
+    {
+        AuditEvent? capturedEvent = null;
+        _context.AuditEvents.Add(Arg.Do<AuditEvent>(e => capturedEvent = e));
+
+        var extendedPayload = new
+        {
+            ClientSecret = "top-secret-client-secret-999",
+            PrivateKey = "-----BEGIN PRIVATE KEY-----ABCDEF123456",
+            ConnectionString = "Server=myServer;Database=myDb;User Id=myUser;Password=myPassword;",
+            Credentials = "Basic dXNlcjpwYXNz",
+            Bearer = "token-xyz-123",
+            SafeInfo = "safe-data-value"
+        };
+
+        await _auditService.RecordAsync(
+            action: "Security.ConfigUpdate",
+            targetEntityType: "SystemConfig",
+            targetEntityId: "cfg-1",
+            outcome: "Success",
+            metadata: extendedPayload);
+
+        capturedEvent.Should().NotBeNull();
+        capturedEvent!.MetadataJson.Should().NotBeNull();
+        capturedEvent.MetadataJson.Should().NotContain("top-secret-client-secret-999");
+        capturedEvent.MetadataJson.Should().NotContain("-----BEGIN PRIVATE KEY-----ABCDEF123456");
+        capturedEvent.MetadataJson.Should().NotContain("myPassword");
+        capturedEvent.MetadataJson.Should().NotContain("Basic dXNlcjpwYXNz");
+        capturedEvent.MetadataJson.Should().NotContain("token-xyz-123");
+        capturedEvent.MetadataJson.Should().Contain("safe-data-value");
+    }
+
+    [Fact]
+    public async Task RecordAsync_WhenMetadataHasNestedSensitiveKeys_ShouldRedactRecursively()
+    {
+        AuditEvent? capturedEvent = null;
+        _context.AuditEvents.Add(Arg.Do<AuditEvent>(e => capturedEvent = e));
+
+        var nestedPayload = new
+        {
+            Environment = "Production",
+            Auth = new
+            {
+                ApiKey = "nested_api_key_value",
+                Token = "nested_token_value",
+                Config = new
+                {
+                    Secret = "deep_secret_value"
+                }
+            }
+        };
+
+        await _auditService.RecordAsync(
+            action: "System.Deploy",
+            targetEntityType: "Environment",
+            targetEntityId: "env-prod",
+            outcome: "Success",
+            metadata: nestedPayload);
+
+        capturedEvent.Should().NotBeNull();
+        capturedEvent!.MetadataJson.Should().NotBeNull();
+        capturedEvent.MetadataJson.Should().NotContain("nested_api_key_value");
+        capturedEvent.MetadataJson.Should().NotContain("nested_token_value");
+        capturedEvent.MetadataJson.Should().NotContain("deep_secret_value");
+        capturedEvent.MetadataJson.Should().Contain("Production");
+    }
 }

@@ -11,9 +11,9 @@ Console.WriteLine("=============================================================
 Console.ResetColor();
 
 var endpoint = GetArg(args, "--endpoint", "http://localhost:5100");
-var email = GetArg(args, "--email", "qa.admin@sentinelops.local");
-var password = GetArg(args, "--password", "P@ssword2026!Secure");
-var apiKey = GetArg(args, "--api-key", "sent_live_default_key");
+var email = GetArg(args, "--email", Environment.GetEnvironmentVariable("SENTINELOPS_BENCHMARK_EMAIL") ?? "");
+var password = GetArg(args, "--password", Environment.GetEnvironmentVariable("SENTINELOPS_BENCHMARK_PASSWORD") ?? "");
+var apiKey = GetArg(args, "--api-key", Environment.GetEnvironmentVariable("SENTINELOPS_BENCHMARK_API_KEY") ?? "");
 var profile = GetArg(args, "--profile", "baseline").ToLowerInvariant();
 
 var (totalRequests, concurrency) = profile switch
