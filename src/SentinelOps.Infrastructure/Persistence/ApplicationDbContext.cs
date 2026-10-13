@@ -48,6 +48,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<OrganizationInvitation> OrganizationInvitations => Set<OrganizationInvitation>();
     public DbSet<OrganizationSettings> OrganizationSettings => Set<OrganizationSettings>();
     public DbSet<OrganizationUsage> OrganizationUsages => Set<OrganizationUsage>();
+    public DbSet<CustomDashboard> Dashboards => Set<CustomDashboard>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

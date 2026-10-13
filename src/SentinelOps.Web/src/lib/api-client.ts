@@ -1004,4 +1004,115 @@ export async function updateOrganizationSettings(id: string, req: OrganizationSe
   await apiClient.put<ApiResponse<any>>(`/organizations/${id}/settings`, req);
 }
 
+// ==========================================
+// Custom Dashboards & Widget Builder APIs
+// ==========================================
+
+export interface DashboardSummaryItemDto {
+  id: string;
+  organizationId: string;
+  title: string;
+  description: string | null;
+  isDefault: boolean;
+  isShared: boolean;
+  createdByUserName: string | null;
+  refreshIntervalSeconds: number;
+  defaultTimeRange: string;
+  tags: string[];
+  widgetCount: number;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+}
+
+export interface DashboardWidgetDto {
+  id: string;
+  type: string;
+  title: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  configJson: string;
+}
+
+export interface DashboardDetailDto extends DashboardSummaryItemDto {
+  layoutJson: string;
+  widgets: DashboardWidgetDto[];
+}
+
+export interface CreateDashboardRequest {
+  title: string;
+  description?: string;
+  isDefault?: boolean;
+  isShared?: boolean;
+  refreshIntervalSeconds?: number;
+  defaultTimeRange?: string;
+  tags?: string[];
+  layoutJson?: string;
+}
+
+export interface UpdateDashboardRequest {
+  title: string;
+  description?: string;
+  isDefault?: boolean;
+  isShared?: boolean;
+  refreshIntervalSeconds?: number;
+  defaultTimeRange?: string;
+  tags?: string[];
+  layoutJson?: string;
+}
+
+export interface ImportDashboardRequest {
+  title: string;
+  description?: string;
+  layoutJson: string;
+  tags?: string[];
+}
+
+export async function getDashboards(): Promise<DashboardSummaryItemDto[]> {
+  const res = await apiClient.get<ApiResponse<DashboardSummaryItemDto[]>>("/dashboards");
+  return res.data.data;
+}
+
+export async function getDashboardById(id: string): Promise<DashboardDetailDto> {
+  const res = await apiClient.get<ApiResponse<DashboardDetailDto>>(`/dashboards/${id}`);
+  return res.data.data;
+}
+
+export async function createDashboard(req: CreateDashboardRequest): Promise<DashboardDetailDto> {
+  const res = await apiClient.post<ApiResponse<DashboardDetailDto>>("/dashboards", req);
+  return res.data.data;
+}
+
+export async function updateDashboard(id: string, req: UpdateDashboardRequest): Promise<DashboardDetailDto> {
+  const res = await apiClient.put<ApiResponse<DashboardDetailDto>>(`/dashboards/${id}`, req);
+  return res.data.data;
+}
+
+export async function deleteDashboard(id: string): Promise<boolean> {
+  const res = await apiClient.delete<ApiResponse<boolean>>(`/dashboards/${id}`);
+  return res.data.success;
+}
+
+export async function duplicateDashboard(id: string): Promise<DashboardDetailDto> {
+  const res = await apiClient.post<ApiResponse<DashboardDetailDto>>(`/dashboards/${id}/duplicate`);
+  return res.data.data;
+}
+
+export async function importDashboard(req: ImportDashboardRequest): Promise<DashboardDetailDto> {
+  const res = await apiClient.post<ApiResponse<DashboardDetailDto>>("/dashboards/import", req);
+  return res.data.data;
+}
+
+export async function exportDashboard(id: string): Promise<DashboardDetailDto> {
+  const res = await apiClient.get<ApiResponse<DashboardDetailDto>>(`/dashboards/${id}/export`);
+  return res.data.data;
+}
+
+export async function instantiateDashboardTemplate(templateKey: string): Promise<DashboardDetailDto> {
+  const res = await apiClient.post<ApiResponse<DashboardDetailDto>>(`/dashboards/templates/${templateKey}/instantiate`);
+  return res.data.data;
+}
+
+
 

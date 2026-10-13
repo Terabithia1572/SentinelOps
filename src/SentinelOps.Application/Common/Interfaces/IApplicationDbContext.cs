@@ -39,6 +39,7 @@ public interface IApplicationDbContext
     DbSet<OrganizationInvitation> OrganizationInvitations { get; }
     DbSet<OrganizationSettings> OrganizationSettings { get; }
     DbSet<OrganizationUsage> OrganizationUsages { get; }
+    DbSet<CustomDashboard> Dashboards { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
