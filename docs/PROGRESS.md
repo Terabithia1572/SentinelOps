@@ -401,7 +401,54 @@
   - Documented all 20 acceptance criteria in [`docs/phase7/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase7/FINAL-ACCEPTANCE.md).
   - Production readiness verdict: **CONDITIONALLY READY** (native stack 100% production ready; containerized deployment ready for Linux container hosts).
 
-## Phase 8 — Portfolio Presentation
-**Status:** ⏳ Pending
+## Phase 8 — Enterprise Multi-Tenant SaaS, Custom Dashboards, Advanced APM, AI Incident Intelligence & Product Experience
+**Status:** ✅ Completed  
+**Completed:** 2026-10-14  
+**Latest Phase 8 Commit:** `ac33734`
+
+### Completed Checkpoints
+- [x] **Mandatory Security Remediation Gate (`7c06824`)**:
+  - Comprehensive audit of Git history, local database, and configuration files.
+  - Revoked development API keys, deactivated and locked out visual QA accounts, invalidated active refresh tokens, rotated user security stamps.
+  - Sanitized CLI tool fallback credentials, expanded audit sanitization (`SensitiveKeys`).
+  - Documented in [`docs/phase8/SECURITY-REMEDIATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase8/SECURITY-REMEDIATION.md).
+- [x] **Mandatory Architecture Audit & Plan (`5e9d1ce`)**:
+  - Comprehensive architecture plan for multi-tenant isolation, custom dashboard builder, advanced APM service map, AI incident intelligence, and public status pages.
+  - Documented in [`docs/phase8/ARCHITECTURE-PLAN.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase8/ARCHITECTURE-PLAN.md).
+- [x] **Checkpoint 8.1 — Multi-Tenant SaaS Foundation (`0ca3941`)**:
+  - Domain entities: `Organization`, `OrganizationMember`, `OrganizationInvitation`, `OrganizationSettings`, `OrganizationUsage`.
+  - Database schema: EF Core migration `20261013203223_AddMultiTenantSaasFoundation` applied to PostgreSQL.
+  - Services: `ICurrentTenantService`, `IOrganizationService`, `OrganizationService`, `OrganizationsController`.
+  - Automatic migration of legacy applications to fallback `Default Organization`.
+  - Frontend: `TenantProvider`, `OrganizationsPage`, sidebar tenant switcher, `organizations.test.tsx`.
+- [x] **Checkpoint 8.2 — Custom Observability Dashboard Builder (`a65de9b`)**:
+  - Domain entity: `CustomDashboard`, migration `20261013204633_AddCustomDashboards`.
+  - Backend: `IDashboardService`, `DashboardService`, `DashboardsController` with 4 prebuilt templates.
+  - Frontend: `dashboards.tsx` with 12 enterprise widget types (`MetricChart`, `LogStream`, `TraceWaterfall`, `ServiceLatency`, `ErrorRate`, `AlertSummary`, `HealthGauge`, `TopologyMap`, `HostMetrics`, `IncidentList`, `SloBurndown`, `IngestionGauge`), JSON export/import, and `dashboards.test.tsx`.
+- [x] **Checkpoint 8.3 — Advanced APM & Service Dependency Map (`0dd2b8b`)**:
+  - Backend contracts and services: `IApmService`, `ApmService`, `ApmController`. Directed call edges derived from `TraceRecords` & `SpanRecords`.
+  - Frontend: `apm.tsx` with SVG Service Topology Map, Endpoints Explorer with latency histograms, External & DB Dependencies, and `apm.test.tsx`.
+- [x] **Checkpoint 8.4 — AI Incident Intelligence & Investigation Assistant (`8beaee7`)**:
+  - Backend: `IIncidentIntelligenceProvider`, `DeterministicIncidentIntelligenceProvider`, `IncidentIntelligenceController`. Root cause heuristics, PII regex scrubbing, remediation playbooks, postmortem generator.
+  - Frontend: `incident-detail.tsx` with AI Incident Intelligence card and Postmortem Markdown modal with copy-to-clipboard.
+  - 4 integration tests and 5 frontend vitest tests.
+- [x] **Checkpoint 8.5 — Public Status Pages & Incident Communication (`9f38904`)**:
+  - Domain: `StatusPage`, `StatusPageIncident`, migration `20261013211353_AddPublicStatusPages`.
+  - Backend: `IStatusPageService`, `StatusPageService` with automated live telemetry rollup (`AlertRules` + `HealthCheckResults`), `StatusPagesController` and public `[AllowAnonymous] PublicStatusController`.
+  - Frontend: `public-status.tsx` (`/status/:slug`), `status-pages.tsx`, router navigation, and `status-pages.test.tsx`.
+- [x] **Checkpoint 8.6 — Usage Tracking, Quotas & SaaS Administration (`b117dad`)**:
+  - Domain & EF: `OrganizationSettings` with `PlanTier` and quota limits (`MaxApplications`, `MaxMembers`, `MaxCustomDashboards`, `MaxMonthlyLogs`, `MaxMonthlyTraces`), migration `20261013212135_AddOrganizationQuotas`.
+  - Backend: Live quota status calculation, update endpoints, and aggregate quota summary.
+  - Frontend: SaaS Quotas & Resource Usage dashboard with 6 progress meters, warning banners, and plan quota configuration modal.
+  - 4 integration tests (`OrganizationQuotaIntegrationTests.cs`) and frontend tests.
+- [x] **Checkpoint 8.7 — Product Experience, Accessibility & Visual QA (`ac33734`)**:
+  - Automated headless Chrome verification capturing 7 authentic screenshots across desktop, tablet (1024x768), and mobile (390x844).
+  - Updated `README.md` with screenshot gallery.
+- [x] **Checkpoint 8.8 — Final Security, Integration & Acceptance Audit**:
+  - Comprehensive automated test execution:
+    - Backend: **180 / 180 tests passing** (29 Domain, 58 Application, 93 Api Integration) with 0 errors and warnings.
+    - Frontend: **39 / 39 tests passing** across 12 test suites.
+    - TypeScript compilation & Vite build: 0 errors.
+  - Documented in [`docs/phase8/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase8/FINAL-ACCEPTANCE.md).
 
 
