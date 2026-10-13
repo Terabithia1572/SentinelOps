@@ -1,0 +1,151 @@
+name: SentinelOps Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_VERSION: '22.x'
+
+jobs:
+  validate:
+    name: Validate Release Candidate
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sentinelops_test
+          POSTGRES_USER: sentinelops
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sentinelops -d sentinelops_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/SentinelOps.Web/package-lock.json
+
+      - name: Backend Build & Test
+        run: |
+          dotnet restore SentinelOps.slnx
+          dotnet build SentinelOps.slnx --configuration Release --no-restore --warnaserror
+          dotnet test SentinelOps.slnx --configuration Release --no-build --verbosity normal
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=sentinelops_test;Username=sentinelops;Password=test_password"
+          ConnectionStrings__Redis: "localhost:6379"
+          JwtSettings__Key: "Release-Validation-Secret-Key-Must-Be-At-Least-32-Characters!!"
+          JwtSettings__Issuer: "SentinelOps"
+          JwtSettings__Audience: "SentinelOps"
+
+      - name: Frontend Build & Test
+        working-directory: src/SentinelOps.Web
+        run: |
+          npm ci
+          npm run typecheck
+          npm run test:run
+          npm run build
+
+  build-and-package:
+    name: Build & Package Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [validate]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Publish API Binary
+        run: |
+          dotnet publish src/SentinelOps.Api/SentinelOps.Api.csproj -c Release -o dist/api /p:UseAppHost=false
+          cd dist/api && zip -r ../../sentinelops-api-${{ github.ref_name }}.zip . && cd ../..
+
+      - name: Publish Worker Binary
+        run: |
+          dotnet publish src/SentinelOps.Worker/SentinelOps.Worker.csproj -c Release -o dist/worker /p:UseAppHost=false
+          cd dist/worker && zip -r ../../sentinelops-worker-${{ github.ref_name }}.zip . && cd ../..
+
+      - name: Build Web Frontend Assets
+        working-directory: src/SentinelOps.Web
+        run: |
+          npm ci
+          npm run build
+          cd dist && zip -r ../../../sentinelops-web-${{ github.ref_name }}.zip .
+
+      - name: Upload Packaged Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries
+          path: |
+            sentinelops-api-*.zip
+            sentinelops-worker-*.zip
+            sentinelops-web-*.zip
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-and-package]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Packaged Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: release-assets
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "SentinelOps ${{ github.ref_name }}"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
