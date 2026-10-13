@@ -223,7 +223,60 @@
 ---
 
 ## Phase 5 — Alerting & Incident Management
-**Status:** ⏳ Pending
+**Status:** ✅ Completed  
+**Completed:** 2026-10-13
+
+### Completed
+- [x] **Domain Aggregate & State Machine (`SentinelOps.Domain`)**:
+  - `AlertRule`: Real multi-condition evaluation engine supporting 8 condition types (`ErrorRateAboveThreshold`, `P95LatencyAboveThreshold`, `P99LatencyAboveThreshold`, `ThroughputBelowThreshold`, `ThroughputAboveThreshold`, `ExceptionCountAboveThreshold`, `LogSeverityCountAboveThreshold`, `NoTelemetryReceived`).
+  - State machine transitions (`Normal`, `Pending`, `Firing`, `Acknowledged`, `Resolved`, `Suppressed`) with consecutive breach requirements and cooldown timer management.
+  - `Incident`: Enterprise aggregate with lifecycle state machine (`Open`, `Investigating`, `Mitigated`, `Resolved`, `Closed`), immutable `IncidentTimelineEvent` audit stream, responder assignment, and responder comments.
+  - Automatic critical incident declaration: Critical severity alert fires trigger automatic incident creation and link alert rule relations.
+  - `ServiceLevelObjective`: SRE availability and latency indicator metrics, rolling evaluation windows (24h, 7d, 30d), error budget remaining percentage, and burn rate formulas.
+- [x] **Infrastructure & Database Persistence (`SentinelOps.Infrastructure`)**:
+  - EF Core entity configurations with relational foreign keys, cascade deletes, composite indexes on status, timestamps, and application IDs.
+  - EF Core migration `20261013175814_AddEnterpriseAlertingAndIncidents` applied to PostgreSQL database.
+  - `AlertEvaluationService`: Performs high-performance SQL queries over raw persisted logs, traces, spans, and metrics to calculate exact breach values.
+  - `SloEvaluationService`: Computes good vs. total request ratios, latency thresholds, rolling compliance, and historical trend points.
+- [x] **Notification Pipeline & Security Hardening**:
+  - Persistent `NotificationOutbox` with exponential retry backoff, max retry limits, and dead-letter status tracking.
+  - `SsrfValidator`: Comprehensive Server-Side Request Forgery protection pre-resolving hostnames and rejecting loopback (IPv4/IPv6), link-local, private LAN ranges (RFC 1918), and cloud metadata endpoints (`169.254.169.254`).
+  - `WebhookNotificationProvider`: Secure HTTP dispatch with HMAC-SHA256 signature header (`X-SentinelOps-Signature`) and SSRF protection.
+  - `EmailNotificationProvider`: Configurable SMTP delivery with dev-safe mode preventing real email leaks.
+  - `InAppNotification`: Header notification center with read/unread tracking and real-time push.
+- [x] **SignalR Real-Time Push Hub (`SentinelOps.Api`)**:
+  - `AlertsHub` (`/hubs/alerts`) with JWT query string authentication handler and application-scoped groups (`JoinApplicationGroup`, `LeaveApplicationGroup`).
+  - Real-time broadcasts for `AlertFired`, `AlertResolved`, `IncidentUpdated`, and `NotificationReceived`.
+- [x] **Background Worker Services (`SentinelOps.Worker`)**:
+  - `AlertEvaluationBackgroundService`: Continuous 15s evaluation loop processing active alert rules.
+  - `NotificationDispatcherBackgroundService`: Continuous 10s outbox dispatcher processing pending notifications.
+  - `SloEvaluationBackgroundService`: Periodic 60s background SLO compliance calculation.
+- [x] **Web Frontend UI (`SentinelOps.Web`)**:
+  - `AlertsPage` (`/alerts`): Summary KPI cards, multi-facet filtering (Status, Severity, Application, Search), acknowledge & resolve modals, and live SignalR updates.
+  - `AlertRulesPage` (`/alert-rules`): Rule builder with all 8 condition types, operator selection, threshold and window controls, enable/disable switches, "Test Evaluate" execution, and notification channel manager drawer.
+  - `IncidentsPage` (`/incidents`): Incident triage stream, status/severity filters, and "Declare Incident" modal.
+  - `IncidentDetailPage` (`/incidents/:id`): Full incident triage dashboard, quick status transitions (`Investigating`, `Mitigated`, `Resolved`, `Closed`), lead responder assignment, correlated trace link, linked alert rules, audit timeline, and responder discussion thread.
+  - `SlosPage` (`/slos`): SRE objective cards, compliance percentage gauge, error budget remaining progress bar, burn rate indicator, manual re-evaluation button, and Recharts compliance history area chart.
+  - `NotificationCenter`: Header notification bell with live unread counter and interactive dropdown panel.
+- [x] **Automated Tests & Quality Gates**:
+  - Solution compiles with 0 errors and 0 warnings under `dotnet build --warnaserror`.
+  - 109 backend tests passing:
+    - 29 Domain unit tests (`AlertRuleTests`, `IncidentTests`, `ServiceLevelObjectiveTests`, etc.)
+    - 48 Application unit tests (`SsrfValidatorTests`, `OtlpPayloadMapperTests`, etc.)
+    - 32 Api integration tests (`AlertsAndIncidentsIntegrationTests`, `ObservabilityExplorerIntegrationTests`, `SecurityHardeningIntegrationTests`, etc.)
+  - 19 Web frontend tests passing in Vitest (`npm run test:run`).
+  - TypeScript strict typecheck passing with 0 errors (`npm run typecheck`).
+  - Production build bundle passing (`npm run build`).
+- [x] **Browser Visual Verification & Screenshots**:
+  - Puppeteer browser automation captured all 18 high-resolution screenshots under `docs/screenshots/`:
+    - `14-alerts-overview.png` — Active firing & acknowledged alerts with summary KPI cards
+    - `15-alert-rules.png` — Dynamic alert rule builder & notification channels
+    - `16-incidents-list.png` — Incident lifecycle stream and triage status filters
+    - `17-incident-detail.png` — Incident audit timeline and responder discussion
+    - `18-slos-dashboard.png` — SRE SLOs, compliance gauge, and error budget depletion
+  - Embedded screenshots into `README.md`.
+
+---
 
 ## Phase 6 — Advanced Analytics
 **Status:** ⏳ Pending

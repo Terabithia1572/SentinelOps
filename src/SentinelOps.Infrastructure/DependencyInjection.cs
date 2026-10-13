@@ -57,6 +57,16 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddScoped<IAlertEvaluationService, Services.Alerting.AlertEvaluationService>();
+
+        // Notifications
+        services.AddHttpClient<Services.Notifications.WebhookNotificationProvider>();
+        services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.EmailNotificationProvider>();
+        services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.WebhookNotificationProvider>();
+        services.AddScoped<Services.Notifications.INotificationDispatcherService, Services.Notifications.NotificationDispatcherService>();
+
+        // SLO Monitoring
+        services.AddScoped<ISloEvaluationService, Services.Slo.SloEvaluationService>();
 
         services.AddHostedService<TelemetryConsumerService>();
 

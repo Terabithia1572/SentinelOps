@@ -154,6 +154,95 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlertRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("EvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsTriggered")
+                        .HasColumnType("boolean");
+
+                    b.Property<double>("MeasuredValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertRuleId");
+
+                    b.HasIndex("EvaluatedAtUtc");
+
+                    b.ToTable("AlertEvaluations", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlertRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("MeasuredValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("OldStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("TriggeredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertRuleId");
+
+                    b.HasIndex("TriggeredAtUtc");
+
+                    b.ToTable("AlertEvents", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.AlertIncident", b =>
                 {
                     b.Property<Guid>("Id")
@@ -212,10 +301,13 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Condition")
+                    b.Property<string>("ConditionType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int>("ConsecutiveCountRequired")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CooldownMinutes")
                         .HasColumnType("integer");
@@ -223,10 +315,24 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("CurrentConsecutiveFailures")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("EnvironmentName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("EvaluationFrequencyMinutes")
+                        .HasColumnType("integer");
 
                     b.Property<int>("EvaluationWindowMinutes")
                         .HasColumnType("integer");
@@ -235,6 +341,15 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastEvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastFiredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("LastMeasuredValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("LastResolvedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MetricName")
@@ -247,10 +362,27 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<string>("Operator")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("ServiceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("SuppressedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<double>("Threshold")
                         .HasColumnType("double precision");
@@ -258,13 +390,49 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationId");
 
                     b.HasIndex("IsEnabled");
 
+                    b.HasIndex("LastEvaluatedAtUtc");
+
+                    b.HasIndex("Status");
+
                     b.ToTable("AlertRules", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertRuleNotificationChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlertRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("NotificationChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationChannelId");
+
+                    b.HasIndex("AlertRuleId", "NotificationChannelId")
+                        .IsUnique();
+
+                    b.ToTable("AlertRuleNotificationChannels", (string)null);
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.ApiKey", b =>
@@ -510,6 +678,306 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("HealthCheckResults", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.InAppNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LinkUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ReadAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("Role");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("InAppNotifications", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.Incident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcknowledgedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AcknowledgedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssignedToUserId")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("AssignedToUserName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ClosedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("EnvironmentName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("IncidentNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("MitigatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MitigatedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid?>("RelatedLogId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RelatedTraceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResolvedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("RootCauseSummary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ServiceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("IncidentNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Severity");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Incidents", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentAlertRelation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlertRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LinkedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertRuleId");
+
+                    b.HasIndex("IncidentId", "AlertRuleId")
+                        .IsUnique();
+
+                    b.ToTable("IncidentAlertRelations", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CommentText")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("IncidentComments", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentTimelineEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentId");
+
+                    b.HasIndex("TimestampUtc");
+
+                    b.ToTable("IncidentTimelineEvents", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.LogEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -644,6 +1112,138 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("MetricRecords", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CustomHeadersJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WebhookSecret")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.ToTable("NotificationChannels", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationOutbox", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeliveredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("LastAttemptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextRetryAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("NextRetryAtUtc");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("NotificationOutboxes", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -729,6 +1329,134 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Services", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.ServiceLevelObjective", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("BurnRate")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<double?>("CurrentCompliancePercentage")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("CurrentErrorBudgetRemaining")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("EnvironmentName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EvaluationWindow")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("IndicatorType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("IsBreached")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastEvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("LatencyThresholdMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<double>("TargetPercentage")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("IsEnabled");
+
+                    b.HasIndex("ServiceName");
+
+                    b.ToTable("ServiceLevelObjectives", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.SloEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("BurnRate")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("CompliancePercentage")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("ErrorBudgetRemaining")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("EvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("GoodRequests")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsBreached")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ServiceLevelObjectiveId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("TotalRequests")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvaluatedAtUtc");
+
+                    b.HasIndex("ServiceLevelObjectiveId");
+
+                    b.ToTable("SloEvaluations", (string)null);
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.SpanRecord", b =>
@@ -979,6 +1707,28 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertEvaluation", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.AlertRule", "AlertRule")
+                        .WithMany("Evaluations")
+                        .HasForeignKey("AlertRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AlertRule");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertEvent", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.AlertRule", "AlertRule")
+                        .WithMany("Events")
+                        .HasForeignKey("AlertRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AlertRule");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.AlertIncident", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.AlertRule", "AlertRule")
@@ -988,6 +1738,25 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("AlertRule");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.AlertRuleNotificationChannel", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.AlertRule", "AlertRule")
+                        .WithMany("NotificationChannels")
+                        .HasForeignKey("AlertRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SentinelOps.Domain.Entities.NotificationChannel", "NotificationChannel")
+                        .WithMany("AlertRules")
+                        .HasForeignKey("NotificationChannelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AlertRule");
+
+                    b.Navigation("NotificationChannel");
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.ApiKey", b =>
@@ -1012,6 +1781,58 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentAlertRelation", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.AlertRule", "AlertRule")
+                        .WithMany()
+                        .HasForeignKey("AlertRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SentinelOps.Domain.Entities.Incident", "Incident")
+                        .WithMany("AlertRelations")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AlertRule");
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentComment", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Incident", "Incident")
+                        .WithMany("Comments")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.IncidentTimelineEvent", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Incident", "Incident")
+                        .WithMany("TimelineEvents")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationOutbox", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.NotificationChannel", "Channel")
+                        .WithMany("OutboxMessages")
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Channel");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.Service", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
@@ -1023,9 +1844,26 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.SloEvaluation", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.ServiceLevelObjective", "ServiceLevelObjective")
+                        .WithMany("Evaluations")
+                        .HasForeignKey("ServiceLevelObjectiveId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ServiceLevelObjective");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.AlertRule", b =>
                 {
+                    b.Navigation("Evaluations");
+
+                    b.Navigation("Events");
+
                     b.Navigation("Incidents");
+
+                    b.Navigation("NotificationChannels");
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.Application", b =>
@@ -1035,6 +1873,27 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Environments");
 
                     b.Navigation("Services");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.Incident", b =>
+                {
+                    b.Navigation("AlertRelations");
+
+                    b.Navigation("Comments");
+
+                    b.Navigation("TimelineEvents");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationChannel", b =>
+                {
+                    b.Navigation("AlertRules");
+
+                    b.Navigation("OutboxMessages");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.ServiceLevelObjective", b =>
+                {
+                    b.Navigation("Evaluations");
                 });
 #pragma warning restore 612, 618
         }

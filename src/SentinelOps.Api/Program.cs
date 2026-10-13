@@ -117,7 +117,22 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         ClockSkew = TimeSpan.Zero
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
+
+builder.Services.AddSignalR();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -198,6 +213,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.MapControllers();
+app.MapHub<SentinelOps.Api.Hubs.AlertsHub>("/hubs/alerts");
 
 // Seed Identity Roles on startup
 using (var scope = app.Services.CreateScope())

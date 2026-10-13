@@ -22,6 +22,9 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Background Services
 builder.Services.AddHostedService<RetentionCleanupService>();
+builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
+builder.Services.AddHostedService<NotificationDispatcherBackgroundService>();
+builder.Services.AddHostedService<SloEvaluationBackgroundService>();
 
 var host = builder.Build();
 host.Run();

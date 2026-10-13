@@ -6,5 +6,6 @@ public enum AlertStatus
     Pending,
     Firing,
     Acknowledged,
-    Resolved
+    Resolved,
+    Suppressed
 }

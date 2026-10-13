@@ -75,6 +75,32 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
       <img src="docs/screenshots/10-exceptions-explorer.png" alt="Exceptions Explorer" />
     </td>
   </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">🔔 Real-Time Alerting Engine & Triage</h4>
+      <img src="docs/screenshots/14-alerts-overview.png" alt="Alerts Overview Dashboard" />
+    </td>
+    <td width="50%">
+      <h4 align="center">⚙️ Alert Rules & SSRF-Protected Channels</h4>
+      <img src="docs/screenshots/15-alert-rules.png" alt="Alert Rules and Notification Channels" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">🚨 Enterprise Incident Management</h4>
+      <img src="docs/screenshots/16-incidents-list.png" alt="Incidents Management List" />
+    </td>
+    <td width="50%">
+      <h4 align="center">📝 Incident Audit Timeline & Responder Collaboration</h4>
+      <img src="docs/screenshots/17-incident-detail.png" alt="Incident Audit Timeline Detail" />
+    </td>
+  </tr>
+  <tr>
+    <td width="100%" colspan="2">
+      <h4 align="center">🎯 Site Reliability Engineering (SRE) SLOs & Error Budgets</h4>
+      <img src="docs/screenshots/18-slos-dashboard.png" alt="SLO and Error Budget Dashboard" />
+    </td>
+  </tr>
 </table>
 
 ---
@@ -184,10 +210,10 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (68 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security)
+# Backend tests (109 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security, Alerting, Incidents, SLOs)
 dotnet test SentinelOps.slnx
 
-# Frontend tests (15 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Service Health, Exceptions)
+# Frontend tests (19 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, SLOs)
 cd src/SentinelOps.Web
 npm run test:run
 ```
@@ -225,7 +251,7 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 2** — Identity & Application Management (JWT, RBAC, API Keys, Frontend Auth)
 - [x] **Phase 3** — Telemetry Ingestion (OpenTelemetry OTLP HTTP/gRPC, Redis Streams, Worker Batch Persistence, Sample API)
 - [x] **Phase 4** — Observability Explorer (Log search and live stream, Trace waterfall visualization, Metrics charts, Service health matrix, Exception grouping)
-- [ ] **Phase 5** — Alerting Engine
+- [x] **Phase 5** — Enterprise Alerting & Incident Management (Telemetry evaluation engine, SignalR push hub, automated incident state machine, audit timelines, SSRF-protected notification outbox, SRE SLO and error budget monitoring)
 - [ ] **Phase 6** — Advanced Analytics
 - [ ] **Phase 7** — Production Hardening
 - [ ] **Phase 8** — Portfolio Presentation

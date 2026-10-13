@@ -16,6 +16,18 @@ public interface IApplicationDbContext
     DbSet<MetricRecord> MetricRecords { get; }
     DbSet<AlertRule> AlertRules { get; }
     DbSet<AlertIncident> AlertIncidents { get; }
+    DbSet<AlertEvaluation> AlertEvaluations { get; }
+    DbSet<AlertEvent> AlertEvents { get; }
+    DbSet<AlertRuleNotificationChannel> AlertRuleNotificationChannels { get; }
+    DbSet<NotificationChannel> NotificationChannels { get; }
+    DbSet<NotificationOutbox> NotificationOutboxes { get; }
+    DbSet<InAppNotification> InAppNotifications { get; }
+    DbSet<Incident> Incidents { get; }
+    DbSet<IncidentTimelineEvent> IncidentTimelineEvents { get; }
+    DbSet<IncidentComment> IncidentComments { get; }
+    DbSet<IncidentAlertRelation> IncidentAlertRelations { get; }
+    DbSet<ServiceLevelObjective> ServiceLevelObjectives { get; }
+    DbSet<SloEvaluation> SloEvaluations { get; }
     DbSet<HealthCheckResult> HealthCheckResults { get; }
     DbSet<AuditEvent> AuditEvents { get; }
     DbSet<ApiKey> ApiKeys { get; }

@@ -14,6 +14,11 @@ import { TracesPage } from "@/pages/traces";
 import { MetricsPage } from "@/pages/metrics";
 import { ExceptionsPage } from "@/pages/exceptions";
 import { ServiceHealthPage } from "@/pages/health";
+import { AlertsPage } from "@/pages/alerts";
+import { AlertRulesPage } from "@/pages/alert-rules";
+import { IncidentsPage } from "@/pages/incidents";
+import { IncidentDetailPage } from "@/pages/incident-detail";
+import { SlosPage } from "@/pages/slos";
 import { PlaceholderPage } from "@/pages/placeholder";
 
 const queryClient = new QueryClient({
@@ -56,6 +61,11 @@ function App() {
                 <Route path="metrics" element={<MetricsPage />} />
                 <Route path="exceptions" element={<ExceptionsPage />} />
                 <Route path="health" element={<ServiceHealthPage />} />
+                <Route path="alerts" element={<AlertsPage />} />
+                <Route path="alert-rules" element={<AlertRulesPage />} />
+                <Route path="incidents" element={<IncidentsPage />} />
+                <Route path="incidents/:id" element={<IncidentDetailPage />} />
+                <Route path="slos" element={<SlosPage />} />
                 <Route
                   path="analytics"
                   element={

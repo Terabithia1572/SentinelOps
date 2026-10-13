@@ -83,6 +83,25 @@ Security behaviors are validated by automated integration tests in [`SecurityHar
 - **Strict Identity Derivation**: Ingestion endpoints (`/v1/logs`, `/v1/traces`, `/v1/metrics`) require valid application API keys via `X-API-Key` or `Authorization: Bearer <key>`.
 - **Anti-Spoofing & Cross-App Isolation**: Any application identifier submitted inside the OTLP payload body (`Resource.Attributes`) is untrusted and discarded. Telemetry records are bound exclusively to the application identified by the authenticated API key hash in PostgreSQL.
 - **Payload Size Limits**: Enforced `[RequestSizeLimit(10 * 1024 * 1024)]` (10 MB) prevents memory exhaustion and denial-of-service through excessive payload batches.
-- **Collector Trust Boundary**: Central collector pipelines must use separate exporter pipelines or pass-through auth headers if multi-tenant workload isolation is required. Forwarding via a single static API key aggregates all workloads under the key owner.
 - **Telemetry Anti-Spoofing Test**: Validated by `IngestLogs_WithSpoofedApplicationAttributes_StrictlyAttributedToKeyOwner` in `OtlpIngestionIntegrationTests.cs`.
+
+---
+
+## 7. Webhook Security & Server-Side Request Forgery (SSRF) Mitigation
+
+To prevent attackers from using the SentinelOps alert dispatch system to probe internal services or cloud infrastructure metadata APIs, webhook notifications are strictly validated by [`SsrfValidator`](file:///c:/Users/Yunus/Desktop/SentinelOps/src/SentinelOps.Infrastructure/Security/SsrfValidator.cs):
+
+### DNS Pre-Resolution & IP Filtering
+1. **Scheme Enforcement**: Only `https://` and `http://` protocols are allowed (`ftp://`, `file://`, `gopher://` are strictly rejected).
+2. **DNS Pre-Resolution**: Hostnames are resolved to IP addresses via system DNS prior to connecting.
+3. **Blacklisted IP Ranges**: All resolved IPv4 and IPv6 addresses are checked against security boundaries:
+   - **Loopback Addresses**: `127.0.0.0/8` and `::1` (prevents loopback requests to local databases, Redis, or internal microservices).
+   - **Cloud Provider Metadata Endpoints**: `169.254.169.254` and link-local range `169.254.0.0/16` / `fe80::/10` (prevents IMDS / instance metadata credential harvesting on AWS, Azure, GCP, and DigitalOcean).
+   - **Private RFC 1918 LANs**: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (prevents probing corporate intranets or VPC subnets).
+   - **Carrier-Grade NAT & Benchmark**: `100.64.0.0/10` and `198.18.0.0/15`.
+
+### Payload Authentication & Integrity
+- **HMAC-SHA256 Signatures**: When a webhook channel is configured with a shared secret, SentinelOps signs the exact UTF-8 JSON request body with `HMAC-SHA256` and attaches the signature in the `X-SentinelOps-Signature` HTTP header (formatted as `sha256=<hex-digest>`).
+- **Timestamp Anti-Replay**: The delivery payload includes an ISO-8601 UTC timestamp for receiver anti-replay verification.
+- **SSRF Test Suite**: Verified by unit test suite in `tests/SentinelOps.Application.Tests/Security/SsrfValidatorTests.cs`.
 

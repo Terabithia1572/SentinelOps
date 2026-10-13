@@ -242,3 +242,316 @@ export interface ServiceHealthSummaryDto {
   p95DurationMs: number;
   lastSeenAtUtc?: string | null;
 }
+
+// Alerting types
+export type AlertConditionType =
+  | "ErrorRateAboveThreshold"
+  | "P95LatencyAboveThreshold"
+  | "P99LatencyAboveThreshold"
+  | "ThroughputBelowThreshold"
+  | "ThroughputAboveThreshold"
+  | "ExceptionCountAboveThreshold"
+  | "LogSeverityCountAboveThreshold"
+  | "NoTelemetryReceived";
+
+export type ComparisonOperator =
+  | "GreaterThan"
+  | "GreaterThanOrEqual"
+  | "LessThan"
+  | "LessThanOrEqual"
+  | "Equal"
+  | "NotEqual";
+
+export type AlertStatus = "Normal" | "Pending" | "Firing" | "Acknowledged" | "Resolved" | "Suppressed";
+export type AlertSeverity = "Trace" | "Debug" | "Information" | "Warning" | "Error" | "Critical";
+
+export interface AlertRuleDto {
+  id: string;
+  name: string;
+  description: string;
+  applicationId: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  conditionType: AlertConditionType | string;
+  operator: ComparisonOperator | string;
+  condition: string;
+  metricName: string;
+  threshold: number;
+  evaluationWindowMinutes: number;
+  evaluationFrequencyMinutes: number;
+  consecutiveCountRequired: number;
+  currentConsecutiveFailures: number;
+  cooldownMinutes: number;
+  status: AlertStatus;
+  severity: AlertSeverity;
+  isEnabled: boolean;
+  lastEvaluatedAtUtc?: string | null;
+  lastFiredAtUtc?: string | null;
+  lastResolvedAtUtc?: string | null;
+  lastMeasuredValue?: number | null;
+}
+
+export interface AlertEventDto {
+  id: string;
+  alertRuleId: string;
+  alertRuleName: string;
+  severity: AlertSeverity;
+  oldStatus: AlertStatus;
+  newStatus: AlertStatus;
+  measuredValue: number;
+  threshold: number;
+  triggeredAtUtc: string;
+  message: string;
+}
+
+export interface AlertSummaryDto {
+  totalRules: number;
+  enabledRules: number;
+  firingAlerts: number;
+  acknowledgedAlerts: number;
+  pendingAlerts: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+}
+
+export interface CreateAlertRuleRequest {
+  name: string;
+  description?: string;
+  applicationId: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  conditionType: string;
+  operator: string;
+  metricName?: string;
+  threshold: number;
+  evaluationWindowMinutes: number;
+  evaluationFrequencyMinutes?: number;
+  consecutiveCountRequired: number;
+  cooldownMinutes: number;
+  severity: string;
+  notificationChannelIds?: string[];
+}
+
+export interface UpdateAlertRuleRequest {
+  name: string;
+  description?: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  conditionType: string;
+  operator: string;
+  metricName?: string;
+  threshold: number;
+  evaluationWindowMinutes: number;
+  evaluationFrequencyMinutes?: number;
+  consecutiveCountRequired: number;
+  cooldownMinutes: number;
+  severity: string;
+  notificationChannelIds?: string[];
+}
+
+// Incident types
+export type IncidentStatus = "Open" | "Investigating" | "Mitigated" | "Resolved" | "Closed";
+export type IncidentTimelineEventType =
+  | "Created"
+  | "StatusChanged"
+  | "SeverityChanged"
+  | "Assigned"
+  | "CommentAdded"
+  | "AlertLinked"
+  | "TraceLinked"
+  | "Mitigated"
+  | "Resolved"
+  | "Closed";
+
+export interface IncidentDto {
+  id: string;
+  incidentNumber: string;
+  title: string;
+  description: string;
+  severity: AlertSeverity;
+  status: IncidentStatus;
+  applicationId: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  assignedToUserId?: string | null;
+  assignedToUserName?: string | null;
+  createdAtUtc: string;
+  acknowledgedAtUtc?: string | null;
+  acknowledgedBy?: string | null;
+  mitigatedAtUtc?: string | null;
+  mitigatedBy?: string | null;
+  resolvedAtUtc?: string | null;
+  resolvedBy?: string | null;
+  closedAtUtc?: string | null;
+  closedBy?: string | null;
+  rootCauseSummary?: string | null;
+  resolutionNotes?: string | null;
+  relatedTraceId?: string | null;
+  timelineEventsCount: number;
+  commentsCount: number;
+}
+
+export interface IncidentTimelineEventDto {
+  id: string;
+  eventType: string;
+  timestampUtc: string;
+  actorId: string;
+  actorName: string;
+  title: string;
+  description: string;
+}
+
+export interface IncidentCommentDto {
+  id: string;
+  userId: string;
+  userName: string;
+  commentText: string;
+  createdAtUtc: string;
+}
+
+export interface IncidentDetailDto extends IncidentDto {
+  timelineEvents: IncidentTimelineEventDto[];
+  comments: IncidentCommentDto[];
+  linkedAlerts: AlertRuleDto[];
+}
+
+export interface CreateIncidentRequest {
+  title: string;
+  description: string;
+  severity: string;
+  applicationId: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  assignedToUserId?: string | null;
+  relatedTraceId?: string | null;
+  alertRuleIds?: string[];
+}
+
+export interface UpdateIncidentRequest {
+  title: string;
+  description: string;
+  severity: string;
+  environmentName?: string | null;
+  serviceName?: string | null;
+  rootCauseSummary?: string | null;
+  resolutionNotes?: string | null;
+  relatedTraceId?: string | null;
+}
+
+export interface TransitionIncidentStatusRequest {
+  status: IncidentStatus;
+  note?: string;
+  resolutionNotes?: string;
+  rootCauseSummary?: string;
+}
+
+export interface AssignIncidentRequest {
+  assignedToUserId?: string | null;
+  notes?: string;
+}
+
+export interface AddIncidentCommentRequest {
+  commentText: string;
+}
+
+// Notification Channels & InApp
+export type NotificationChannelType = "Email" | "Webhook" | "Slack" | "PagerDuty";
+
+export interface NotificationChannelDto {
+  id: string;
+  name: string;
+  description: string;
+  type: NotificationChannelType | string;
+  destination: string;
+  isEnabled: boolean;
+  applicationId?: string | null;
+  createdBy?: string | null;
+  createdAtUtc: string;
+}
+
+export interface CreateNotificationChannelRequest {
+  name: string;
+  description?: string;
+  type: string;
+  destination: string;
+  webhookSecret?: string;
+  applicationId?: string | null;
+}
+
+export interface InAppNotificationDto {
+  id: string;
+  title: string;
+  message: string;
+  severity: AlertSeverity;
+  linkUrl?: string | null;
+  isRead: boolean;
+  readAtUtc?: string | null;
+  createdAtUtc: string;
+}
+
+// SLO types
+export type SloIndicatorType = "Availability" | "Latency";
+export type SloEvaluationWindow = "Rolling24Hours" | "Rolling7Days" | "Rolling30Days";
+
+export interface SloDto {
+  id: string;
+  name: string;
+  description: string;
+  applicationId: string;
+  serviceName: string;
+  environmentName?: string | null;
+  indicatorType: SloIndicatorType | string;
+  targetPercentage: number;
+  evaluationWindow: SloEvaluationWindow | string;
+  latencyThresholdMs?: number | null;
+  isEnabled: boolean;
+  currentCompliancePercentage?: number | null;
+  currentErrorBudgetRemaining?: number | null;
+  burnRate?: number | null;
+  isBreached: boolean;
+  lastEvaluatedAtUtc?: string | null;
+  createdAtUtc: string;
+}
+
+export interface SloEvaluationPointDto {
+  timestamp: string;
+  compliancePercentage: number;
+  errorBudgetRemaining: number;
+  burnRate: number;
+  totalRequests: number;
+  goodRequests: number;
+  isBreached: boolean;
+}
+
+export interface SloComplianceHistoryDto {
+  serviceLevelObjectiveId: string;
+  name: string;
+  targetPercentage: number;
+  currentCompliance: number;
+  errorBudgetRemaining: number;
+  burnRate: number;
+  isBreached: boolean;
+  history: SloEvaluationPointDto[];
+}
+
+export interface CreateSloRequest {
+  name: string;
+  description?: string;
+  applicationId: string;
+  serviceName: string;
+  environmentName?: string | null;
+  indicatorType: string;
+  targetPercentage: number;
+  evaluationWindow: string;
+  latencyThresholdMs?: number | null;
+}
+
+export interface UpdateSloRequest {
+  name: string;
+  description?: string;
+  environmentName?: string | null;
+  targetPercentage: number;
+  evaluationWindow: string;
+  latencyThresholdMs?: number | null;
+  isEnabled: boolean;
+}
