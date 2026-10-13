@@ -363,14 +363,46 @@ async function runVisualQA() {
     }
 
     // 16. SLOs Dashboard
-    console.log("\n[16/17] Verifying SLO & Error Budget Dashboard...");
+    console.log("\n[16/21] Verifying SLO & Error Budget Dashboard...");
     await page.goto(`${BASE_URL}/slos`, { waitUntil: "networkidle0" });
     await new Promise((r) => setTimeout(r, 1500));
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "18-slos-dashboard.png") });
     console.log("Saved: 18-slos-dashboard.png");
 
-    // 17. Responsive Viewport Tests (Tablet & Mobile)
-    console.log("\n[17/17] Verifying Responsive Viewports...");
+    // 17. Phase 6 - User & Access Management
+    console.log("\n[17/21] Verifying Enterprise User & Access Management...");
+    await page.goto(`${BASE_URL}/users`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "19-user-management.png") });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "phase6-users-management.png") });
+    console.log("Saved: 19-user-management.png & phase6-users-management.png");
+
+    // 18. Phase 6 - Security & Forensic Audit Trail
+    console.log("\n[18/21] Verifying Security & Forensic Audit Trail...");
+    await page.goto(`${BASE_URL}/audit-logs`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "20-security-audit-trail.png") });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "phase6-audit-logs.png") });
+    console.log("Saved: 20-security-audit-trail.png & phase6-audit-logs.png");
+
+    // 19. Phase 6 - Enterprise Reporting & Analytics
+    console.log("\n[19/21] Verifying Enterprise Reporting & Analytics...");
+    await page.goto(`${BASE_URL}/reports`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "21-reports-and-analytics.png") });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "phase6-reporting-center.png") });
+    console.log("Saved: 21-reports-and-analytics.png & phase6-reporting-center.png");
+
+    // 20. Phase 6 - Platform Settings & Data Retention
+    console.log("\n[20/21] Verifying Platform Settings & Retention Health...");
+    await page.goto(`${BASE_URL}/settings`, { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 1500));
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "22-platform-settings-and-retention.png") });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, "phase6-platform-settings.png") });
+    console.log("Saved: 22-platform-settings-and-retention.png & phase6-platform-settings.png");
+
+    // 21. Responsive Viewport Tests (Tablet & Mobile)
+    console.log("\n[21/21] Verifying Responsive Viewports...");
     
     // Tablet Viewport (1024x768)
     await page.setViewport({ width: 1024, height: 768 });
@@ -390,7 +422,7 @@ async function runVisualQA() {
     console.log("\n=================================================");
     console.log("   VISUAL QA BROWSER VERIFICATION SUMMARY");
     console.log("=================================================");
-    console.log(`Total Screenshots Captured: 18`);
+    console.log(`Total Screenshots Captured: 26`);
     console.log(`Console Errors Encountered: ${consoleErrors.length}`);
     if (consoleErrors.length > 0) {
       console.log("Errors:", consoleErrors);

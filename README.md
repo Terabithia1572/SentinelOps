@@ -96,9 +96,29 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
     </td>
   </tr>
   <tr>
-    <td width="100%" colspan="2">
-      <h4 align="center">🎯 Site Reliability Engineering (SRE) SLOs & Error Budgets</h4>
+    <td width="50%">
+      <h4 align="center">🎯 Site Reliability Engineering (SRE) SLOs</h4>
       <img src="docs/screenshots/18-slos-dashboard.png" alt="SLO and Error Budget Dashboard" />
+    </td>
+    <td width="50%">
+      <h4 align="center">👥 Enterprise User & RBAC Management</h4>
+      <img src="docs/screenshots/19-user-management.png" alt="Enterprise User and Role Management" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">🛡️ Forensic Audit Trail & Sensitive Redaction</h4>
+      <img src="docs/screenshots/20-security-audit-trail.png" alt="Forensic Audit Trail & Sensitive Redaction" />
+    </td>
+    <td width="50%">
+      <h4 align="center">📑 Enterprise Analytics & CSV Formula Defense</h4>
+      <img src="docs/screenshots/21-reports-and-analytics.png" alt="Enterprise Analytics and Reporting" />
+    </td>
+  </tr>
+  <tr>
+    <td width="100%" colspan="2">
+      <h4 align="center">⚙️ Live Component Health & Guarded Data Retention</h4>
+      <img src="docs/screenshots/22-platform-settings-and-retention.png" alt="Platform Settings and Data Retention" />
     </td>
   </tr>
 </table>
@@ -210,10 +230,10 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (109 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security, Alerting, Incidents, SLOs)
+# Backend tests (124 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security, Alerting, Incidents, SLOs, User Management, Audit Sanitization, Retention, CSV Sanitizer)
 dotnet test SentinelOps.slnx
 
-# Frontend tests (19 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, SLOs)
+# Frontend tests (23 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, SLOs, Admin, Audit Logs, Reports, Settings)
 cd src/SentinelOps.Web
 npm run test:run
 ```
@@ -244,6 +264,8 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [Architecture Decisions](docs/DECISIONS.md)
 - [Security Policy & Hardening](docs/SECURITY.md)
 - [Development Progress](docs/PROGRESS.md)
+- [Platform Operations Runbook](docs/runbooks/platform-operations.md)
+- [Backup & Disaster Recovery Runbook](docs/runbooks/backup-restore.md)
 
 ## Roadmap
 
@@ -252,8 +274,8 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 3** — Telemetry Ingestion (OpenTelemetry OTLP HTTP/gRPC, Redis Streams, Worker Batch Persistence, Sample API)
 - [x] **Phase 4** — Observability Explorer (Log search and live stream, Trace waterfall visualization, Metrics charts, Service health matrix, Exception grouping)
 - [x] **Phase 5** — Enterprise Alerting & Incident Management (Telemetry evaluation engine, SignalR push hub, automated incident state machine, audit timelines, SSRF-protected notification outbox, SRE SLO and error budget monitoring)
-- [ ] **Phase 6** — Advanced Analytics
-- [ ] **Phase 7** — Production Hardening
+- [x] **Phase 6** — Enterprise Administration, Advanced Security, Audit, Reporting & Production Readiness (Directory, RBAC, session revocation, forensic audit trail with sensitive key sanitization, 6 executive report types with CSV formula defense, configurable retention policies with dry-run estimation, non-root Docker, CSP/Permissions-Policy hardening, and operational runbooks)
+- [ ] **Phase 7** — Production Hardening & Cloud Staging
 - [ ] **Phase 8** — Portfolio Presentation
 
 ## Security

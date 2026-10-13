@@ -555,3 +555,319 @@ export interface UpdateSloRequest {
   latencyThresholdMs?: number | null;
   isEnabled: boolean;
 }
+
+// -------------------------------------------------------------
+// Phase 6: Enterprise Administration, Audit, Reports & Settings
+// -------------------------------------------------------------
+
+export interface UserDto {
+  id: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+  isActive: boolean;
+  isLockedOut: boolean;
+  lockoutEnd?: string | null;
+  createdAtUtc: string;
+}
+
+export interface UserDetailDto extends UserDto {
+  applicationMemberships: ApplicationMemberDto[];
+  recentSecurityActivity: SecurityActivityDto[];
+}
+
+export interface ApplicationMemberDto {
+  id: string;
+  applicationId: string;
+  applicationName: string;
+  userId: string;
+  userName: string;
+  role: string;
+  createdAtUtc: string;
+}
+
+export interface SecurityActivityDto {
+  id: string;
+  action: string;
+  outcome: string;
+  details: string;
+  ipAddress?: string | null;
+  timestampUtc: string;
+}
+
+export interface GetUsersRequest {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  fromUtc?: string;
+  toUtc?: string;
+}
+
+export interface AuditEventDto {
+  id: string;
+  timestampUtc: string;
+  actorId?: string | null;
+  actorName?: string | null;
+  action: string;
+  targetEntityType: string;
+  targetEntityId: string;
+  applicationScope?: string | null;
+  outcome: string;
+  correlationId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  details: string;
+  metadataJson?: string | null;
+}
+
+export interface TopFacetCountDto {
+  key: string;
+  count: number;
+}
+
+export interface AuditSummaryDto {
+  totalEvents24h: number;
+  failureCount24h: number;
+  topActions: TopFacetCountDto[];
+  topActors: TopFacetCountDto[];
+}
+
+export interface GetAuditEventsRequest {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  actor?: string;
+  action?: string;
+  targetType?: string;
+  outcome?: string;
+  applicationScope?: string;
+  fromUtc?: string;
+  toUtc?: string;
+}
+
+export interface ReportTypeOptionDto {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface ReportPreviewDto {
+  reportType: string;
+  title: string;
+  description: string;
+  startUtc: string;
+  endUtc: string;
+  generatedAtUtc: string;
+  applicationId?: string | null;
+  applicationName?: string | null;
+  summaryMetrics: Record<string, any>;
+  columnHeaders: string[];
+  rows: string[][];
+}
+
+export interface GenerateReportRequest {
+  reportType: string;
+  startUtc?: string;
+  endUtc?: string;
+  timeRange?: string;
+  applicationId?: string;
+  environmentName?: string;
+  serviceName?: string;
+}
+
+export interface RetentionPolicyDto {
+  logsRetentionDays: number;
+  tracesRetentionDays: number;
+  metricsRetentionDays: number;
+  alertEvaluationsRetentionDays: number;
+  resolvedIncidentsRetentionDays: number;
+  notificationsRetentionDays: number;
+  auditLogsRetentionDays: number;
+  lastExecutedUtc: string;
+  lastExecutedBy: string;
+}
+
+export interface RetentionTableEstimateDto {
+  tableName: string;
+  retentionDays: number;
+  cutoffUtc: string;
+  estimatedCount: number;
+  oldestRecordUtc?: string | null;
+}
+
+export interface RetentionDryRunResultDto {
+  estimatedAtUtc: string;
+  logs: RetentionTableEstimateDto;
+  traces: RetentionTableEstimateDto;
+  spans: RetentionTableEstimateDto;
+  metrics: RetentionTableEstimateDto;
+  alertEvaluations: RetentionTableEstimateDto;
+  resolvedIncidents: RetentionTableEstimateDto;
+  notifications: RetentionTableEstimateDto;
+  auditLogs: RetentionTableEstimateDto;
+  totalEstimatedRecordsToDelete: number;
+}
+
+export interface RetentionExecutionResultDto {
+  success: boolean;
+  message: string;
+  executedAtUtc: string;
+  deletedCountsByTable: Record<string, number>;
+  totalDeletedRecords: number;
+}
+
+export interface SystemSettingsDto {
+  platformName: string;
+  environmentName: string;
+  publicRegistrationEnabled: boolean;
+  alertEvaluationIntervalSeconds: number;
+  maxNotificationRetries: number;
+  webhookTimeoutSeconds: number;
+  systemNoticeBanner: string;
+  systemNoticeBannerActive: boolean;
+  updatedAtUtc: string;
+  updatedBy: string;
+}
+
+export interface ComponentHealthDto {
+  name: string;
+  status: string;
+  message: string;
+  latencyMs: number;
+  details?: Record<string, string>;
+}
+
+export interface SystemHealthDto {
+  status: string;
+  checkedAtUtc: string;
+  version: string;
+  database: ComponentHealthDto;
+  redis: ComponentHealthDto;
+  ingestionEngine: ComponentHealthDto;
+  alertEvaluator: ComponentHealthDto;
+  notificationDispatcher: ComponentHealthDto;
+}
+
+// User & Access API methods
+export async function getUsers(params?: GetUsersRequest): Promise<PagedResponse<UserDto>> {
+  const res = await apiClient.get<ApiResponse<PagedResponse<UserDto>>>("/users", { params });
+  return res.data.data;
+}
+
+export async function getUserDetail(id: string): Promise<UserDetailDto> {
+  const res = await apiClient.get<ApiResponse<UserDetailDto>>(`/users/${id}`);
+  return res.data.data;
+}
+
+export async function updateUserRole(id: string, roles: string[]): Promise<boolean> {
+  const res = await apiClient.put<ApiResponse<boolean>>(`/users/${id}/roles`, { roles });
+  return res.data.success;
+}
+
+export async function updateUserStatus(id: string, isActive: boolean, isLocked: boolean, lockoutDurationMinutes?: number): Promise<boolean> {
+  const res = await apiClient.put<ApiResponse<boolean>>(`/users/${id}/status`, { isActive, isLocked, lockoutDurationMinutes });
+  return res.data.success;
+}
+
+export async function revokeUserSessions(id: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/users/${id}/revoke-sessions`);
+  return res.data.success;
+}
+
+export async function adminResetPassword(id: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/users/${id}/reset-password`, { newPassword, confirmPassword });
+  return res.data.success;
+}
+
+export async function getApplicationMembers(appId: string): Promise<ApplicationMemberDto[]> {
+  const res = await apiClient.get<ApiResponse<ApplicationMemberDto[]>>(`/users/applications/${appId}/members`);
+  return res.data.data;
+}
+
+export async function assignApplicationMember(appId: string, userId: string, role: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/users/applications/${appId}/members`, { userId, role });
+  return res.data.success;
+}
+
+export async function removeApplicationMember(appId: string, userId: string): Promise<boolean> {
+  const res = await apiClient.delete<ApiResponse<boolean>>(`/users/applications/${appId}/members/${userId}`);
+  return res.data.success;
+}
+
+// Audit API methods
+export async function getAuditEvents(params?: GetAuditEventsRequest): Promise<PagedResponse<AuditEventDto>> {
+  const res = await apiClient.get<ApiResponse<PagedResponse<AuditEventDto>>>("/audit", { params });
+  return res.data.data;
+}
+
+export async function getAuditSummary(): Promise<AuditSummaryDto> {
+  const res = await apiClient.get<ApiResponse<AuditSummaryDto>>("/audit/summary");
+  return res.data.data;
+}
+
+export async function getAuditEventDetail(id: string): Promise<AuditEventDto> {
+  const res = await apiClient.get<ApiResponse<AuditEventDto>>(`/audit/${id}`);
+  return res.data.data;
+}
+
+// Reports API methods
+export async function getReportTypes(): Promise<ReportTypeOptionDto[]> {
+  const res = await apiClient.get<ApiResponse<ReportTypeOptionDto[]>>("/reports/types");
+  return res.data.data;
+}
+
+export async function previewReport(req: GenerateReportRequest): Promise<ReportPreviewDto> {
+  const res = await apiClient.post<ApiResponse<ReportPreviewDto>>("/reports/preview", req);
+  return res.data.data;
+}
+
+export async function exportReportCsv(req: GenerateReportRequest): Promise<Blob> {
+  const res = await apiClient.post("/reports/export/csv", { ...req, format: "csv" }, { responseType: "blob" });
+  return res.data;
+}
+
+export async function exportReportPrint(req: GenerateReportRequest): Promise<Blob> {
+  const res = await apiClient.post("/reports/export/print", { ...req, format: "html" }, { responseType: "blob" });
+  return res.data;
+}
+
+// Retention & System API methods
+export async function getRetentionPolicy(): Promise<RetentionPolicyDto> {
+  const res = await apiClient.get<ApiResponse<RetentionPolicyDto>>("/retention/policy");
+  return res.data.data;
+}
+
+export async function updateRetentionPolicy(req: Partial<RetentionPolicyDto>): Promise<RetentionPolicyDto> {
+  const res = await apiClient.put<ApiResponse<RetentionPolicyDto>>("/retention/policy", req);
+  return res.data.data;
+}
+
+export async function previewRetentionCleanup(): Promise<RetentionDryRunResultDto> {
+  const res = await apiClient.post<ApiResponse<RetentionDryRunResultDto>>("/retention/preview");
+  return res.data.data;
+}
+
+export async function executeRetentionCleanup(confirm: boolean, batchSize = 5000): Promise<RetentionExecutionResultDto> {
+  const res = await apiClient.post<ApiResponse<RetentionExecutionResultDto>>("/retention/execute", { confirm, batchSize });
+  return res.data.data;
+}
+
+export async function getSystemSettings(): Promise<SystemSettingsDto> {
+  const res = await apiClient.get<ApiResponse<SystemSettingsDto>>("/system/settings");
+  return res.data.data;
+}
+
+export async function updateSystemSettings(req: Partial<SystemSettingsDto>): Promise<SystemSettingsDto> {
+  const res = await apiClient.put<ApiResponse<SystemSettingsDto>>("/system/settings", req);
+  return res.data.data;
+}
+
+export async function getSystemHealth(): Promise<SystemHealthDto> {
+  const res = await apiClient.get<ApiResponse<SystemHealthDto>>("/system/health");
+  return res.data.data;
+}
+

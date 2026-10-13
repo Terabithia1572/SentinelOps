@@ -30,14 +30,32 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(a => a.Details)
-            .HasMaxLength(2000);
+        builder.Property(a => a.ApplicationScope)
+            .HasMaxLength(100);
+
+        builder.Property(a => a.Outcome)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(a => a.CorrelationId)
+            .HasMaxLength(100);
 
         builder.Property(a => a.IpAddress)
             .HasMaxLength(50);
 
+        builder.Property(a => a.UserAgent)
+            .HasMaxLength(500);
+
+        builder.Property(a => a.Details)
+            .HasMaxLength(2000);
+
+        builder.Property(a => a.MetadataJson)
+            .HasColumnType("text");
+
         builder.HasIndex(a => a.UserId);
         builder.HasIndex(a => a.Action);
+        builder.HasIndex(a => a.EntityType);
+        builder.HasIndex(a => a.Outcome);
         builder.HasIndex(a => a.Timestamp);
     }
 }

@@ -19,7 +19,10 @@ import { AlertRulesPage } from "@/pages/alert-rules";
 import { IncidentsPage } from "@/pages/incidents";
 import { IncidentDetailPage } from "@/pages/incident-detail";
 import { SlosPage } from "@/pages/slos";
-import { PlaceholderPage } from "@/pages/placeholder";
+import { UsersPage } from "@/pages/users";
+import { AuditLogsPage } from "@/pages/audit-logs";
+import { ReportsPage } from "@/pages/reports";
+import { SettingsPage } from "@/pages/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,43 +69,14 @@ function App() {
                 <Route path="incidents" element={<IncidentsPage />} />
                 <Route path="incidents/:id" element={<IncidentDetailPage />} />
                 <Route path="slos" element={<SlosPage />} />
-                <Route
-                  path="analytics"
-                  element={
-                    <PlaceholderPage
-                      title="Analytics"
-                      description="Historical analytics and performance trends"
-                    />
-                  }
-                />
-                <Route
-                  path="team"
-                  element={
-                    <PlaceholderPage
-                      title="Team Management"
-                      description="Manage users and role assignments"
-                    />
-                  }
-                />
-                <Route
-                  path="audit-logs"
-                  element={
-                    <PlaceholderPage
-                      title="Audit Logs"
-                      description="System audit trail and activity history"
-                    />
-                  }
-                />
-                <Route
-                  path="settings"
-                  element={
-                    <PlaceholderPage
-                      title="Settings"
-                      description="Platform configuration and preferences"
-                    />
-                  }
-                />
+                <Route path="analytics" element={<ReportsPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="team" element={<UsersPage />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="audit-logs" element={<AuditLogsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
+
             </Routes>
           </BrowserRouter>
         </AuthProvider>

@@ -32,6 +32,9 @@ public interface IApplicationDbContext
     DbSet<AuditEvent> AuditEvents { get; }
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<ApplicationMember> ApplicationMembers { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+

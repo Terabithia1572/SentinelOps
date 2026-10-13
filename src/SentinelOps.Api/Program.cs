@@ -128,6 +128,26 @@ builder.Services.AddAuthentication(options =>
                 context.Token = accessToken;
             }
             return Task.CompletedTask;
+        },
+        OnTokenValidated = async context =>
+        {
+            var userManager = context.HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<SentinelOps.Infrastructure.Identity.ApplicationUser>>();
+            var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = await userManager.FindByIdAsync(userId);
+                if (user == null || !user.IsActive)
+                {
+                    context.Fail("User is inactive or deleted.");
+                    return;
+                }
+                if (await userManager.IsLockedOutAsync(user))
+                {
+                    context.Fail("User account is locked.");
+                    return;
+                }
+            }
         }
     };
 });

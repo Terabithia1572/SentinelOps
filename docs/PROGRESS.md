@@ -278,10 +278,72 @@
 
 ---
 
-## Phase 6 — Advanced Analytics
-**Status:** ⏳ Pending
+## Phase 6 — Enterprise Administration, Advanced Security, Audit, Reporting & Production Readiness
+**Status:** ✅ Completed  
+**Completed:** 2026-10-13
 
-## Phase 7 — Production Hardening
+### Completed
+- [x] **Enterprise User & Access Management (`SentinelOps.Domain` & `SentinelOps.Infrastructure`)**:
+  - `ApplicationMember`: Domain entity modeling user-to-application access scoping with `(ApplicationId, UserId, Role)` unique constraint.
+  - Enhanced `IIdentityService` & `IdentityService`:
+    - Directory pagination, filtering by role, status, and search query.
+    - User detail projection with recent security activity log and application memberships.
+    - Role management with guardrails: non-admins cannot assign Admin role; system prevents demoting or deactivating the last active Admin.
+    - User status toggle: activating or locking out users (`LockoutEnd = DateTimeOffset.MaxValue`).
+    - Session revocation: rotates ASP.NET Core Identity `SecurityStamp` and invalidates refresh tokens.
+    - Admin password reset with password complexity validation and audit logging.
+    - `JwtBearerEvents` validation in `Program.cs`: verifies user active state and lockout timestamp on every authenticated request.
+- [x] **Security & Forensic Audit Trail (`IAuditService` & `AuditService`)**:
+  - Upgraded `AuditEvent` entity schema with enterprise forensic properties: `ActorId`, `ActorName`, `Action`, `TargetEntityType`, `TargetEntityId`, `ApplicationScope`, `Outcome` (`Success`, `Failure`, `Denied`), `CorrelationId`, `IpAddress`, `UserAgent`, `MetadataJson`, `TimestampUtc`.
+  - Sensitive Key Redaction: `AuditService` recursively inspects and sanitizes metadata dictionaries and JSON payloads, masking `password`, `token`, `secret`, `apiKey`, `authorization`, `cookie` values.
+  - Query endpoints: paginated audit stream with filters for action category, outcome, date range, and actor search, plus audit summary KPI breakdowns.
+  - Unit tests: [`AuditServiceSanitizationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Services/AuditServiceSanitizationTests.cs) verifying zero sensitive leaks.
+- [x] **Enterprise Reporting & Analytics (`IReportingService` & `ReportingService`)**:
+  - 6 executive report types:
+    1. `Performance`: Service latency percentiles (p50, p95, p99), throughput, error rate breakdown.
+    2. `ErrorsAndExceptions`: Top exception fingerprints, message samples, occurrences, and services.
+    3. `IncidentHistory`: Operational incidents, MTTA/MTTR metrics, severity distribution, lead responders.
+    4. `AlertActivity`: Breach frequencies, noisy rules, evaluation breach rates.
+    5. `SloCompliance`: SRE objectives compliance, error budget consumption, burn rate indicators.
+    6. `ApplicationHealth`: Microservice registration health, latency, last check timestamps.
+  - Formula Injection Defense: Standalone [`CsvSanitizer.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/src/SentinelOps.Application/Common/Security/CsvSanitizer.cs) escaping formula trigger prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`) with single quotes (`'`) and CSV quotation escaping.
+  - Executive Printable HTML Export: Professional dark-themed executive report generator with printable CSS overrides (`@media print`).
+- [x] **Data Retention & System Settings (`IRetentionService` & `RetentionService`)**:
+  - `SystemSetting` entity with unique key indexing for configurable platform retention policies.
+  - Dry-Run Estimation: `PreviewRetentionCleanupAsync` computes exact record counts and oldest timestamps across 8 tables without executing deletions.
+  - Guarded Batch Deletion: `ExecuteRetentionCleanupAsync` requires explicit `confirm: true` parameter, executes bounded relational deletions (`ExecuteDeleteAsync`) with fallback for InMemory providers, and records forensic audit entries.
+  - Live Platform Health: `SystemSettingsController` `/api/system/health` reports live connectivity and latency for PostgreSQL, Redis, and ingestion background engines.
+- [x] **Production Readiness, Hardening & Runbooks**:
+  - SSRF SocketsHttpHandler Hardening: `WebhookNotificationProvider` configured with custom `SocketsHttpHandler` disabling automatic redirects (`AllowAutoRedirect = false`) and validating resolved socket connection IPs via `ConnectCallback`.
+  - Non-root Container Hardening & Security Headers: Nginx configured with Content-Security-Policy (CSP) and Permissions-Policy headers.
+  - Operational Runbooks created in `docs/runbooks/`:
+    - [`docs/runbooks/backup-restore.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/runbooks/backup-restore.md): Automated PostgreSQL backup scripts, checksum verification, point-in-time restore, RPO/RTO SLAs, and Redis cache persistence.
+    - [`docs/runbooks/platform-operations.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/runbooks/platform-operations.md): Service startup order, zero-downtime EF Core migration procedures, consumer group recovery, and incident escalation protocols.
+- [x] **Web Frontend Enterprise UI (`SentinelOps.Web`)**:
+  - `UsersPage` (`/users`, `/team`): Directory data table, search/role/status filters, user detail drawer, change role modal with safety guardrails, deactivate/activate user modal, revoke sessions modal, admin reset password modal.
+  - `AuditLogsPage` (`/audit-logs`): Activity feed, category tabs, outcome badges, filter controls, forensic JSON metadata inspector drawer with copy capability.
+  - `ReportsPage` (`/reports`, `/analytics`): 6 report type cards, time range selector, live summary KPI cards, preview data table, Export CSV with formula injection sanitization, Export Executive Printable HTML.
+  - `SettingsPage` (`/settings`): Live component health status cards, retention policy duration sliders, "Calculate Estimates" dry-run modal, guarded "Execute Cleanup" dialog with confirmation checks.
+- [x] **Automated Tests & Quality Gates**:
+  - Solution compiles with 0 errors and 0 warnings under `dotnet build --warnaserror`.
+  - **124 backend tests passing**:
+    - 29 Domain unit tests
+    - 56 Application unit tests (`AuditServiceSanitizationTests`, `ReportingServiceTests`, `CsvSanitizerTests`, `SsrfValidatorTests`, etc.)
+    - 39 API integration tests (`EnterpriseAdminAndSecurityIntegrationTests`, `AlertsAndIncidentsIntegrationTests`, `ObservabilityExplorerIntegrationTests`, etc.)
+  - **23 frontend tests passing** in Vitest (`npm run test:run`).
+  - TypeScript strict check passing (`npm run typecheck`).
+  - Production build bundle passing (`npm run build`).
+- [x] **Browser Visual Verification & Screenshots**:
+  - Puppeteer browser automation captured all 26 high-resolution screenshots under `docs/screenshots/`:
+    - `19-user-management.png` & `phase6-users-management.png` — Enterprise user directory and RBAC controls
+    - `20-security-audit-trail.png` & `phase6-audit-logs.png` — Forensic audit feed and redacted metadata inspector
+    - `21-reports-and-analytics.png` & `phase6-reporting-center.png` — Executive reports selector, KPIs, and preview table
+    - `22-platform-settings-and-retention.png` & `phase6-platform-settings.png` — Platform component health and data retention policies
+  - Embedded screenshots into `README.md`.
+
+---
+
+## Phase 7 — Production Hardening & Cloud Staging
 **Status:** ⏳ Pending
 
 ## Phase 8 — Portfolio Presentation

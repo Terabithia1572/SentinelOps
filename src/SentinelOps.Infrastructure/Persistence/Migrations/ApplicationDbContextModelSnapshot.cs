@@ -532,6 +532,45 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("Applications", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.ApplicationMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AddedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ApplicationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ApplicationMembers", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -540,6 +579,20 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Action")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ActorId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicationScope")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CorrelationId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -565,11 +618,34 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TargetEntityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TargetEntityType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("TimestampUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("UserId")
                         .HasMaxLength(100)
@@ -582,6 +658,10 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Action");
+
+                    b.HasIndex("EntityType");
+
+                    b.HasIndex("Outcome");
 
                     b.HasIndex("Timestamp");
 
@@ -1521,6 +1601,46 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("SpanRecords", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.SystemSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SystemSettings", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.TraceRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1770,6 +1890,17 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.ApplicationMember", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
+                        .WithMany("Members")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.Environment", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
@@ -1871,6 +2002,8 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("ApiKeys");
 
                     b.Navigation("Environments");
+
+                    b.Navigation("Members");
 
                     b.Navigation("Services");
                 });

@@ -57,10 +57,35 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<IRetentionService, RetentionService>();
         services.AddScoped<IAlertEvaluationService, Services.Alerting.AlertEvaluationService>();
 
-        // Notifications
-        services.AddHttpClient<Services.Notifications.WebhookNotificationProvider>();
+        // Notifications with SSRF DNS Rebinding & Redirect Hijacking Hardening
+        services.AddHttpClient<Services.Notifications.WebhookNotificationProvider>()
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new SocketsHttpHandler
+                {
+                    AllowAutoRedirect = false,
+                    ConnectCallback = async (context, cancellationToken) =>
+                    {
+                        var entry = await System.Net.Dns.GetHostEntryAsync(context.DnsEndPoint.Host, cancellationToken);
+                        var targetIp = entry.AddressList.FirstOrDefault()
+                            ?? throw new HttpRequestException($"DNS resolution yielded no address for {context.DnsEndPoint.Host}");
+
+                        if (Security.SsrfValidator.IsPrivateOrRestrictedIp(targetIp))
+                        {
+                            throw new HttpRequestException($"SSRF Violation: Socket connection to restricted IP {targetIp} blocked.");
+                        }
+
+                        var socket = new System.Net.Sockets.Socket(System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
+                        await socket.ConnectAsync(new System.Net.IPEndPoint(targetIp, context.DnsEndPoint.Port), cancellationToken);
+                        return new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
+                    }
+                };
+            });
         services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.EmailNotificationProvider>();
         services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.WebhookNotificationProvider>();
         services.AddScoped<Services.Notifications.INotificationDispatcherService, Services.Notifications.NotificationDispatcherService>();
