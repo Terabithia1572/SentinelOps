@@ -119,9 +119,43 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
     </td>
   </tr>
   <tr>
-    <td width="100%" colspan="2">
+    <td width="50%">
       <h4 align="center">⚙️ Live Component Health & Guarded Data Retention</h4>
       <img src="docs/screenshots/22-platform-settings-and-retention.png" alt="Platform Settings and Data Retention" />
+    </td>
+    <td width="50%">
+      <h4 align="center">🏢 Multi-Tenant SaaS Organizations & Plan Quotas</h4>
+      <img src="docs/screenshots/phase8-organizations-quotas.png" alt="Multi-Tenant SaaS Organizations and Quotas" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">📊 Custom Observability Dashboard Builder</h4>
+      <img src="docs/screenshots/phase8-custom-dashboards.png" alt="Custom Observability Dashboard Builder" />
+    </td>
+    <td width="50%">
+      <h4 align="center">🗺️ Advanced APM & Service Dependency Topology</h4>
+      <img src="docs/screenshots/phase8-apm-service-map.png" alt="Advanced APM and Service Dependency Map" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">🤖 AI Incident Intelligence & Diagnostic Assistant</h4>
+      <img src="docs/screenshots/phase8-incident-intelligence.png" alt="AI Incident Intelligence and Diagnostics" />
+    </td>
+    <td width="50%">
+      <h4 align="center">🌐 Public Status Page & Incident Communication</h4>
+      <img src="docs/screenshots/phase8-public-status-page.png" alt="Public Status Page and Incidents" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">📱 Responsive Tablet: Dashboard Builder (1024x768)</h4>
+      <img src="docs/screenshots/phase8-responsive-dashboards-tablet.png" alt="Responsive Tablet Dashboard Builder" />
+    </td>
+    <td width="50%">
+      <h4 align="center">📱 Responsive Mobile: APM Topology (390x844)</h4>
+      <img src="docs/screenshots/phase8-responsive-apm-mobile.png" alt="Responsive Mobile APM Topology" />
     </td>
   </tr>
 </table>
