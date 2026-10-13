@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SentinelOps.Application.Identity.Commands.Login;
 using SentinelOps.Application.Identity.Commands.RefreshToken;
 using SentinelOps.Application.Identity.Commands.Register;
@@ -13,6 +14,7 @@ namespace SentinelOps.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth-rate-limit")]
 public class AuthController : BaseApiController
 {
     [HttpPost("register")]

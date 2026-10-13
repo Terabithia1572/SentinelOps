@@ -29,15 +29,26 @@ public static class SsrfValidator
             return (false, "Loopback / localhost destinations are strictly prohibited.");
         }
 
+        // Direct IP literal validation (prevents DNS reverse-lookup overhead and spoofing)
+        if (IPAddress.TryParse(uri.DnsSafeHost, out var directIp))
+        {
+            if (IsPrivateOrRestrictedIp(directIp))
+            {
+                return (false, $"Destination resolved to restricted IP address: {directIp}. SSRF protection blocked request.");
+            }
+
+            return (true, null);
+        }
+
         try
         {
-            var hostEntry = await Dns.GetHostEntryAsync(uri.DnsSafeHost);
-            if (hostEntry.AddressList.Length == 0)
+            var addresses = await Dns.GetHostAddressesAsync(uri.DnsSafeHost);
+            if (addresses.Length == 0)
             {
                 return (false, "Could not resolve DNS for host.");
             }
 
-            foreach (var ip in hostEntry.AddressList)
+            foreach (var ip in addresses)
             {
                 if (IsPrivateOrRestrictedIp(ip))
                 {
