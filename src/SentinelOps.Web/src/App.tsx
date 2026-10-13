@@ -9,6 +9,7 @@ import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
 import { OverviewPage } from "@/pages/overview";
 import { DashboardsPage } from "@/pages/dashboards";
+import { ApmPage } from "@/pages/apm";
 import { OrganizationsPage } from "@/pages/organizations";
 import { ApplicationsPage } from "@/pages/applications";
 import { ApiKeysPage } from "@/pages/api-keys";
@@ -61,6 +62,7 @@ function App() {
                   <Route index element={<OverviewPage />} />
                   <Route path="overview" element={<OverviewPage />} />
                   <Route path="dashboards" element={<DashboardsPage />} />
+                  <Route path="apm" element={<ApmPage />} />
                   <Route path="organizations" element={<OrganizationsPage />} />
                   <Route path="applications" element={<ApplicationsPage />} />
                   <Route path="api-keys" element={<ApiKeysPage />} />

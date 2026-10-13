@@ -24,6 +24,7 @@ import {
   User as UserIcon,
   Building2,
   LayoutGrid,
+  Network,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/context/auth-context";
@@ -35,6 +36,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Dashboards", href: "/dashboards", icon: LayoutGrid },
+  { name: "APM & Service Map", href: "/apm", icon: Network },
   { name: "Organizations", href: "/organizations", icon: Building2 },
   { name: "Applications", href: "/applications", icon: AppWindow },
   { name: "Services", href: "/services", icon: Server },

@@ -1114,5 +1114,133 @@ export async function instantiateDashboardTemplate(templateKey: string): Promise
   return res.data.data;
 }
 
+// ==========================================
+// Advanced APM & Service Map APIs
+// ==========================================
+
+export interface ServiceMapDto {
+  nodes: ServiceMapNodeDto[];
+  edges: ServiceMapEdgeDto[];
+  computedAtUtc: string;
+  timeRange: string;
+}
+
+export interface ServiceMapNodeDto {
+  id: string;
+  serviceName: string;
+  displayName: string;
+  environmentName: string;
+  throughput: number;
+  errorRate: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  healthStatus: string;
+  totalCalls: number;
+  errorCount: number;
+}
+
+export interface ServiceMapEdgeDto {
+  sourceService: string;
+  targetService: string;
+  callCount: number;
+  errorCount: number;
+  errorRate: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface ServiceDependenciesDto {
+  serviceName: string;
+  inbound: ServiceMapEdgeDto[];
+  outbound: ServiceMapEdgeDto[];
+}
+
+export interface EndpointPerformanceDto {
+  endpointKey: string;
+  method: string;
+  route: string;
+  serviceName: string;
+  environmentName: string;
+  throughputPerMin: number;
+  totalCalls: number;
+  errorCount: number;
+  errorRate: number;
+  avgDurationMs: number;
+  p50DurationMs: number;
+  p95DurationMs: number;
+  p99DurationMs: number;
+}
+
+export interface LatencyBucketDto {
+  rangeLabel: string;
+  count: number;
+}
+
+export interface ErrorCategoryDto {
+  statusCodeOrType: string;
+  count: number;
+}
+
+export interface EndpointBreakdownDto {
+  endpointKey: string;
+  method: string;
+  route: string;
+  serviceName: string;
+  throughputPerMin: number;
+  avgDurationMs: number;
+  p95DurationMs: number;
+  errorRate: number;
+  latencyBuckets: LatencyBucketDto[];
+  errorBreakdown: ErrorCategoryDto[];
+  sampleTraceIds: string[];
+}
+
+export interface ExternalDependencyDto {
+  type: string;
+  targetHostOrSystem: string;
+  operationOrDb: string;
+  callCount: number;
+  errorCount: number;
+  errorRate: number;
+  avgDurationMs: number;
+  p95DurationMs: number;
+}
+
+export async function getServiceMap(timeRange = "1h", environment?: string): Promise<ServiceMapDto> {
+  const res = await apiClient.get<ApiResponse<ServiceMapDto>>("/apm/service-map", {
+    params: { timeRange, environment }
+  });
+  return res.data.data;
+}
+
+export async function getServiceDependencies(serviceName: string, timeRange = "1h"): Promise<ServiceDependenciesDto> {
+  const res = await apiClient.get<ApiResponse<ServiceDependenciesDto>>(`/apm/services/${serviceName}/dependencies`, {
+    params: { timeRange }
+  });
+  return res.data.data;
+}
+
+export async function getEndpoints(timeRange = "1h", service?: string, search?: string): Promise<EndpointPerformanceDto[]> {
+  const res = await apiClient.get<ApiResponse<EndpointPerformanceDto[]>>("/apm/endpoints", {
+    params: { timeRange, service, search }
+  });
+  return res.data.data;
+}
+
+export async function getEndpointBreakdown(endpointKey: string, timeRange = "1h"): Promise<EndpointBreakdownDto> {
+  const res = await apiClient.get<ApiResponse<EndpointBreakdownDto>>(`/apm/endpoints/${encodeURIComponent(endpointKey)}/breakdown`, {
+    params: { timeRange }
+  });
+  return res.data.data;
+}
+
+export async function getExternalDependencies(timeRange = "1h"): Promise<ExternalDependencyDto[]> {
+  const res = await apiClient.get<ApiResponse<ExternalDependencyDto[]>>("/apm/external-dependencies", {
+    params: { timeRange }
+  });
+  return res.data.data;
+}
+
+
 
 
