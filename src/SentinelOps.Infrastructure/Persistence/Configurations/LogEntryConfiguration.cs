@@ -47,6 +47,7 @@ public class LogEntryConfiguration : IEntityTypeConfiguration<LogEntry>
         builder.HasIndex(l => l.Severity);
         builder.HasIndex(l => l.Timestamp);
         builder.HasIndex(l => new { l.ApplicationId, l.Timestamp });
+        builder.HasIndex(l => new { l.ApplicationId, l.Severity, l.Timestamp });
         builder.HasIndex(l => l.TraceId);
     }
 }

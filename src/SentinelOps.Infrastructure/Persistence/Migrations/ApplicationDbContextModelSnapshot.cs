@@ -1131,6 +1131,8 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ApplicationId", "Timestamp");
 
+                    b.HasIndex("ApplicationId", "Severity", "Timestamp");
+
                     b.ToTable("LogEntries", (string)null);
                 });
 
