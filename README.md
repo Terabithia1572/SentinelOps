@@ -19,7 +19,9 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-17-336791" />
+    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-18-336791" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-152%20backend%20%7C%2023%20frontend-brightgreen" />
+    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Conditionally%20Ready-blue" />
   </p>
 </div>
 
@@ -38,6 +40,7 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
 - **🚨 Alerting Engine** — Configurable alert rules with email and webhook notifications
 - **🏥 Health Monitoring** — Service health checks and availability tracking
 - **🔐 Security** — JWT authentication, role-based access control, API key management
+- **📑 Enterprise PDF Reports** — Pure C# vector PDF 1.4 reporting engine with 6 canonical report types
 - **🌍 Multi-language** — English and Turkish UI support
 
 ---
@@ -111,7 +114,7 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
       <img src="docs/screenshots/20-security-audit-trail.png" alt="Forensic Audit Trail & Sensitive Redaction" />
     </td>
     <td width="50%">
-      <h4 align="center">📑 Enterprise Analytics & CSV Formula Defense</h4>
+      <h4 align="center">📑 Enterprise Analytics & Vector PDF Reports</h4>
       <img src="docs/screenshots/21-reports-and-analytics.png" alt="Enterprise Analytics and Reporting" />
     </td>
   </tr>
@@ -230,7 +233,7 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (124 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security, Alerting, Incidents, SLOs, User Management, Audit Sanitization, Retention, CSV Sanitizer)
+# Backend tests (152 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security Hardening, Alerting, Incidents, SLOs, User Management, Audit Sanitization, Retention, PDF Reporting)
 dotnet test SentinelOps.slnx
 
 # Frontend tests (23 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, SLOs, Admin, Audit Logs, Reports, Settings)
@@ -266,6 +269,8 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [Development Progress](docs/PROGRESS.md)
 - [Platform Operations Runbook](docs/runbooks/platform-operations.md)
 - [Backup & Disaster Recovery Runbook](docs/runbooks/backup-restore.md)
+- [Release Readiness & Deployment Runbook](docs/phase7/RELEASE-READINESS.md)
+- [Phase 7 Final Acceptance & Production Audit](docs/phase7/FINAL-ACCEPTANCE.md)
 
 ## Roadmap
 
@@ -275,7 +280,7 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 4** — Observability Explorer (Log search and live stream, Trace waterfall visualization, Metrics charts, Service health matrix, Exception grouping)
 - [x] **Phase 5** — Enterprise Alerting & Incident Management (Telemetry evaluation engine, SignalR push hub, automated incident state machine, audit timelines, SSRF-protected notification outbox, SRE SLO and error budget monitoring)
 - [x] **Phase 6** — Enterprise Administration, Advanced Security, Audit, Reporting & Production Readiness (Directory, RBAC, session revocation, forensic audit trail with sensitive key sanitization, 6 executive report types with CSV formula defense, configurable retention policies with dry-run estimation, non-root Docker, CSP/Permissions-Policy hardening, and operational runbooks)
-- [ ] **Phase 7** — Production Hardening & Cloud Staging
+- [x] **Phase 7** — Production Deployment, End-to-End Observability, Performance Engineering, Security Validation & Enterprise Reliability (Hardened Docker Compose, Redis Streams & OTel validation, 1,330 req/s verified throughput, composite indexing, strict SSRF validator, account lockout, rate limiting, disaster recovery pg_dump/pg_restore verification, pure C# PDF 1.4 vector reporting engine, hardened CI/CD & release workflows)
 - [ ] **Phase 8** — Portfolio Presentation
 
 ## Security
@@ -308,7 +313,8 @@ Birden fazla uygulamanın ürettiği telemetri verilerini toplamak, işlemek, sa
 - **📈 Metrikler ve Analitik** — İstek verimi, hata oranları, yanıt gecikmesi yüzdelik dilimleri
 - **🚨 Alarm Motoru** — E-posta ve webhook bildirim adaptörleri içeren kural tabanlı alarm mekanizması
 - **🏥 Servis Sağlığı İzleme** — Sistem sağlık kontrolleri ve erişilebilirlik takibi
-- **🔐 Kurumsal Güvenlik** — JWT kimlik doğrulama, rol tabanlı yetkilendirme (RBAC) ve API anahtarı yönetimi
+- **🔐 Kurumsal Güvenlik** — JWT kimlik doğrulama, rol tabanlı yetkilendirme (RBAC), SSRF koruması, hesap kilitleme ve hız sınırlama
+- **📑 Kurumsal PDF Raporlama** — ISO PDF 1.4 standartlarına uygun, harici bağımlılıksız saf C# vektör raporlama motoru (6 kurumsal rapor türü)
 - **🌍 Çoklu Dil Desteği** — İngilizce ve Türkçe kullanıcı arayüzü desteği
 
 ## Mimari
