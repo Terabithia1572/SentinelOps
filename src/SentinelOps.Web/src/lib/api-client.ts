@@ -936,6 +936,12 @@ export interface OrganizationSettingsDto {
   allowMemberInvites: boolean;
   requireTwoFactor: boolean;
   defaultRetentionDays: number;
+  planTier?: string;
+  maxApplications?: number;
+  maxMembers?: number;
+  maxCustomDashboards?: number;
+  maxMonthlyLogs?: number;
+  maxMonthlyTraces?: number;
 }
 
 export interface OrganizationUsageDto {
@@ -1496,6 +1502,60 @@ export async function getPublicStatusPage(slug: string): Promise<PublicStatusPag
   const res = await apiClient.get<ApiResponse<PublicStatusPageDto>>(`/status/${slug}`);
   return res.data.data;
 }
+
+// Quota & Usage Types
+export interface OrganizationQuotaStatusDto {
+  organizationId: string;
+  organizationName: string;
+  planTier: string;
+  logsUsed: number;
+  logsQuota: number;
+  logsPercentUsed: number;
+  isLogsWarning: boolean;
+  isLogsExceeded: boolean;
+  tracesUsed: number;
+  tracesQuota: number;
+  tracesPercentUsed: number;
+  isTracesWarning: boolean;
+  isTracesExceeded: boolean;
+  applicationsUsed: number;
+  applicationsQuota: number;
+  applicationsPercentUsed: number;
+  dashboardsUsed: number;
+  dashboardsQuota: number;
+  dashboardsPercentUsed: number;
+  membersUsed: number;
+  membersQuota: number;
+  membersPercentUsed: number;
+  estimatedStorageBytes: number;
+  hasAnyQuotaWarning: boolean;
+  hasAnyQuotaExceeded: boolean;
+}
+
+export interface UpdateOrganizationQuotaRequest {
+  planTier: string;
+  maxApplications: number;
+  maxMembers: number;
+  maxCustomDashboards: number;
+  maxMonthlyLogs: number;
+  maxMonthlyTraces: number;
+}
+
+export async function getOrganizationQuota(orgId: string): Promise<OrganizationQuotaStatusDto> {
+  const res = await apiClient.get<ApiResponse<OrganizationQuotaStatusDto>>(`/organizations/${orgId}/quota`);
+  return res.data.data;
+}
+
+export async function updateOrganizationQuota(orgId: string, req: UpdateOrganizationQuotaRequest): Promise<boolean> {
+  const res = await apiClient.put<ApiResponse<boolean>>(`/organizations/${orgId}/quota`, req);
+  return res.data.success;
+}
+
+export async function getAllQuotasSummary(): Promise<OrganizationQuotaStatusDto[]> {
+  const res = await apiClient.get<ApiResponse<OrganizationQuotaStatusDto[]>>("/organizations/quotas/summary");
+  return res.data.data;
+}
+
 
 
 

@@ -10,8 +10,11 @@ import {
   removeOrganizationMember,
   changeOrganizationMemberRole,
   updateOrganizationSettings,
+  getOrganizationQuota,
+  updateOrganizationQuota,
   type OrganizationDetailDto,
-  type InvitationCreatedResponseDto
+  type InvitationCreatedResponseDto,
+  type OrganizationQuotaStatusDto,
 } from "../lib/api-client";
 import {
   Building2,
@@ -23,12 +26,16 @@ import {
   Copy,
   Check,
   RefreshCw,
-  Trash2
+  Trash2,
+  Zap,
+  AlertTriangle,
+  Sliders,
 } from "lucide-react";
 
 export const OrganizationsPage: React.FC = () => {
   const { organizations, activeOrg, setActiveOrg, refreshOrganizations } = useTenant();
   const [detail, setDetail] = useState<OrganizationDetailDto | null>(null);
+  const [quota, setQuota] = useState<OrganizationQuotaStatusDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"members" | "invites" | "settings" | "usage">("members");
 
@@ -53,6 +60,16 @@ export const OrganizationsPage: React.FC = () => {
   const [retentionDays, setRetentionDays] = useState(30);
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  // Quota Modal state
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [quotaTier, setQuotaTier] = useState("Pro");
+  const [quotaMaxApps, setQuotaMaxApps] = useState(20);
+  const [quotaMaxMembers, setQuotaMaxMembers] = useState(25);
+  const [quotaMaxDashboards, setQuotaMaxDashboards] = useState(15);
+  const [quotaMaxLogs, setQuotaMaxLogs] = useState(1000000);
+  const [quotaMaxTraces, setQuotaMaxTraces] = useState(500000);
+  const [quotaSaving, setQuotaSaving] = useState(false);
+
   // Status message
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
@@ -65,11 +82,42 @@ export const OrganizationsPage: React.FC = () => {
         setAllowInvites(data.settings.allowMemberInvites);
         setRequire2fa(data.settings.requireTwoFactor);
         setRetentionDays(data.settings.defaultRetentionDays);
+        if (data.settings.planTier) setQuotaTier(data.settings.planTier);
+      }
+      try {
+        const q = await getOrganizationQuota(orgId);
+        setQuota(q);
+      } catch {
+        // Quota fetch fallback
       }
     } catch {
       setStatusMessage({ text: "Failed to load organization details.", type: "error" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateQuota = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeOrg) return;
+    try {
+      setQuotaSaving(true);
+      await updateOrganizationQuota(activeOrg.id, {
+        planTier: quotaTier,
+        maxApplications: quotaMaxApps,
+        maxMembers: quotaMaxMembers,
+        maxCustomDashboards: quotaMaxDashboards,
+        maxMonthlyLogs: quotaMaxLogs,
+        maxMonthlyTraces: quotaMaxTraces,
+      });
+      const updatedQuota = await getOrganizationQuota(activeOrg.id);
+      setQuota(updatedQuota);
+      setShowQuotaModal(false);
+      setStatusMessage({ text: "Organization quota limits successfully updated!", type: "success" });
+    } catch {
+      setStatusMessage({ text: "Failed to update organization quota limits.", type: "error" });
+    } finally {
+      setQuotaSaving(false);
     }
   };
 
@@ -173,8 +221,12 @@ export const OrganizationsPage: React.FC = () => {
     }
   };
 
-  const isOwnerOrAdmin = detail?.userRole === "Owner" || detail?.userRole === "Admin";
-  const isOwner = detail?.userRole === "Owner";
+  const isOwnerOrAdmin =
+    detail?.userRole === "Owner" ||
+    detail?.userRole === "Admin" ||
+    activeOrg?.userRole === "Owner" ||
+    activeOrg?.userRole === "Admin";
+  const isOwner = detail?.userRole === "Owner" || activeOrg?.userRole === "Owner";
 
   return (
     <div className="space-y-6">
@@ -515,31 +567,258 @@ export const OrganizationsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tab: Usage */}
+      {/* Tab: Usage & Quotas */}
       {activeTab === "usage" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <div className="text-xs font-semibold text-slate-400 uppercase">Logs Ingested MTD</div>
-            <div className="text-2xl font-bold text-white mt-2">
-              {detail?.usage.logsIngestedMonthToDate.toLocaleString() || "0"}
+        <div className="space-y-6">
+          {/* Header Bar: Current Plan & Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-sky-950/60 border border-sky-800/40 text-sky-400">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-base text-white">SaaS Quotas & Resource Usage</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    {quota?.planTier || detail?.settings.planTier || "Pro"} Plan
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Monthly allocation limits and live telemetry consumption for {detail?.name || activeOrg?.name}.
+                </p>
+              </div>
             </div>
-            <div className="text-xs text-emerald-400 mt-1">Telemetry stream buffer active</div>
+
+            {isOwnerOrAdmin && (
+              <button
+                onClick={() => {
+                  if (quota) {
+                    setQuotaTier(quota.planTier);
+                    setQuotaMaxApps(quota.applicationsQuota);
+                    setQuotaMaxMembers(quota.membersQuota);
+                    setQuotaMaxDashboards(quota.dashboardsQuota);
+                    setQuotaMaxLogs(quota.logsQuota);
+                    setQuotaMaxTraces(quota.tracesQuota);
+                  }
+                  setShowQuotaModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg border border-slate-700 transition-colors"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                Configure Plan Quotas
+              </button>
+            )}
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <div className="text-xs font-semibold text-slate-400 uppercase">Traces Ingested MTD</div>
-            <div className="text-2xl font-bold text-white mt-2">
-              {detail?.usage.tracesIngestedMonthToDate.toLocaleString() || "0"}
+          {/* Warning Banner if quota reached */}
+          {quota && (quota.hasAnyQuotaExceeded || quota.hasAnyQuotaWarning) && (
+            <div
+              className={`p-4 rounded-xl border flex items-start gap-3 ${
+                quota.hasAnyQuotaExceeded
+                  ? "bg-rose-950/30 border-rose-500/40 text-rose-300"
+                  : "bg-amber-950/30 border-amber-500/40 text-amber-300"
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <span className="font-bold block">
+                  {quota.hasAnyQuotaExceeded ? "Quota Limit Exceeded" : "Quota Warning: Approaching Capacity"}
+                </span>
+                <p>
+                  {quota.hasAnyQuotaExceeded
+                    ? "One or more organization quotas have reached 100% capacity. Additional resource creation or telemetry ingestion may be throttled."
+                    : "Your organization has consumed over 80% of its monthly resource allocation. Consider upgrading your plan or adjusting limits."}
+                </p>
+              </div>
             </div>
-            <div className="text-xs text-blue-400 mt-1">Distributed trace trees</div>
-          </div>
+          )}
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-            <div className="text-xs font-semibold text-slate-400 uppercase">API Requests MTD</div>
-            <div className="text-2xl font-bold text-white mt-2">
-              {detail?.usage.apiRequestsMonthToDate.toLocaleString() || "0"}
+          {/* Quota Progress Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* 1. Monthly Logs */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Monthly Logs Ingestion</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                    quota?.isLogsExceeded
+                      ? "bg-rose-950 text-rose-400 border border-rose-800"
+                      : quota?.isLogsWarning
+                      ? "bg-amber-950 text-amber-400 border border-amber-800"
+                      : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                  }`}
+                >
+                  {quota?.isLogsExceeded ? "Exceeded" : quota?.isLogsWarning ? "Warning" : "Normal"}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {(quota?.logsUsed ?? detail?.usage.logsIngestedMonthToDate ?? 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  / {(quota?.logsQuota ?? 1000000).toLocaleString()} logs
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    quota?.isLogsExceeded
+                      ? "bg-rose-500"
+                      : quota?.isLogsWarning
+                      ? "bg-amber-500"
+                      : "bg-sky-500"
+                  }`}
+                  style={{ width: `${Math.min(quota?.logsPercentUsed ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{quota?.logsPercentUsed ?? 0}% capacity used</span>
+                <span>Resets on 1st of month</span>
+              </div>
             </div>
-            <div className="text-xs text-purple-400 mt-1">SaaS endpoints queried</div>
+
+            {/* 2. Monthly Traces */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Monthly Distributed Traces</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                    quota?.isTracesExceeded
+                      ? "bg-rose-950 text-rose-400 border border-rose-800"
+                      : quota?.isTracesWarning
+                      ? "bg-amber-950 text-amber-400 border border-amber-800"
+                      : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                  }`}
+                >
+                  {quota?.isTracesExceeded ? "Exceeded" : quota?.isTracesWarning ? "Warning" : "Normal"}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {(quota?.tracesUsed ?? detail?.usage.tracesIngestedMonthToDate ?? 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  / {(quota?.tracesQuota ?? 500000).toLocaleString()} spans
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    quota?.isTracesExceeded
+                      ? "bg-rose-500"
+                      : quota?.isTracesWarning
+                      ? "bg-amber-500"
+                      : "bg-blue-500"
+                  }`}
+                  style={{ width: `${Math.min(quota?.tracesPercentUsed ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{quota?.tracesPercentUsed ?? 0}% capacity used</span>
+                <span>Resets on 1st of month</span>
+              </div>
+            </div>
+
+            {/* 3. Monitored Applications */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Monitored Applications</span>
+                <span className="text-slate-400 text-xs">Limit</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {quota?.applicationsUsed ?? 0}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  / {quota?.applicationsQuota ?? 20} apps
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(quota?.applicationsPercentUsed ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{quota?.applicationsPercentUsed ?? 0}% allocated</span>
+                <span>Active services</span>
+              </div>
+            </div>
+
+            {/* 4. Custom Dashboards */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Custom Dashboards</span>
+                <span className="text-slate-400 text-xs">Limit</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {quota?.dashboardsUsed ?? 0}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  / {quota?.dashboardsQuota ?? 15} dashboards
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-purple-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(quota?.dashboardsPercentUsed ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{quota?.dashboardsPercentUsed ?? 0}% allocated</span>
+                <span>Team & Personal</span>
+              </div>
+            </div>
+
+            {/* 5. Team Members */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Team Members</span>
+                <span className="text-slate-400 text-xs">Seats</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {quota?.membersUsed ?? detail?.members.length ?? 0}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  / {quota?.membersQuota ?? 25} seats
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-indigo-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(quota?.membersPercentUsed ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>{quota?.membersPercentUsed ?? 0}% seats filled</span>
+                <span>Active logins</span>
+              </div>
+            </div>
+
+            {/* 6. Estimated Storage */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-400 uppercase tracking-wider">Estimated Storage</span>
+                <span className="text-slate-400 text-xs">Active</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-bold text-white">
+                  {quota?.estimatedStorageBytes
+                    ? `${(quota.estimatedStorageBytes / (1024 * 1024)).toFixed(1)} MB`
+                    : "0.0 MB"}
+                </div>
+                <div className="text-xs text-slate-400 font-mono">Compressed</div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div className="bg-teal-500 h-2 rounded-full" style={{ width: "25%" }} />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>PostgreSQL & Redis buffers</span>
+                <span>Retention: {detail?.settings.defaultRetentionDays ?? 30} days</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -703,6 +982,136 @@ export const OrganizationsPage: React.FC = () => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Plan Quotas Configuration Modal */}
+      {showQuotaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-sky-400" />
+                Configure Organization Plan Quotas
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Adjust resource capacity ceilings and billing tier for {detail?.name || activeOrg?.name}.
+              </p>
+            </div>
+
+            <form onSubmit={handleUpdateQuota} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-medium text-slate-300">Plan Tier</label>
+                <select
+                  value={quotaTier}
+                  onChange={(e) => {
+                    const tier = e.target.value;
+                    setQuotaTier(tier);
+                    if (tier === "Starter") {
+                      setQuotaMaxApps(5);
+                      setQuotaMaxMembers(5);
+                      setQuotaMaxDashboards(3);
+                      setQuotaMaxLogs(100000);
+                      setQuotaMaxTraces(50000);
+                    } else if (tier === "Pro") {
+                      setQuotaMaxApps(20);
+                      setQuotaMaxMembers(25);
+                      setQuotaMaxDashboards(15);
+                      setQuotaMaxLogs(1000000);
+                      setQuotaMaxTraces(500000);
+                    } else if (tier === "Enterprise") {
+                      setQuotaMaxApps(100);
+                      setQuotaMaxMembers(100);
+                      setQuotaMaxDashboards(50);
+                      setQuotaMaxLogs(10000000);
+                      setQuotaMaxTraces(5000000);
+                    }
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                >
+                  <option value="Starter">Starter (5 apps, 100K logs/mo)</option>
+                  <option value="Pro">Pro (20 apps, 1M logs/mo)</option>
+                  <option value="Enterprise">Enterprise (100 apps, 10M logs/mo)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-medium text-slate-300">Max Applications</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quotaMaxApps}
+                    onChange={(e) => setQuotaMaxApps(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-medium text-slate-300">Max Team Seats</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quotaMaxMembers}
+                    onChange={(e) => setQuotaMaxMembers(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-medium text-slate-300">Max Custom Dashboards</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quotaMaxDashboards}
+                    onChange={(e) => setQuotaMaxDashboards(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-medium text-slate-300">Monthly Logs Ceiling</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    step="100000"
+                    value={quotaMaxLogs}
+                    onChange={(e) => setQuotaMaxLogs(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-medium text-slate-300">Monthly Distributed Traces Ceiling</label>
+                <input
+                  type="number"
+                  min="1000"
+                  step="50000"
+                  value={quotaMaxTraces}
+                  onChange={(e) => setQuotaMaxTraces(Number(e.target.value))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowQuotaModal(false)}
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={quotaSaving}
+                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg"
+                >
+                  {quotaSaving ? "Saving..." : "Save Quota Configuration"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

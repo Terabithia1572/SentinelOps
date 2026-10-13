@@ -18,4 +18,8 @@ public interface IOrganizationService
     Task<(bool Success, string? Error)> RemoveMemberAsync(Guid orgId, string targetUserId, string currentUserId, CancellationToken ct = default);
     Task<(bool Success, string? Error)> ChangeMemberRoleAsync(Guid orgId, string targetUserId, ChangeMemberRoleRequest request, string currentUserId, CancellationToken ct = default);
     Task<(bool Success, string? Error)> UpdateSettingsAsync(Guid orgId, UpdateOrganizationSettingsRequest request, string userId, CancellationToken ct = default);
+
+    Task<OrganizationQuotaStatusDto?> GetQuotaStatusAsync(Guid orgId, string userId, CancellationToken ct = default);
+    Task<(bool Success, string? Error)> UpdateQuotaAsync(Guid orgId, UpdateOrganizationQuotaRequest request, string userId, CancellationToken ct = default);
+    Task<List<OrganizationQuotaStatusDto>> GetAllOrganizationsQuotaSummaryAsync(string userId, CancellationToken ct = default);
 }

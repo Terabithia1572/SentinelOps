@@ -58,6 +58,12 @@ public class OrganizationSettingsDto
     public bool AllowMemberInvites { get; set; } = true;
     public bool RequireTwoFactor { get; set; }
     public int DefaultRetentionDays { get; set; } = 30;
+    public string PlanTier { get; set; } = "Pro";
+    public int MaxApplications { get; set; } = 20;
+    public int MaxMembers { get; set; } = 25;
+    public int MaxCustomDashboards { get; set; } = 15;
+    public long MaxMonthlyLogs { get; set; } = 1_000_000;
+    public long MaxMonthlyTraces { get; set; } = 500_000;
 }
 
 public class OrganizationUsageDto
@@ -68,4 +74,49 @@ public class OrganizationUsageDto
     public long ApiRequestsMonthToDate { get; set; }
     public long EstimatedStorageBytes { get; set; }
     public DateTime LastResetAtUtc { get; set; }
+}
+
+public class OrganizationQuotaStatusDto
+{
+    public Guid OrganizationId { get; set; }
+    public string OrganizationName { get; set; } = string.Empty;
+    public string PlanTier { get; set; } = "Pro";
+
+    public long LogsUsed { get; set; }
+    public long LogsQuota { get; set; }
+    public double LogsPercentUsed { get; set; }
+    public bool IsLogsWarning { get; set; }
+    public bool IsLogsExceeded { get; set; }
+
+    public long TracesUsed { get; set; }
+    public long TracesQuota { get; set; }
+    public double TracesPercentUsed { get; set; }
+    public bool IsTracesWarning { get; set; }
+    public bool IsTracesExceeded { get; set; }
+
+    public int ApplicationsUsed { get; set; }
+    public int ApplicationsQuota { get; set; }
+    public double ApplicationsPercentUsed { get; set; }
+
+    public int DashboardsUsed { get; set; }
+    public int DashboardsQuota { get; set; }
+    public double DashboardsPercentUsed { get; set; }
+
+    public int MembersUsed { get; set; }
+    public int MembersQuota { get; set; }
+    public double MembersPercentUsed { get; set; }
+
+    public long EstimatedStorageBytes { get; set; }
+    public bool HasAnyQuotaWarning { get; set; }
+    public bool HasAnyQuotaExceeded { get; set; }
+}
+
+public class UpdateOrganizationQuotaRequest
+{
+    public string PlanTier { get; set; } = "Pro";
+    public int MaxApplications { get; set; } = 20;
+    public int MaxMembers { get; set; } = 25;
+    public int MaxCustomDashboards { get; set; } = 15;
+    public long MaxMonthlyLogs { get; set; } = 1_000_000;
+    public long MaxMonthlyTraces { get; set; } = 500_000;
 }

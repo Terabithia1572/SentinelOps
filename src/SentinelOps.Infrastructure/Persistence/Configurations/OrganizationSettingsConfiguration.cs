@@ -12,6 +12,10 @@ public class OrganizationSettingsConfiguration : IEntityTypeConfiguration<Organi
 
         builder.HasKey(s => s.Id);
 
+        builder.Property(s => s.PlanTier)
+            .IsRequired()
+            .HasMaxLength(50);
+
         builder.HasIndex(s => s.OrganizationId)
             .IsUnique();
     }

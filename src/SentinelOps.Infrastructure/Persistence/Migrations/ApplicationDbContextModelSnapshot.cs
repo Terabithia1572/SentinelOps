@@ -1533,8 +1533,28 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Property<int>("DefaultRetentionDays")
                         .HasColumnType("integer");
 
+                    b.Property<int>("MaxApplications")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxCustomDashboards")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxMembers")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("MaxMonthlyLogs")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("MaxMonthlyTraces")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PlanTier")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("RequireTwoFactor")
                         .HasColumnType("boolean");

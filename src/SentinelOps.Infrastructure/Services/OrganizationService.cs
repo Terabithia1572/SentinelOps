@@ -114,7 +114,13 @@ public class OrganizationService : IOrganizationService
             {
                 AllowMemberInvites = org.Settings?.AllowMemberInvites ?? true,
                 RequireTwoFactor = org.Settings?.RequireTwoFactor ?? false,
-                DefaultRetentionDays = org.Settings?.DefaultRetentionDays ?? 30
+                DefaultRetentionDays = org.Settings?.DefaultRetentionDays ?? 30,
+                PlanTier = org.Settings?.PlanTier ?? "Pro",
+                MaxApplications = org.Settings?.MaxApplications ?? 20,
+                MaxMembers = org.Settings?.MaxMembers ?? 25,
+                MaxCustomDashboards = org.Settings?.MaxCustomDashboards ?? 15,
+                MaxMonthlyLogs = org.Settings?.MaxMonthlyLogs ?? 1_000_000,
+                MaxMonthlyTraces = org.Settings?.MaxMonthlyTraces ?? 500_000
             },
             Usage = new OrganizationUsageDto
             {
@@ -164,7 +170,13 @@ public class OrganizationService : IOrganizationService
             {
                 AllowMemberInvites = true,
                 RequireTwoFactor = false,
-                DefaultRetentionDays = 30
+                DefaultRetentionDays = 30,
+                PlanTier = "Pro",
+                MaxApplications = 20,
+                MaxMembers = 25,
+                MaxCustomDashboards = 15,
+                MaxMonthlyLogs = 1_000_000,
+                MaxMonthlyTraces = 500_000
             },
             Usage = new OrganizationUsage
             {
@@ -548,6 +560,156 @@ public class OrganizationService : IOrganizationService
             cancellationToken: ct);
 
         return (true, null);
+    }
+
+    public async Task<OrganizationQuotaStatusDto?> GetQuotaStatusAsync(Guid orgId, string userId, CancellationToken ct = default)
+    {
+        var member = await _context.OrganizationMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, ct);
+
+        if (member == null) return null;
+
+        var org = await _context.Organizations
+            .AsNoTracking()
+            .Include(o => o.Settings)
+            .Include(o => o.Usage)
+            .FirstOrDefaultAsync(o => o.Id == orgId && o.IsActive, ct);
+
+        if (org == null) return null;
+
+        var appsUsed = await _context.Applications.CountAsync(a => a.OrganizationId == orgId, ct);
+        var membersUsed = await _context.OrganizationMembers.CountAsync(m => m.OrganizationId == orgId, ct);
+        var dashboardsUsed = await _context.Dashboards.CountAsync(d => d.OrganizationId == orgId, ct);
+
+        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var appIds = await _context.Applications.Where(a => a.OrganizationId == orgId).Select(a => a.Id).ToListAsync(ct);
+
+        long actualLogs = 0;
+        long actualTraces = 0;
+        if (appIds.Count > 0)
+        {
+            actualLogs = await _context.LogEntries.CountAsync(l => appIds.Contains(l.ApplicationId) && l.Timestamp >= monthStart, ct);
+            actualTraces = await _context.TraceRecords.CountAsync(t => appIds.Contains(t.ApplicationId) && t.StartedAtUtc >= monthStart, ct);
+        }
+
+        var logsUsed = Math.Max(org.Usage?.LogsIngestedMonthToDate ?? 0, actualLogs);
+        var tracesUsed = Math.Max(org.Usage?.TracesIngestedMonthToDate ?? 0, actualTraces);
+
+        var settings = org.Settings ?? new OrganizationSettings();
+        var planTier = string.IsNullOrWhiteSpace(settings.PlanTier) ? "Pro" : settings.PlanTier;
+        var logsQuota = Math.Max(settings.MaxMonthlyLogs, 1);
+        var tracesQuota = Math.Max(settings.MaxMonthlyTraces, 1);
+        var appsQuota = Math.Max(settings.MaxApplications, 1);
+        var membersQuota = Math.Max(settings.MaxMembers, 1);
+        var dashboardsQuota = Math.Max(settings.MaxCustomDashboards, 1);
+
+        var logsPct = Math.Round((double)logsUsed / logsQuota * 100.0, 1);
+        var tracesPct = Math.Round((double)tracesUsed / tracesQuota * 100.0, 1);
+        var appsPct = Math.Round((double)appsUsed / appsQuota * 100.0, 1);
+        var membersPct = Math.Round((double)membersUsed / membersQuota * 100.0, 1);
+        var dashboardsPct = Math.Round((double)dashboardsUsed / dashboardsQuota * 100.0, 1);
+
+        var isLogsWarning = logsPct >= 80.0;
+        var isLogsExceeded = logsPct >= 100.0;
+        var isTracesWarning = tracesPct >= 80.0;
+        var isTracesExceeded = tracesPct >= 100.0;
+
+        return new OrganizationQuotaStatusDto
+        {
+            OrganizationId = org.Id,
+            OrganizationName = org.Name,
+            PlanTier = planTier,
+            LogsUsed = logsUsed,
+            LogsQuota = logsQuota,
+            LogsPercentUsed = logsPct,
+            IsLogsWarning = isLogsWarning,
+            IsLogsExceeded = isLogsExceeded,
+            TracesUsed = tracesUsed,
+            TracesQuota = tracesQuota,
+            TracesPercentUsed = tracesPct,
+            IsTracesWarning = isTracesWarning,
+            IsTracesExceeded = isTracesExceeded,
+            ApplicationsUsed = appsUsed,
+            ApplicationsQuota = appsQuota,
+            ApplicationsPercentUsed = appsPct,
+            DashboardsUsed = dashboardsUsed,
+            DashboardsQuota = dashboardsQuota,
+            DashboardsPercentUsed = dashboardsPct,
+            MembersUsed = membersUsed,
+            MembersQuota = membersQuota,
+            MembersPercentUsed = membersPct,
+            EstimatedStorageBytes = org.Usage?.EstimatedStorageBytes ?? 0,
+            HasAnyQuotaWarning = isLogsWarning || isTracesWarning || appsPct >= 80.0 || membersPct >= 80.0 || dashboardsPct >= 80.0,
+            HasAnyQuotaExceeded = isLogsExceeded || isTracesExceeded || appsPct >= 100.0 || membersPct >= 100.0 || dashboardsPct >= 100.0
+        };
+    }
+
+    public async Task<(bool Success, string? Error)> UpdateQuotaAsync(
+        Guid orgId,
+        UpdateOrganizationQuotaRequest request,
+        string userId,
+        CancellationToken ct = default)
+    {
+        var member = await _context.OrganizationMembers
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, ct);
+
+        if (member == null || (member.Role != OrganizationRole.Owner && member.Role != OrganizationRole.Admin))
+        {
+            return (false, "Only organization Owners or Admins can modify quota limits.");
+        }
+
+        var settings = await _context.OrganizationSettings
+            .FirstOrDefaultAsync(s => s.OrganizationId == orgId, ct);
+
+        if (settings == null)
+        {
+            settings = new OrganizationSettings
+            {
+                OrganizationId = orgId
+            };
+            _context.OrganizationSettings.Add(settings);
+        }
+
+        settings.PlanTier = string.IsNullOrWhiteSpace(request.PlanTier) ? "Pro" : request.PlanTier.Trim();
+        settings.MaxApplications = Math.Max(request.MaxApplications, 1);
+        settings.MaxMembers = Math.Max(request.MaxMembers, 1);
+        settings.MaxCustomDashboards = Math.Max(request.MaxCustomDashboards, 1);
+        settings.MaxMonthlyLogs = Math.Max(request.MaxMonthlyLogs, 1000);
+        settings.MaxMonthlyTraces = Math.Max(request.MaxMonthlyTraces, 1000);
+        settings.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(ct);
+
+        await _auditService.RecordAsync(
+            action: "Organization.QuotaUpdated",
+            targetEntityType: "OrganizationSettings",
+            targetEntityId: settings.Id.ToString(),
+            outcome: "Success",
+            details: $"Updated quota for organization {orgId}: Tier={settings.PlanTier}, MaxApps={settings.MaxApplications}, MaxLogs={settings.MaxMonthlyLogs}.",
+            cancellationToken: ct);
+
+        return (true, null);
+    }
+
+    public async Task<List<OrganizationQuotaStatusDto>> GetAllOrganizationsQuotaSummaryAsync(string userId, CancellationToken ct = default)
+    {
+        var orgs = await _context.Organizations
+            .AsNoTracking()
+            .Where(o => o.IsActive)
+            .OrderBy(o => o.Name)
+            .ToListAsync(ct);
+
+        var results = new List<OrganizationQuotaStatusDto>();
+        foreach (var org in orgs)
+        {
+            var quota = await GetQuotaStatusAsync(org.Id, userId, ct);
+            if (quota != null)
+            {
+                results.Add(quota);
+            }
+        }
+        return results;
     }
 
     private static string HashToken(string rawToken)

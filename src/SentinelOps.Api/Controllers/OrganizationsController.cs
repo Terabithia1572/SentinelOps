@@ -207,4 +207,49 @@ public class OrganizationsController : ControllerBase
 
         return Ok(ApiResponse<object>.Ok(new { message = "Settings updated successfully." }));
     }
+
+    [HttpGet("{id:guid}/quota")]
+    public async Task<ActionResult<ApiResponse<OrganizationQuotaStatusDto>>> GetQuotaStatus(
+        Guid id,
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<OrganizationQuotaStatusDto>.Fail("Unauthorized."));
+
+        var status = await _organizationService.GetQuotaStatusAsync(id, userId, ct);
+        if (status == null)
+            return NotFound(ApiResponse<OrganizationQuotaStatusDto>.Fail("Organization not found or access denied."));
+
+        return Ok(ApiResponse<OrganizationQuotaStatusDto>.Ok(status));
+    }
+
+    [HttpPut("{id:guid}/quota")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateQuota(
+        Guid id,
+        [FromBody] UpdateOrganizationQuotaRequest request,
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<object>.Fail("Unauthorized."));
+
+        var (success, error) = await _organizationService.UpdateQuotaAsync(id, request, userId, ct);
+        if (!success)
+            return BadRequest(ApiResponse<object>.Fail(error ?? "Failed to update organization quota."));
+
+        return Ok(ApiResponse<object>.Ok(new { message = "Organization quota limits updated successfully." }));
+    }
+
+    [HttpGet("quotas/summary")]
+    public async Task<ActionResult<ApiResponse<List<OrganizationQuotaStatusDto>>>> GetAllQuotasSummary(
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<List<OrganizationQuotaStatusDto>>.Fail("Unauthorized."));
+
+        var summary = await _organizationService.GetAllOrganizationsQuotaSummaryAsync(userId, ct);
+        return Ok(ApiResponse<List<OrganizationQuotaStatusDto>>.Ok(summary));
+    }
 }
