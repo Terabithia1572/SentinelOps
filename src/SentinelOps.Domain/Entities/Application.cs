@@ -10,6 +10,9 @@ public class Application : AggregateRoot
     public bool IsActive { get; set; } = true;
     public string ApiKeyHash { get; set; } = string.Empty;
 
+    public Guid? OrganizationId { get; set; }
+    public Organization? Organization { get; set; }
+
     public ICollection<Environment> Environments { get; set; } = new List<Environment>();
     public ICollection<Service> Services { get; set; } = new List<Service>();
     public ICollection<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();

@@ -40,5 +40,12 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<ApplicationEnti
             .WithOne(s => s.Application)
             .HasForeignKey(s => s.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(a => a.Organization)
+            .WithMany(o => o.Applications)
+            .HasForeignKey(a => a.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(a => a.OrganizationId);
     }
 }

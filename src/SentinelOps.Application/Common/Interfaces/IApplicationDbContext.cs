@@ -34,6 +34,11 @@ public interface IApplicationDbContext
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<ApplicationMember> ApplicationMembers { get; }
     DbSet<SystemSetting> SystemSettings { get; }
+    DbSet<Organization> Organizations { get; }
+    DbSet<OrganizationMember> OrganizationMembers { get; }
+    DbSet<OrganizationInvitation> OrganizationInvitations { get; }
+    DbSet<OrganizationSettings> OrganizationSettings { get; }
+    DbSet<OrganizationUsage> OrganizationUsages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

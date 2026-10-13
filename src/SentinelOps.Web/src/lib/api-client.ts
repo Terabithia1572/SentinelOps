@@ -13,6 +13,10 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const orgId = localStorage.getItem("sentinelops_active_org_id");
+  if (orgId) {
+    config.headers["X-Organization-Id"] = orgId;
+  }
   return config;
 });
 
@@ -875,4 +879,129 @@ export async function getSystemHealth(): Promise<SystemHealthDto> {
   const res = await apiClient.get<ApiResponse<SystemHealthDto>>("/system/health");
   return res.data.data;
 }
+
+// ==========================================
+// Organization & Multi-Tenant SaaS APIs
+// ==========================================
+
+export interface OrganizationDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+  userRole: string;
+  membersCount: number;
+  applicationsCount: number;
+  createdAtUtc: string;
+}
+
+export interface OrganizationDetailDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+  userRole: string;
+  createdAtUtc: string;
+  members: OrganizationMemberDto[];
+  pendingInvitations: OrganizationInvitationDto[];
+  settings: OrganizationSettingsDto;
+  usage: OrganizationUsageDto;
+}
+
+export interface OrganizationMemberDto {
+  id: string;
+  organizationId: string;
+  userId: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  role: string;
+  joinedAtUtc: string;
+}
+
+export interface OrganizationInvitationDto {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: string;
+  expiresAtUtc: string;
+  invitedByUserName: string;
+  createdAtUtc: string;
+  isPending: boolean;
+}
+
+export interface OrganizationSettingsDto {
+  allowMemberInvites: boolean;
+  requireTwoFactor: boolean;
+  defaultRetentionDays: number;
+}
+
+export interface OrganizationUsageDto {
+  logsIngestedMonthToDate: number;
+  tracesIngestedMonthToDate: number;
+  metricsIngestedMonthToDate: number;
+  apiRequestsMonthToDate: number;
+  estimatedStorageBytes: number;
+  lastResetAtUtc: string;
+}
+
+export interface InvitationCreatedResponseDto {
+  invitationId: string;
+  email: string;
+  role: string;
+  expiresAtUtc: string;
+  rawToken: string;
+}
+
+export async function getUserOrganizations(): Promise<OrganizationDto[]> {
+  const res = await apiClient.get<ApiResponse<OrganizationDto[]>>("/organizations");
+  return res.data.data;
+}
+
+export async function getOrganizationById(id: string): Promise<OrganizationDetailDto> {
+  const res = await apiClient.get<ApiResponse<OrganizationDetailDto>>(`/organizations/${id}`);
+  return res.data.data;
+}
+
+export async function createOrganization(req: { name: string; slug: string; description?: string }): Promise<OrganizationDto> {
+  const res = await apiClient.post<ApiResponse<OrganizationDto>>("/organizations", req);
+  return res.data.data;
+}
+
+export async function updateOrganization(id: string, req: { name: string; description?: string }): Promise<void> {
+  await apiClient.put<ApiResponse<any>>(`/organizations/${id}`, req);
+}
+
+export async function getOrganizationMembers(id: string): Promise<OrganizationMemberDto[]> {
+  const res = await apiClient.get<ApiResponse<OrganizationMemberDto[]>>(`/organizations/${id}/members`);
+  return res.data.data;
+}
+
+export async function inviteOrganizationMember(id: string, req: { email: string; role: string }): Promise<InvitationCreatedResponseDto> {
+  const res = await apiClient.post<ApiResponse<InvitationCreatedResponseDto>>(`/organizations/${id}/members/invite`, req);
+  return res.data.data;
+}
+
+export async function acceptOrganizationInvitation(req: { token: string }): Promise<void> {
+  await apiClient.post<ApiResponse<any>>("/organizations/invitations/accept", req);
+}
+
+export async function revokeOrganizationInvitation(id: string, invitationId: string): Promise<void> {
+  await apiClient.delete<ApiResponse<any>>(`/organizations/${id}/invitations/${invitationId}`);
+}
+
+export async function removeOrganizationMember(id: string, userId: string): Promise<void> {
+  await apiClient.delete<ApiResponse<any>>(`/organizations/${id}/members/${userId}`);
+}
+
+export async function changeOrganizationMemberRole(id: string, userId: string, role: string): Promise<void> {
+  await apiClient.put<ApiResponse<any>>(`/organizations/${id}/members/${userId}/role`, { role });
+}
+
+export async function updateOrganizationSettings(id: string, req: OrganizationSettingsDto): Promise<void> {
+  await apiClient.put<ApiResponse<any>>(`/organizations/${id}/settings`, req);
+}
+
 

@@ -521,6 +521,9 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -528,6 +531,8 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("Applications", (string)null);
                 });
@@ -1326,6 +1331,203 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("NotificationOutboxes", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Organizations", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvitedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId", "Email");
+
+                    b.ToTable("OrganizationInvitations", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationMembers", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AllowMemberInvites")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DefaultRetentionDays")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("RequireTwoFactor")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationSettings", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("ApiRequestsMonthToDate")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("EstimatedStorageBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastResetAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("LogsIngestedMonthToDate")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("MetricsIngestedMonthToDate")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("TracesIngestedMonthToDate")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationUsages", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1892,6 +2094,16 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.Application", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany("Applications")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.ApplicationMember", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
@@ -1966,6 +2178,50 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Channel");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationInvitation", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany("Invitations")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationMember", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany("Members")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationSettings", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithOne("Settings")
+                        .HasForeignKey("SentinelOps.Domain.Entities.OrganizationSettings", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.OrganizationUsage", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithOne("Usage")
+                        .HasForeignKey("SentinelOps.Domain.Entities.OrganizationUsage", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.Service", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
@@ -2024,6 +2280,19 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("AlertRules");
 
                     b.Navigation("OutboxMessages");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.Organization", b =>
+                {
+                    b.Navigation("Applications");
+
+                    b.Navigation("Invitations");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Settings");
+
+                    b.Navigation("Usage");
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.ServiceLevelObjective", b =>

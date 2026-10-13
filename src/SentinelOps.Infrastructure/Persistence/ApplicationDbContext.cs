@@ -43,6 +43,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ApplicationMember> ApplicationMembers => Set<ApplicationMember>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
+    public DbSet<OrganizationInvitation> OrganizationInvitations => Set<OrganizationInvitation>();
+    public DbSet<OrganizationSettings> OrganizationSettings => Set<OrganizationSettings>();
+    public DbSet<OrganizationUsage> OrganizationUsages => Set<OrganizationUsage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

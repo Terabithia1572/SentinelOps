@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -262,6 +263,69 @@ using (var scope = app.Services.CreateScope())
             {
                 await roleManager.CreateAsync(new IdentityRole(role));
             }
+        }
+    }
+
+    // Initialize Default Organization and reconcile legacy applications
+    var dbContext = scope.ServiceProvider.GetService<SentinelOps.Application.Common.Interfaces.IApplicationDbContext>();
+    if (dbContext != null)
+    {
+        var defaultOrg = await dbContext.Organizations.FirstOrDefaultAsync(o => o.Slug == "default-org");
+        if (defaultOrg == null)
+        {
+            defaultOrg = new SentinelOps.Domain.Entities.Organization
+            {
+                Name = "Default Organization",
+                Slug = "default-org",
+                Description = "Default tenant organization for legacy applications.",
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow,
+                Settings = new SentinelOps.Domain.Entities.OrganizationSettings
+                {
+                    AllowMemberInvites = true,
+                    RequireTwoFactor = false,
+                    DefaultRetentionDays = 30
+                },
+                Usage = new SentinelOps.Domain.Entities.OrganizationUsage
+                {
+                    LastResetAtUtc = DateTime.UtcNow
+                }
+            };
+            dbContext.Organizations.Add(defaultOrg);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var unassignedApps = await dbContext.Applications.Where(a => a.OrganizationId == null).ToListAsync();
+        if (unassignedApps.Count > 0)
+        {
+            foreach (var appItem in unassignedApps)
+            {
+                appItem.OrganizationId = defaultOrg.Id;
+            }
+            await dbContext.SaveChangesAsync();
+        }
+
+        var userManager = scope.ServiceProvider.GetService<UserManager<SentinelOps.Infrastructure.Identity.ApplicationUser>>();
+        if (userManager != null)
+        {
+            var existingUsers = userManager.Users.Where(u => u.IsActive).ToList();
+            foreach (var user in existingUsers)
+            {
+                var isMember = await dbContext.OrganizationMembers
+                    .AnyAsync(m => m.OrganizationId == defaultOrg.Id && m.UserId == user.Id);
+                if (!isMember)
+                {
+                    var isUserAdmin = await userManager.IsInRoleAsync(user, Roles.Admin);
+                    dbContext.OrganizationMembers.Add(new SentinelOps.Domain.Entities.OrganizationMember
+                    {
+                        OrganizationId = defaultOrg.Id,
+                        UserId = user.Id,
+                        Role = isUserAdmin ? SentinelOps.Domain.Enums.OrganizationRole.Owner : SentinelOps.Domain.Enums.OrganizationRole.Member,
+                        JoinedAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+            await dbContext.SaveChangesAsync();
         }
     }
 }

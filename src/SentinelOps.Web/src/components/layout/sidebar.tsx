@@ -22,15 +22,18 @@ import {
   Sun,
   LogOut,
   User as UserIcon,
+  Building2,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/context/auth-context";
+import { useTenant } from "@/context/tenant-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
+  { name: "Organizations", href: "/organizations", icon: Building2 },
   { name: "Applications", href: "/applications", icon: AppWindow },
   { name: "Services", href: "/services", icon: Server },
   { name: "Logs", href: "/logs", icon: FileText },
@@ -52,6 +55,7 @@ const navigation = [
 export function Sidebar() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { activeOrg, organizations, setActiveOrg } = useTenant();
 
   const primaryRole = user?.roles?.[0] || "Viewer";
 
@@ -62,6 +66,48 @@ export function Sidebar() {
         <Shield className="h-7 w-7 text-[hsl(var(--primary))]" />
         <span className="text-lg font-bold tracking-tight">SentinelOps</span>
       </div>
+
+      {/* Active Organization Switcher */}
+      {user && (
+        <div className="border-b border-[hsl(var(--border))] px-3 py-2.5 bg-[hsl(var(--muted)/0.3)]">
+          <div className="flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mb-1.5 px-1">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">Organization</span>
+            <NavLink to="/organizations" className="hover:text-[hsl(var(--primary))] transition-colors" title="Manage Organizations">
+              <Settings className="h-3 w-3" />
+            </NavLink>
+          </div>
+          {organizations.length > 1 ? (
+            <select
+              aria-label="Active Organization"
+              value={activeOrg?.id || ""}
+              onChange={(e) => {
+                const found = organizations.find((o) => o.id === e.target.value);
+                if (found) setActiveOrg(found);
+              }}
+              className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+            >
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name} ({org.userRole})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <NavLink
+              to="/organizations"
+              className="flex items-center justify-between px-2 py-1.5 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-xs font-medium hover:border-[hsl(var(--primary)/0.5)] transition-colors"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <Building2 className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                <span className="truncate">{activeOrg?.name || "Default Org"}</span>
+              </div>
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                {activeOrg?.userRole || "Member"}
+              </Badge>
+            </NavLink>
+          )}
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
