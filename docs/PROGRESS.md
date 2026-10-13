@@ -184,7 +184,41 @@
   - React/TypeScript: 0 errors, 0 warnings (`npm run typecheck`, `npm run build`).
 
 ### Next Steps
+- Phase 4 Visual QA & Browser Verification Checkpoint (Completed)
 - Proceed to Phase 5: Alerting & Incident Management (Alert rules, threshold evaluators, notification channels, incident lifecycle).
+
+---
+
+## Phase 4 Visual QA & Browser Verification Checkpoint
+**Status:** ✅ Completed  
+**Completed:** 2026-10-13
+
+### Completed
+- [x] **Live Environment Verification**: Validated runtime operation of .NET API (`http://localhost:5100`) and React frontend (`http://localhost:3000`) against local PostgreSQL 17 database.
+- [x] **Real Telemetry Rendering**: Seeded and rendered live traces, spans, structured log streams, exception records, and metric throughput percentiles across multiple simulated microservices (`order-service`, `billing-service`, `auth-service`, `catalog-service`).
+- [x] **Runtime JavaScript & Routing Defect Resolutions**:
+  - Fixed React key collision in `ExceptionsPage` by combining `fingerprint`, `serviceName`, and `environmentName`.
+  - Fixed Vite reverse proxy route interception (`/api` vs `/api-keys`) by constraining proxy path regexes to `^/api/` and `^/hubs/`.
+  - Added route alias `<Route path="overview" ... />` ensuring both root (`/`) and named paths render cleanly.
+- [x] **Automated Browser Screenshot Pipeline**:
+  - Implemented automated visual verification suite (`src/SentinelOps.Web/scripts/visual-qa.mjs`) driving Google Chrome via Puppeteer.
+  - Verified 0 runtime JavaScript console errors and 0 unhandled promise rejections across all pages.
+  - Captured 13 high-resolution screenshots saved to `docs/screenshots/`:
+    - `01-login.png` — Secure login screen
+    - `02-overview.png` — Real-time telemetry dashboard with KPI cards and charts
+    - `03-applications.png` — Monitored applications and environment management
+    - `04-api-keys.png` — High-entropy API key management interface
+    - `05-logs-explorer.png` — Structured log stream with expandable JSON properties
+    - `06-traces-list.png` — Distributed trace list with latency, status, and service tags
+    - `07-traces-waterfall.png` — Hierarchical waterfall view with parent-child span timelines
+    - `08-metrics-explorer.png` — RPS throughput, error rate, and p50/p90/p99 latency charts
+    - `09-service-health.png` — Microservice health status, error rates, and SLA matrix
+    - `10-exceptions-explorer.png` — Fingerprinted exception groups with occurrence counters
+    - `11-responsive-tablet.png` — Tablet viewport (1024x768) layout verification
+    - `12-responsive-mobile.png` — Mobile viewport (390x844) layout verification
+    - `13-register.png` — User registration screen with password complexity indicators
+- [x] **Homepage Documentation Integration**: Embedded selected screenshots directly into `README.md` for immediate visibility on GitHub.
+- [x] **Regression Test Validation**: 68/68 backend tests passing, 15/15 frontend tests passing, 0 TypeScript/build errors.
 
 ---
 

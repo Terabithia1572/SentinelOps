@@ -6,6 +6,7 @@
   </p>
 
   <p>
+    <a href="#platform-interface">Screenshots</a> •
     <a href="#features">Features</a> •
     <a href="#architecture">Architecture</a> •
     <a href="#quick-start">Quick Start</a> •
@@ -38,6 +39,45 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
 - **🏥 Health Monitoring** — Service health checks and availability tracking
 - **🔐 Security** — JWT authentication, role-based access control, API key management
 - **🌍 Multi-language** — English and Turkish UI support
+
+---
+
+## 🖥️ Platform Interface
+
+<table>
+  <tr>
+    <td width="50%">
+      <h4 align="center">📊 Real-Time Operations Overview</h4>
+      <img src="docs/screenshots/02-overview.png" alt="SentinelOps Overview Dashboard" />
+    </td>
+    <td width="50%">
+      <h4 align="center">🔍 Structured Log Explorer</h4>
+      <img src="docs/screenshots/05-logs-explorer.png" alt="SentinelOps Log Explorer" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">⚡ Distributed Traces Waterfall</h4>
+      <img src="docs/screenshots/07-traces-waterfall.png" alt="Distributed Traces Waterfall" />
+    </td>
+    <td width="50%">
+      <h4 align="center">📈 Metrics & Percentiles Explorer</h4>
+      <img src="docs/screenshots/08-metrics-explorer.png" alt="Metrics Explorer" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h4 align="center">🏥 Microservice Health & SLA Matrix</h4>
+      <img src="docs/screenshots/09-service-health.png" alt="Service Health Monitoring" />
+    </td>
+    <td width="50%">
+      <h4 align="center">⚠️ Fingerprinted Exceptions Drilldown</h4>
+      <img src="docs/screenshots/10-exceptions-explorer.png" alt="Exceptions Explorer" />
+    </td>
+  </tr>
+</table>
+
+---
 
 ## Architecture
 

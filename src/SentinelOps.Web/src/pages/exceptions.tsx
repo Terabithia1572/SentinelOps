@@ -279,7 +279,7 @@ export function ExceptionsPage() {
             <div className="divide-y divide-[hsl(var(--border))] text-xs">
               {filtered.map((item) => (
                 <div
-                  key={item.fingerprint}
+                  key={`${item.fingerprint}-${item.serviceName}-${item.environmentName}`}
                   className="p-4 hover:bg-[hsl(var(--accent)/0.3)] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="space-y-1.5 min-w-0 flex-1">

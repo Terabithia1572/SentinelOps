@@ -47,6 +47,7 @@ function App() {
                 }
               >
                 <Route index element={<OverviewPage />} />
+                <Route path="overview" element={<OverviewPage />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="api-keys" element={<ApiKeysPage />} />
                 <Route path="services" element={<ServiceHealthPage />} />
