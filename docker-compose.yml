@@ -19,6 +19,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    stop_grace_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+        reservations:
+          memory: 256M
     networks:
       - sentinelops
     restart: unless-stopped
@@ -37,6 +51,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    stop_grace_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          memory: 256M
     networks:
       - sentinelops
     restart: unless-stopped
@@ -49,7 +71,15 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - sentinelops-api
+      sentinelops-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
     networks:
       - sentinelops
     restart: unless-stopped
@@ -70,6 +100,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+        reservations:
+          memory: 256M
     networks:
       - sentinelops
     restart: unless-stopped
@@ -77,6 +115,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sentinelops-redis
+    command: ["redis-server", "--appendonly", "yes", "--save", "60 1", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
     ports:
       - "6379:6379"
     volumes:
@@ -86,6 +125,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     networks:
       - sentinelops
     restart: unless-stopped
@@ -104,15 +151,26 @@ services:
       - "8888:8888"   # Prometheus metrics (collector)
       - "8889:8889"   # Prometheus exporter
     depends_on:
-      - sentinelops-api
+      sentinelops-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     networks:
       - sentinelops
     restart: unless-stopped
 
 volumes:
   postgres_data:
+    name: sentinelops_postgres_data
   redis_data:
+    name: sentinelops_redis_data
 
 networks:
   sentinelops:
+    name: sentinelops_sentinelops
     driver: bridge
