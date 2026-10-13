@@ -25,6 +25,7 @@ import {
   Building2,
   LayoutGrid,
   Network,
+  Globe,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/context/auth-context";
@@ -47,6 +48,7 @@ const navigation = [
   { name: "Alerts", href: "/alerts", icon: Bell },
   { name: "Alert Rules", href: "/alert-rules", icon: BellRing },
   { name: "Incidents", href: "/incidents", icon: AlertTriangle },
+  { name: "Status Pages", href: "/status-pages", icon: Globe },
   { name: "SLOs & Objectives", href: "/slos", icon: Target },
   { name: "Health", href: "/health", icon: HeartPulse },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },

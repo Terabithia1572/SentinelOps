@@ -1868,6 +1868,124 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("SpanRecords", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.StatusPage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutoRollupEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ComponentsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("HeaderNotice")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("MaintenanceWindowsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SupportUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("StatusPages", (string)null);
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.StatusPageIncident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AffectedComponentIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LinkedIncidentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("StatusPageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StatusPageId");
+
+                    b.HasIndex("StatusPageId", "CreatedAtUtc");
+
+                    b.ToTable("StatusPageIncidents", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.SystemSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2318,6 +2436,28 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("ServiceLevelObjective");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.StatusPage", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.StatusPageIncident", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.StatusPage", "StatusPage")
+                        .WithMany("Incidents")
+                        .HasForeignKey("StatusPageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StatusPage");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.AlertRule", b =>
                 {
                     b.Navigation("Evaluations");
@@ -2372,6 +2512,11 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("SentinelOps.Domain.Entities.ServiceLevelObjective", b =>
                 {
                     b.Navigation("Evaluations");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.StatusPage", b =>
+                {
+                    b.Navigation("Incidents");
                 });
 #pragma warning restore 612, 618
         }

@@ -1331,6 +1331,173 @@ export async function submitIncidentFeedback(incidentId: string, req: Intelligen
   return res.data.data;
 }
 
+// Status Pages Types
+export interface StatusPageComponentDto {
+  id: string;
+  name: string;
+  description?: string | null;
+  applicationId?: string | null;
+  serviceName?: string | null;
+  statusOverride?: string | null;
+  computedStatus: string;
+}
+
+export interface StatusPageMaintenanceWindowDto {
+  id: string;
+  title: string;
+  description?: string | null;
+  startTimeUtc: string;
+  endTimeUtc: string;
+  status: string;
+  affectedComponentIds: string[];
+}
+
+export interface StatusPageIncidentUpdateDto {
+  id: string;
+  status: string;
+  message: string;
+  createdAtUtc: string;
+  postedBy: string;
+}
+
+export interface StatusPageIncidentDto {
+  id: string;
+  statusPageId: string;
+  linkedIncidentId?: string | null;
+  title: string;
+  status: string;
+  severity: string;
+  affectedComponentIds: string[];
+  updates: StatusPageIncidentUpdateDto[];
+  createdAtUtc: string;
+  resolvedAtUtc?: string | null;
+}
+
+export interface StatusPageDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  supportUrl?: string | null;
+  headerNotice?: string | null;
+  isPublic: boolean;
+  autoRollupEnabled: boolean;
+  components: StatusPageComponentDto[];
+  maintenanceWindows: StatusPageMaintenanceWindowDto[];
+  activeIncidentsCount: number;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface PublicStatusPageDto {
+  name: string;
+  slug: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  supportUrl?: string | null;
+  headerNotice?: string | null;
+  overallStatus: string;
+  components: StatusPageComponentDto[];
+  activeIncidents: StatusPageIncidentDto[];
+  pastIncidents: StatusPageIncidentDto[];
+  scheduledMaintenance: StatusPageMaintenanceWindowDto[];
+  generatedAtUtc: string;
+}
+
+export interface CreateStatusPageRequest {
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+  supportUrl?: string;
+  headerNotice?: string;
+  isPublic?: boolean;
+  autoRollupEnabled?: boolean;
+  components?: StatusPageComponentDto[];
+  maintenanceWindows?: StatusPageMaintenanceWindowDto[];
+}
+
+export interface UpdateStatusPageRequest {
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+  supportUrl?: string;
+  headerNotice?: string;
+  isPublic?: boolean;
+  autoRollupEnabled?: boolean;
+  components?: StatusPageComponentDto[];
+  maintenanceWindows?: StatusPageMaintenanceWindowDto[];
+}
+
+export interface CreateStatusPageIncidentRequest {
+  title: string;
+  status: string;
+  severity: string;
+  linkedIncidentId?: string;
+  affectedComponentIds?: string[];
+  initialMessage: string;
+}
+
+export interface AddStatusPageIncidentUpdateRequest {
+  status: string;
+  message: string;
+}
+
+// Status Pages API methods
+export async function getStatusPages(): Promise<StatusPageDto[]> {
+  const res = await apiClient.get<ApiResponse<StatusPageDto[]>>("/status-pages");
+  return res.data.data;
+}
+
+export async function getStatusPageById(id: string): Promise<StatusPageDto> {
+  const res = await apiClient.get<ApiResponse<StatusPageDto>>(`/status-pages/${id}`);
+  return res.data.data;
+}
+
+export async function createStatusPage(req: CreateStatusPageRequest): Promise<StatusPageDto> {
+  const res = await apiClient.post<ApiResponse<StatusPageDto>>("/status-pages", req);
+  return res.data.data;
+}
+
+export async function updateStatusPage(id: string, req: UpdateStatusPageRequest): Promise<StatusPageDto> {
+  const res = await apiClient.put<ApiResponse<StatusPageDto>>(`/status-pages/${id}`, req);
+  return res.data.data;
+}
+
+export async function deleteStatusPage(id: string): Promise<boolean> {
+  const res = await apiClient.delete<ApiResponse<boolean>>(`/status-pages/${id}`);
+  return res.data.data;
+}
+
+export async function postStatusPageIncident(
+  statusPageId: string,
+  req: CreateStatusPageIncidentRequest
+): Promise<StatusPageIncidentDto> {
+  const res = await apiClient.post<ApiResponse<StatusPageIncidentDto>>(`/status-pages/${statusPageId}/incidents`, req);
+  return res.data.data;
+}
+
+export async function addStatusPageIncidentUpdate(
+  statusPageId: string,
+  incidentId: string,
+  req: AddStatusPageIncidentUpdateRequest
+): Promise<StatusPageIncidentDto> {
+  const res = await apiClient.post<ApiResponse<StatusPageIncidentDto>>(
+    `/status-pages/${statusPageId}/incidents/${incidentId}/updates`,
+    req
+  );
+  return res.data.data;
+}
+
+export async function getPublicStatusPage(slug: string): Promise<PublicStatusPageDto> {
+  const res = await apiClient.get<ApiResponse<PublicStatusPageDto>>(`/status/${slug}`);
+  return res.data.data;
+}
+
+
 
 
 

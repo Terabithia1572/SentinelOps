@@ -40,6 +40,8 @@ public interface IApplicationDbContext
     DbSet<OrganizationSettings> OrganizationSettings { get; }
     DbSet<OrganizationUsage> OrganizationUsages { get; }
     DbSet<CustomDashboard> Dashboards { get; }
+    DbSet<StatusPage> StatusPages { get; }
+    DbSet<StatusPageIncident> StatusPageIncidents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

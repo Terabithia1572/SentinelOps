@@ -49,6 +49,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<OrganizationSettings> OrganizationSettings => Set<OrganizationSettings>();
     public DbSet<OrganizationUsage> OrganizationUsages => Set<OrganizationUsage>();
     public DbSet<CustomDashboard> Dashboards => Set<CustomDashboard>();
+    public DbSet<StatusPage> StatusPages => Set<StatusPage>();
+    public DbSet<StatusPageIncident> StatusPageIncidents => Set<StatusPageIncident>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

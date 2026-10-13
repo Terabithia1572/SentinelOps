@@ -27,6 +27,8 @@ import { UsersPage } from "@/pages/users";
 import { AuditLogsPage } from "@/pages/audit-logs";
 import { ReportsPage } from "@/pages/reports";
 import { SettingsPage } from "@/pages/settings";
+import { PublicStatusPage } from "@/pages/public-status";
+import { StatusPagesPage } from "@/pages/status-pages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,9 +48,10 @@ function App() {
           <TenantProvider>
             <BrowserRouter>
               <Routes>
-                {/* Public Authentication Routes */}
+                {/* Public Authentication & External Status Routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/status/:slug" element={<PublicStatusPage />} />
 
                 {/* Protected Platform Routes */}
                 <Route
@@ -76,6 +79,7 @@ function App() {
                   <Route path="alert-rules" element={<AlertRulesPage />} />
                   <Route path="incidents" element={<IncidentsPage />} />
                   <Route path="incidents/:id" element={<IncidentDetailPage />} />
+                  <Route path="status-pages" element={<StatusPagesPage />} />
                   <Route path="slos" element={<SlosPage />} />
                   <Route path="analytics" element={<ReportsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
