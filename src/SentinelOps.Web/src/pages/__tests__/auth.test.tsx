@@ -41,7 +41,7 @@ describe("Authentication Pages", () => {
   });
 
   describe("RegisterPage", () => {
-    it("renders registration form with all required inputs and role dropdown", () => {
+    it("renders registration form with all required inputs without privileged role selection", () => {
       renderWithAuth(<RegisterPage />);
 
       expect(screen.getByRole("heading", { name: "Register Account" })).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe("Authentication Pages", () => {
       expect(screen.getByLabelText(/Work Email/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Confirm Password/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Initial Role/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Initial Role/i)).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Create Account" })).toBeInTheDocument();
     });
 

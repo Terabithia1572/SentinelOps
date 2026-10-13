@@ -18,7 +18,7 @@ interface AuthContextType {
   isOperator: boolean;
   isViewer: boolean;
   login: (userNameOrEmail: string, password: string) => Promise<void>;
-  register: (fullName: string, userName: string, email: string, password: string, role?: string) => Promise<void>;
+  register: (fullName: string, userName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -124,13 +124,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (fullName: string, userName: string, email: string, password: string, role?: string) => {
+  const register = async (fullName: string, userName: string, email: string, password: string) => {
     const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/register", {
       fullName,
       userName,
       email,
       password,
-      role: role || "Viewer",
+      confirmPassword: password,
     });
 
     if (response.data.success && response.data.data) {

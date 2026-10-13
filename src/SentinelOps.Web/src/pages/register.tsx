@@ -15,7 +15,6 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("Admin");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +52,7 @@ export function RegisterPage() {
 
     try {
       setIsLoading(true);
-      await register(fullName.trim(), userName.trim(), email.trim(), password, role);
+      await register(fullName.trim(), userName.trim(), email.trim(), password);
       navigate("/", { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to register account.";
@@ -203,23 +202,6 @@ export function RegisterPage() {
                     {passwordsMatch ? "✓ Passwords match" : "✕ Passwords do not match"}
                   </p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="role">
-                  Initial Role
-                </label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
-                  disabled={isLoading}
-                >
-                  <option value="Admin">Admin (Full administrative & key management)</option>
-                  <option value="Operator">Operator (Manage applications & alert triage)</option>
-                  <option value="Viewer">Viewer (Read-only observability dashboards)</option>
-                </select>
               </div>
             </CardContent>
 

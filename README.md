@@ -144,10 +144,10 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (60 tests: Domain, Application, API Integration, OTLP Ingestion, Security)
+# Backend tests (68 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security)
 dotnet test SentinelOps.slnx
 
-# Frontend tests (10 tests: Auth, Overview, Applications, API Keys)
+# Frontend tests (15 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Service Health, Exceptions)
 cd src/SentinelOps.Web
 npm run test:run
 ```
@@ -184,7 +184,7 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 1** — Foundation (solution structure, Docker, CI/CD)
 - [x] **Phase 2** — Identity & Application Management (JWT, RBAC, API Keys, Frontend Auth)
 - [x] **Phase 3** — Telemetry Ingestion (OpenTelemetry OTLP HTTP/gRPC, Redis Streams, Worker Batch Persistence, Sample API)
-- [ ] **Phase 4** — Observability Explorer (Logs, Traces, Metrics)
+- [x] **Phase 4** — Observability Explorer (Log search and live stream, Trace waterfall visualization, Metrics charts, Service health matrix, Exception grouping)
 - [ ] **Phase 5** — Alerting Engine
 - [ ] **Phase 6** — Advanced Analytics
 - [ ] **Phase 7** — Production Hardening

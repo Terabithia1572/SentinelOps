@@ -135,3 +135,110 @@ export interface HealthCheckDto {
   totalDuration: string;
   entries: Record<string, { status: string; description: string }>;
 }
+
+export interface LogEntryDto {
+  id: string;
+  applicationId: string;
+  serviceName: string;
+  environmentName: string;
+  severity: string;
+  message: string;
+  messageTemplate?: string;
+  properties?: string;
+  exceptionDetail?: string;
+  traceId?: string;
+  spanId?: string;
+  correlationId?: string;
+  timestamp: string;
+}
+
+export interface LogMetadataDto {
+  services: string[];
+  environments: string[];
+}
+
+export interface TraceDto {
+  traceId: string;
+  applicationId: string;
+  serviceName: string;
+  environmentName: string;
+  rootSpanName: string;
+  durationMs: number;
+  spanCount: number;
+  hasErrors: boolean;
+  startedAtUtc: string;
+}
+
+export interface SpanDetailDto {
+  id: string;
+  spanId: string;
+  traceId: string;
+  parentSpanId?: string | null;
+  operationName: string;
+  serviceName: string;
+  durationMs: number;
+  status: string;
+  startedAtUtc: string;
+  attributes?: string;
+  depth: number;
+  offsetMs: number;
+  offsetPercent: number;
+  durationPercent: number;
+}
+
+export interface TraceDetailDto {
+  trace: TraceDto;
+  spans: SpanDetailDto[];
+  correlatedLogs: LogEntryDto[];
+  services: string[];
+  maxDepth: number;
+  totalDurationMs: number;
+}
+
+export interface MetricTimeSeriesPointDto {
+  timestamp: string;
+  requestsPerSecond: number;
+  errorRatePercent: number;
+  avgDurationMs: number;
+  p50DurationMs: number;
+  p95DurationMs: number;
+  p99DurationMs: number;
+  totalRequests: number;
+  errorRequests: number;
+}
+
+export interface MetricSeriesResponse {
+  points: MetricTimeSeriesPointDto[];
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  overallErrorRate: number;
+  totalThroughputRps: number;
+  totalRequests: number;
+}
+
+export interface ExceptionGroupDto {
+  fingerprint: string;
+  exceptionType: string;
+  message: string;
+  serviceName: string;
+  environmentName: string;
+  count: number;
+  firstSeenAtUtc: string;
+  lastSeenAtUtc: string;
+  sampleTraceId?: string | null;
+  sampleLogId: string;
+}
+
+export interface ServiceHealthSummaryDto {
+  applicationId: string;
+  applicationName: string;
+  serviceName: string;
+  environmentName: string;
+  status: "Healthy" | "Degraded" | "Unhealthy" | string;
+  totalRequests: number;
+  totalErrors: number;
+  errorRatePercent: number;
+  avgDurationMs: number;
+  p95DurationMs: number;
+  lastSeenAtUtc?: string | null;
+}

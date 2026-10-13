@@ -16,8 +16,7 @@ public class RegisterCommandValidatorTests
             "user@sentinelops.io",
             "Valid User",
             "Str0ng!Pass#2026",
-            "Str0ng!Pass#2026",
-            "Viewer");
+            "Str0ng!Pass#2026");
 
         var result = _validator.Validate(command);
 

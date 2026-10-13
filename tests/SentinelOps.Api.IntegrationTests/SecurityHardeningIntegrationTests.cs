@@ -58,8 +58,7 @@ public class SecurityHardeningIntegrationTests : IClassFixture<CustomWebApplicat
             Email = email,
             FullName = "Replay Attack Victim",
             Password = "P@ssword2026!Secure",
-            ConfirmPassword = "P@ssword2026!Secure",
-            Role = "Viewer"
+            ConfirmPassword = "P@ssword2026!Secure"
         };
 
         var regRes = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
@@ -94,5 +93,83 @@ public class SecurityHardeningIntegrationTests : IClassFixture<CustomWebApplicat
 
         // The entire family was revoked for security
         victimRefreshRes.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Registration_WhenCallerAttemptsRoleEscalation_MustOnlyGrantViewerRole()
+    {
+        var email = $"attacker_{Guid.NewGuid():N}@sentinelops.io";
+        var userName = $"att_{Guid.NewGuid():N}"[..12];
+
+        // Attacker attempts to forge "role": "Admin" in registration payload
+        var payload = new
+        {
+            userName,
+            email,
+            fullName = "Privilege Escalation Attacker",
+            password = "P@ssword2026!Secure",
+            confirmPassword = "P@ssword2026!Secure",
+            role = "Admin"
+        };
+
+        var registerRes = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        registerRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var regBody = await registerRes.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        regBody.Should().NotBeNull();
+        regBody!.Data!.Roles.Should().NotContain("Admin");
+        regBody.Data.Roles.Should().NotContain("Operator");
+        regBody.Data.Roles.Should().Contain("Viewer");
+
+        // Verify the token cannot be used to perform Operator/Admin actions
+        using var clientWithToken = new HttpClient();
+        clientWithToken.BaseAddress = _client.BaseAddress;
+        clientWithToken.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", regBody.Data.Token);
+
+        var createReq = new CreateApplicationRequest
+        {
+            Name = "malicious-app",
+            DisplayName = "Malicious Application",
+            Description = "Should be rejected"
+        };
+        var appRes = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/applications")
+        {
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", regBody.Data.Token) },
+            Content = JsonContent.Create(createReq)
+        });
+
+        appRes.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ViewerRole_CannotDeleteApplicationOrRevokeApiKey_ReturnsForbidden()
+    {
+        var email = $"viewer_{Guid.NewGuid():N}@sentinelops.io";
+        var userName = $"view_{Guid.NewGuid():N}"[..12];
+
+        var registerRequest = new RegisterRequest
+        {
+            UserName = userName,
+            Email = email,
+            FullName = "Standard Viewer User",
+            Password = "P@ssword2026!Secure",
+            ConfirmPassword = "P@ssword2026!Secure"
+        };
+
+        var registerRes = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var regBody = await registerRes.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        var viewerToken = regBody!.Data!.Token;
+
+        var deleteAppRes = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, $"/api/applications/{Guid.NewGuid()}")
+        {
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", viewerToken) }
+        });
+        deleteAppRes.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var revokeKeyRes = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/keys/{Guid.NewGuid()}/revoke")
+        {
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", viewerToken) }
+        });
+        revokeKeyRes.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

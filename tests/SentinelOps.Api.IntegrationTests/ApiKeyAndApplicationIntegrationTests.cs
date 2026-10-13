@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using SentinelOps.Contracts.DTOs;
 using SentinelOps.Contracts.Requests;
 using SentinelOps.Contracts.Responses;
@@ -13,8 +14,11 @@ public class ApiKeyAndApplicationIntegrationTests : IClassFixture<CustomWebAppli
 {
     private readonly HttpClient _client;
 
+    private readonly CustomWebApplicationFactory _factory;
+
     public ApiKeyAndApplicationIntegrationTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -22,18 +26,20 @@ public class ApiKeyAndApplicationIntegrationTests : IClassFixture<CustomWebAppli
     {
         var email = $"user_{Guid.NewGuid():N}@sentinelops.io";
         var userName = $"user_{Guid.NewGuid():N}"[..12];
+        const string password = "P@ssword2026!Secure";
 
-        var registerRequest = new RegisterRequest
+        using (var scope = _factory.Services.CreateScope())
         {
-            UserName = userName,
-            Email = email,
-            FullName = "Role Test User",
-            Password = "P@ssword2026!Secure",
-            ConfirmPassword = "P@ssword2026!Secure",
-            Role = role
-        };
+            var identityService = scope.ServiceProvider.GetRequiredService<SentinelOps.Application.Common.Interfaces.IIdentityService>();
+            await identityService.CreateUserAsync(userName, email, "Role Test User", password, role);
+        }
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            Email = email,
+            Password = password
+        });
+
         var auth = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.Data!.Token);
     }

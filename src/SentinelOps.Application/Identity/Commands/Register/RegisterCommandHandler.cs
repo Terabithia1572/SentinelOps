@@ -28,9 +28,9 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
     public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var role = !string.IsNullOrWhiteSpace(request.Role) && Roles.All.Contains(request.Role)
-            ? request.Role
-            : Roles.Viewer;
+        // Public self-registration unconditionally assigns Viewer.
+        // Self-assigning Admin or Operator privileges is strictly prohibited.
+        const string role = Roles.Viewer;
 
         var (success, userId, errors) = await _identityService.CreateUserAsync(
             request.UserName,

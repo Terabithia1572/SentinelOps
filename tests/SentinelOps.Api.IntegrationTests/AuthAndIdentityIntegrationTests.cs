@@ -24,15 +24,14 @@ public class AuthAndIdentityIntegrationTests : IClassFixture<CustomWebApplicatio
         var email = $"testuser_{Guid.NewGuid():N}@sentinelops.io";
         var userName = $"user_{Guid.NewGuid():N}"[..12];
 
-        // 1. Register
+        // 1. Register (public registration gives standard Viewer role)
         var registerRequest = new RegisterRequest
         {
             UserName = userName,
             Email = email,
             FullName = "Test Platform User",
             Password = "P@ssword2026!Secure",
-            ConfirmPassword = "P@ssword2026!Secure",
-            Role = "Operator"
+            ConfirmPassword = "P@ssword2026!Secure"
         };
 
         var registerRes = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
@@ -43,7 +42,7 @@ public class AuthAndIdentityIntegrationTests : IClassFixture<CustomWebApplicatio
         regBody!.Success.Should().BeTrue();
         regBody.Data!.Token.Should().NotBeNullOrEmpty();
         regBody.Data.RefreshToken.Should().NotBeNullOrEmpty();
-        regBody.Data.Roles.Should().Contain("Operator");
+        regBody.Data.Roles.Should().Contain("Viewer");
 
         // 2. Login
         var loginRequest = new LoginRequest
@@ -69,7 +68,7 @@ public class AuthAndIdentityIntegrationTests : IClassFixture<CustomWebApplicatio
         var meBody = await meRes.Content.ReadFromJsonAsync<ApiResponse<UserProfileDto>>();
         meBody.Should().NotBeNull();
         meBody!.Data!.Email.Should().Be(email);
-        meBody.Data.Roles.Should().Contain("Operator");
+        meBody.Data.Roles.Should().Contain("Viewer");
 
         // 4. Refresh token rotation
         var refreshRequest = new RefreshTokenRequest

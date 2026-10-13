@@ -9,6 +9,11 @@ import { RegisterPage } from "@/pages/register";
 import { OverviewPage } from "@/pages/overview";
 import { ApplicationsPage } from "@/pages/applications";
 import { ApiKeysPage } from "@/pages/api-keys";
+import { LogsPage } from "@/pages/logs";
+import { TracesPage } from "@/pages/traces";
+import { MetricsPage } from "@/pages/metrics";
+import { ExceptionsPage } from "@/pages/exceptions";
+import { ServiceHealthPage } from "@/pages/health";
 import { PlaceholderPage } from "@/pages/placeholder";
 
 const queryClient = new QueryClient({
@@ -44,78 +49,12 @@ function App() {
                 <Route index element={<OverviewPage />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="api-keys" element={<ApiKeysPage />} />
-                <Route
-                  path="services"
-                  element={
-                    <PlaceholderPage
-                      title="Services"
-                      description="View service instances and dependencies"
-                    />
-                  }
-                />
-                <Route
-                  path="logs"
-                  element={
-                    <PlaceholderPage
-                      title="Log Explorer"
-                      description="Search and analyze structured application logs"
-                    />
-                  }
-                />
-                <Route
-                  path="traces"
-                  element={
-                    <PlaceholderPage
-                      title="Distributed Traces"
-                      description="Explore distributed traces and span timelines"
-                    />
-                  }
-                />
-                <Route
-                  path="metrics"
-                  element={
-                    <PlaceholderPage
-                      title="Metrics"
-                      description="Application performance metrics and dashboards"
-                    />
-                  }
-                />
-                <Route
-                  path="exceptions"
-                  element={
-                    <PlaceholderPage
-                      title="Exceptions"
-                      description="Exception monitoring and error grouping"
-                    />
-                  }
-                />
-                <Route
-                  path="alerts"
-                  element={
-                    <PlaceholderPage
-                      title="Alert Rules"
-                      description="Configure and manage alert rules"
-                    />
-                  }
-                />
-                <Route
-                  path="incidents"
-                  element={
-                    <PlaceholderPage
-                      title="Incidents"
-                      description="Active and resolved alert incidents"
-                    />
-                  }
-                />
-                <Route
-                  path="health"
-                  element={
-                    <PlaceholderPage
-                      title="Health Monitoring"
-                      description="Service health checks and availability"
-                    />
-                  }
-                />
+                <Route path="services" element={<ServiceHealthPage />} />
+                <Route path="logs" element={<LogsPage />} />
+                <Route path="traces" element={<TracesPage />} />
+                <Route path="metrics" element={<MetricsPage />} />
+                <Route path="exceptions" element={<ExceptionsPage />} />
+                <Route path="health" element={<ServiceHealthPage />} />
                 <Route
                   path="analytics"
                   element={

@@ -123,12 +123,72 @@
 - [x] Build validation: .NET 10 (0 errors, 0 warnings), React/TypeScript (0 errors, 0 warnings)
 
 ### Next Steps
-- Proceed to Phase 4: Observability Explorer (Log search and filtering, Trace waterfall visualization, Metric charting, Service health monitoring, and exception grouping).
+- Completed Phase 4: Observability Explorer.
+- Proceed to Phase 5: Alerting & Incident Management.
+
+---
 
 ## Phase 4 — Observability Explorer
-**Status:** ⏳ Pending
+**Status:** ✅ Completed  
+**Completed:** 2026-10-13
 
-## Phase 5 — Alerting
+### Priority 0 — Security Hardening Verified
+- [x] Sealed public self-registration role escalation: removed client role parameter completely from `RegisterRequest` and `RegisterCommand`, unconditionally enforcing `Roles.Viewer` for public registrations.
+- [x] Purged development runtime test API keys and locked out temporary administrator account with token revocation.
+- [x] Enforced strict tenant isolation on all telemetry queries with database-level `ApplicationId` scoping.
+- [x] Added security regression tests in `SecurityHardeningIntegrationTests.cs` verifying unauthorized role escalation prevention and Viewer privilege boundaries.
+
+### Completed Features
+- [x] **Log Explorer (`/logs`, `LogsController`, `LogsPage`)**:
+  - Server-side pagination (`PagedResponse<LogEntryDto>`) and multi-criteria filtering (Application, Service, Environment, Severity pills, Trace ID).
+  - Provider-agnostic full-text search across log messages, templates, and exception details.
+  - Distinct service and environment metadata extraction for filter dropdowns (`GET /api/logs/metadata`).
+  - Expandable structured log row details with syntax-formatted JSON properties and exception stack trace viewer.
+  - One-click copy buttons for log message, stack trace, and structured JSON properties.
+  - Correlated trace drill-down navigation link (`/traces?traceId=...`).
+  - Real-time live stream controls with configurable polling intervals (Manual, 5s, 10s, 30s).
+- [x] **Distributed Trace Explorer (`/traces`, `TracesController`, `TracesPage`)**:
+  - Searchable distributed trace list with status indicators (Success/Error), duration pills with latency color-coding (<300ms emerald, 300-1000ms amber, >1000ms rose), and span counts.
+  - Filter by error status (`hasErrors=true`), min/max latency threshold, service name, and search term.
+  - Hierarchical span waterfall visualization:
+    - Dynamic timeline ruler mapping span execution from 0ms to total duration.
+    - Calculated tree hierarchy depth and visual indentation.
+    - Span bars with offset percentage and duration percentage.
+    - Color-coded service tags with distinct deterministic hashing.
+  - Interactive span inspector displaying operation name, service, duration, parent span ID, and structured attributes JSON.
+  - Correlated logs section displaying logs emitted during the trace execution with relative timestamps and direct links to Log Explorer.
+- [x] **Metrics Explorer (`/metrics`, `MetricsController`, `MetricsPage`)**:
+  - Time-series analytics with interactive Recharts charts:
+    - Response Time Percentiles (Mean, p50, p95, p99) line chart.
+    - Request Throughput (Requests Per Second) area chart.
+    - Error Rate (%) and failed requests bar chart.
+  - Dynamic time windows (15m, 1h, 6h, 24h, 7d) and resolution bucket intervals (1m, 5m, 15m, 1h).
+  - Summary metric counter cards for Total Requests, Throughput (RPS), Avg Latency, p95 Latency, and Overall Error Rate.
+- [x] **Service Health Monitoring (`/health`, `ServicesController`, `ServiceHealthPage`)**:
+  - Microservice SLA/SLO matrix evaluating error rates and p95 latency thresholds (`Healthy` <2% errors, `Degraded` 2-10% errors or >1200ms p95, `Unhealthy` >10% errors or >3000ms p95).
+  - Health summary cards for quick overview (Healthy, Degraded, Unhealthy service counts).
+  - Microservice cards with error rate badges, p95 latency, request throughput, and last activity timestamps.
+  - Direct deep-links to filter logs and traces for each microservice.
+- [x] **Exceptions Explorer (`/exceptions`, `ExceptionsController`, `ExceptionsPage`)**:
+  - Normalized error grouping with SHA-256 fingerprint generation based on exception type and message.
+  - Aggregate occurrence counts, first seen and last seen timestamps.
+  - Sample trace ID correlation and drill-down links.
+  - Filter by application, service, environment, and search keywords.
+- [x] **Automated Test Coverage**:
+  - 6 new integration tests in `ObservabilityExplorerIntegrationTests.cs` (Unauthenticated 401s, Logs filtering and pagination, Trace waterfall hierarchy and parent-child span depth, Metrics time-series percentiles, Exception grouping, Service health status).
+  - 5 new frontend unit tests in `observability.test.tsx` for all explorer views.
+  - Total backend tests: 68 passed (0 failures, 0 warnings).
+  - Total frontend tests: 15 passed (0 failures, 0 warnings).
+- [x] **Build Validation**:
+  - .NET 10 solution: 0 errors, 0 warnings (`dotnet build --warnaserror`).
+  - React/TypeScript: 0 errors, 0 warnings (`npm run typecheck`, `npm run build`).
+
+### Next Steps
+- Proceed to Phase 5: Alerting & Incident Management (Alert rules, threshold evaluators, notification channels, incident lifecycle).
+
+---
+
+## Phase 5 — Alerting & Incident Management
 **Status:** ⏳ Pending
 
 ## Phase 6 — Advanced Analytics
@@ -139,3 +199,4 @@
 
 ## Phase 8 — Portfolio Presentation
 **Status:** ⏳ Pending
+

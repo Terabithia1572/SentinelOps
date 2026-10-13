@@ -26,8 +26,7 @@ public class AuthController : BaseApiController
             request.Email,
             request.FullName,
             request.Password,
-            request.ConfirmPassword,
-            request.Role);
+            request.ConfirmPassword);
 
         var result = await Mediator.Send(command, cancellationToken);
         return Ok(ApiResponse<AuthResponse>.SuccessResponse(result, "User registered successfully."));
