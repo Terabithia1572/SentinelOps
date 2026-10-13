@@ -1241,6 +1241,97 @@ export async function getExternalDependencies(timeRange = "1h"): Promise<Externa
   return res.data.data;
 }
 
+// ==========================================
+// AI Incident Intelligence APIs
+// ==========================================
+
+export interface RootCauseHypothesisDto {
+  id: string;
+  title: string;
+  description: string;
+  confidenceScore: number;
+  evidence: string[];
+  recommendedDiagnostics: string[];
+}
+
+export interface CorrelatedTelemetryDto {
+  logCount: number;
+  topExceptions: string[];
+  anomalousMetrics: string[];
+  slowTraceIds: string[];
+}
+
+export interface SimilarIncidentDto {
+  incidentId: string;
+  title: string;
+  severity: string;
+  resolvedAtUtc: string | null;
+  resolutionNotes: string;
+  mttrMinutes: number;
+}
+
+export interface IncidentAnalysisResult {
+  incidentId: string;
+  summary: string;
+  providerName: string;
+  generatedAtUtc: string;
+  hypotheses: RootCauseHypothesisDto[];
+  correlatedTelemetry: CorrelatedTelemetryDto;
+  similarIncidents: SimilarIncidentDto[];
+}
+
+export interface IncidentPostmortemResult {
+  incidentId: string;
+  title: string;
+  markdownContent: string;
+  generatedAtUtc: string;
+}
+
+export interface RemediationActionDto {
+  stepNumber: number;
+  title: string;
+  commandOrAction: string;
+  riskLevel: string;
+  rationale: string;
+}
+
+export interface RemediationSuggestionsResult {
+  incidentId: string;
+  actions: RemediationActionDto[];
+}
+
+export interface IntelligenceFeedbackRequest {
+  hypothesisId: string;
+  isHelpful: boolean;
+  comment?: string;
+}
+
+export async function analyzeIncident(incidentId: string): Promise<IncidentAnalysisResult> {
+  const res = await apiClient.post<ApiResponse<IncidentAnalysisResult>>(`/incidents/${incidentId}/intelligence/analyze`);
+  return res.data.data;
+}
+
+export async function getIncidentAnalysis(incidentId: string): Promise<IncidentAnalysisResult> {
+  const res = await apiClient.get<ApiResponse<IncidentAnalysisResult>>(`/incidents/${incidentId}/intelligence/analysis`);
+  return res.data.data;
+}
+
+export async function generateIncidentPostmortem(incidentId: string): Promise<IncidentPostmortemResult> {
+  const res = await apiClient.post<ApiResponse<IncidentPostmortemResult>>(`/incidents/${incidentId}/intelligence/postmortem`);
+  return res.data.data;
+}
+
+export async function suggestIncidentRemediation(incidentId: string): Promise<RemediationSuggestionsResult> {
+  const res = await apiClient.post<ApiResponse<RemediationSuggestionsResult>>(`/incidents/${incidentId}/intelligence/remediate`);
+  return res.data.data;
+}
+
+export async function submitIncidentFeedback(incidentId: string, req: IntelligenceFeedbackRequest): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/incidents/${incidentId}/intelligence/feedback`, req);
+  return res.data.data;
+}
+
+
 
 
 

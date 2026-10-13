@@ -5,6 +5,13 @@ import apiClient, {
   type ApiResponse,
   type IncidentDetailDto,
   type TransitionIncidentStatusRequest,
+  analyzeIncident,
+  generateIncidentPostmortem,
+  suggestIncidentRemediation,
+  submitIncidentFeedback,
+  type IncidentAnalysisResult,
+  type IncidentPostmortemResult,
+  type RemediationSuggestionsResult,
 } from "@/lib/api-client";
 import { useAuth } from "@/context/auth-context";
 import { useAlertsHub } from "@/hooks/use-alerts-hub";
@@ -20,6 +27,13 @@ import {
   Send,
   ExternalLink,
   RefreshCw,
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  Terminal,
+  FileText,
+  Copy,
+  Check,
 } from "lucide-react";
 
 export function IncidentDetailPage() {
@@ -31,6 +45,17 @@ export function IncidentDetailPage() {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [rootCauseInput, setRootCauseInput] = useState("");
   const [resolutionInput, setResolutionInput] = useState("");
+
+  // AI Intelligence State
+  const [aiAnalysis, setAiAnalysis] = useState<IncidentAnalysisResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiRemediation, setAiRemediation] = useState<RemediationSuggestionsResult | null>(null);
+  const [remediationLoading, setRemediationLoading] = useState(false);
+  const [aiPostmortem, setAiPostmortem] = useState<IncidentPostmortemResult | null>(null);
+  const [postmortemLoading, setPostmortemLoading] = useState(false);
+  const [showPostmortemModal, setShowPostmortemModal] = useState(false);
+  const [copiedPostmortem, setCopiedPostmortem] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<Record<string, "up" | "down">>({});
 
   // Live WebSocket updates
   useAlertsHub({
@@ -145,6 +170,52 @@ export function IncidentDetailPage() {
       default:
         return <Badge variant="secondary">{st}</Badge>;
     }
+  };
+
+  const handleAnalyze = async () => {
+    if (!id) return;
+    try {
+      setAiLoading(true);
+      const res = await analyzeIncident(id);
+      setAiAnalysis(res);
+    } catch {
+      // Error
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleRemediate = async () => {
+    if (!id) return;
+    try {
+      setRemediationLoading(true);
+      const res = await suggestIncidentRemediation(id);
+      setAiRemediation(res);
+    } catch {
+      // Error
+    } finally {
+      setRemediationLoading(false);
+    }
+  };
+
+  const handlePostmortem = async () => {
+    if (!id) return;
+    try {
+      setPostmortemLoading(true);
+      const res = await generateIncidentPostmortem(id);
+      setAiPostmortem(res);
+      setShowPostmortemModal(true);
+    } catch {
+      // Error
+    } finally {
+      setPostmortemLoading(false);
+    }
+  };
+
+  const handleFeedback = async (hypId: string, isHelpful: boolean) => {
+    if (!id) return;
+    setFeedbackState((prev) => ({ ...prev, [hypId]: isHelpful ? "up" : "down" }));
+    await submitIncidentFeedback(id, { hypothesisId: hypId, isHelpful }).catch(() => {});
   };
 
   return (
@@ -393,6 +464,218 @@ export function IncidentDetailPage() {
 
         {/* Right Column: Timeline & Discussion */}
         <div className="space-y-6 lg:col-span-2">
+          {/* AI Incident Intelligence Card */}
+          <Card className="border-purple-500/30 bg-purple-950/10 shadow-sm overflow-hidden">
+            <CardHeader className="p-4 border-b border-purple-500/20 bg-purple-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-300">
+                  <Sparkles className="h-4 w-4 text-purple-400" />
+                  AI Incident Intelligence & Diagnostic Assistant
+                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-300 border-purple-500/30">
+                    AI-Generated Heuristic Insights
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-xs text-purple-200/70 mt-0.5">
+                  Automated telemetry correlation, root cause hypotheses, remediation playbooks, and postmortems.
+                </CardDescription>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 border-purple-500/40 text-purple-300 hover:bg-purple-500/20"
+                  onClick={handleAnalyze}
+                  disabled={aiLoading}
+                >
+                  <RefreshCw className={`h-3 w-3 ${aiLoading ? "animate-spin" : ""}`} />
+                  {aiAnalysis ? "Re-Analyze" : "Analyze Incident"}
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 border-purple-500/40 text-purple-300 hover:bg-purple-500/20"
+                  onClick={handleRemediate}
+                  disabled={remediationLoading}
+                >
+                  <Terminal className="h-3 w-3" />
+                  Playbook
+                </Button>
+
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={handlePostmortem}
+                  disabled={postmortemLoading}
+                >
+                  <FileText className="h-3 w-3" />
+                  Postmortem
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 space-y-4">
+              {aiLoading ? (
+                <div className="text-center py-6 text-xs text-purple-300 flex flex-col items-center gap-2">
+                  <RefreshCw className="h-5 w-5 animate-spin text-purple-400" />
+                  <span>Synthesizing error logs, trace waterfalls, and metric deviations...</span>
+                </div>
+              ) : !aiAnalysis && !aiRemediation ? (
+                <div className="text-center py-5 text-xs text-[hsl(var(--muted-foreground))] space-y-2">
+                  <p>Click &quot;Analyze Incident&quot; to execute automated AI heuristic correlation.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-purple-300 border-purple-500/40"
+                    onClick={handleAnalyze}
+                  >
+                    Run Automated Analysis
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Summary */}
+                  {aiAnalysis && (
+                    <>
+                      <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-200">
+                        <span className="font-semibold text-purple-300 block mb-1">Executive Diagnostic Summary:</span>
+                        {aiAnalysis.summary}
+                      </div>
+
+                      {/* Root Cause Hypotheses */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-purple-300/80">
+                          Root Cause Hypotheses ({aiAnalysis.hypotheses.length})
+                        </span>
+
+                        {aiAnalysis.hypotheses.map((hyp) => (
+                          <div key={hyp.id} className="p-3 rounded-lg bg-slate-950 border border-purple-500/20 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-xs text-white">{hyp.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">
+                                  Confidence: {hyp.confidenceScore}%
+                                </span>
+                                <button
+                                  onClick={() => handleFeedback(hyp.id, true)}
+                                  className={`p-1 rounded hover:bg-slate-800 ${
+                                    feedbackState[hyp.id] === "up" ? "text-emerald-400" : "text-slate-400"
+                                  }`}
+                                  title="Helpful"
+                                >
+                                  <ThumbsUp className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleFeedback(hyp.id, false)}
+                                  className={`p-1 rounded hover:bg-slate-800 ${
+                                    feedbackState[hyp.id] === "down" ? "text-rose-400" : "text-slate-400"
+                                  }`}
+                                  title="Not helpful"
+                                >
+                                  <ThumbsDown className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Confidence bar */}
+                            <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-purple-500 h-1.5 rounded-full"
+                                style={{ width: `${hyp.confidenceScore}%` }}
+                              />
+                            </div>
+
+                            <p className="text-xs text-slate-300">{hyp.description}</p>
+
+                            {/* Evidence */}
+                            {hyp.evidence.length > 0 && (
+                              <div className="space-y-1 pt-1">
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                                  Supporting Evidence:
+                                </span>
+                                <ul className="list-disc pl-4 text-[11px] text-slate-400 space-y-0.5">
+                                  {hyp.evidence.map((ev, i) => (
+                                    <li key={i}>{ev}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Correlated Telemetry Badges */}
+                      <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex flex-wrap items-center gap-3 text-xs">
+                        <span className="text-slate-400 font-medium">Correlated Signals:</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {aiAnalysis.correlatedTelemetry.logCount} Correlated Logs
+                        </Badge>
+                        {aiAnalysis.correlatedTelemetry.anomalousMetrics.map((m, i) => (
+                          <Badge key={i} variant="warning" className="text-[10px]">
+                            {m}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Remediation Playbook (if fetched) */}
+                  {aiRemediation && (
+                    <div className="space-y-2 pt-2 border-t border-purple-500/20">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-purple-300/80">
+                        Remediation Playbook Checklist ({aiRemediation.actions.length} Steps)
+                      </span>
+                      <div className="space-y-2">
+                        {aiRemediation.actions.map((act) => (
+                          <div key={act.stepNumber} className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-xs text-white">
+                                Step {act.stepNumber}: {act.title}
+                              </span>
+                              <Badge
+                                variant={act.riskLevel === "Low" ? "secondary" : "warning"}
+                                className="text-[10px] px-1.5 py-0"
+                              >
+                                Risk: {act.riskLevel}
+                              </Badge>
+                            </div>
+                            <div className="p-2 rounded bg-slate-900 font-mono text-[11px] text-emerald-400 flex items-center justify-between">
+                              <code>{act.commandOrAction}</code>
+                            </div>
+                            <p className="text-[11px] text-slate-400">{act.rationale}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Similar Past Incidents */}
+                  {aiAnalysis && aiAnalysis.similarIncidents.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-purple-500/20">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-purple-300/80">
+                        Similar Historical Incidents ({aiAnalysis.similarIncidents.length})
+                      </span>
+                      <div className="space-y-2">
+                        {aiAnalysis.similarIncidents.map((sim) => (
+                          <div key={sim.incidentId} className="p-2.5 rounded bg-slate-950 border border-slate-800 text-xs flex items-center justify-between">
+                            <div>
+                              <span className="font-semibold text-slate-200 block">{sim.title}</span>
+                              <span className="text-[10px] text-slate-400">{sim.resolutionNotes}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] whitespace-nowrap">
+                              MTTR: {sim.mttrMinutes}m
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Timeline */}
           <Card className="border-[hsl(var(--border))]">
             <CardHeader className="p-4 border-b border-[hsl(var(--border))]">
@@ -541,6 +824,69 @@ export function IncidentDetailPage() {
               >
                 {transitionMutation.isPending ? "Resolving..." : "Confirm Resolution"}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Generated Postmortem Modal */}
+      {showPostmortemModal && aiPostmortem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-lg border border-purple-500/30 bg-[hsl(var(--card))] shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))] p-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-400" />
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    Incident Postmortem Report
+                  </h3>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    Generated: {new Date(aiPostmortem.generatedAtUtc).toLocaleString()} • AI Diagnostic Engine
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPostmortemModal(false)}
+                className="h-8 w-8 p-0"
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="rounded-md border border-[hsl(var(--border))] bg-slate-950 p-4 font-mono text-xs text-slate-200 whitespace-pre-wrap selection:bg-purple-800">
+                {aiPostmortem.markdownContent}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-[hsl(var(--border))] p-4">
+              <div className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                Ready for export to GitHub, Jira, or Confluence.
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(aiPostmortem.markdownContent);
+                    setCopiedPostmortem(true);
+                    setTimeout(() => setCopiedPostmortem(false), 2000);
+                  }}
+                >
+                  {copiedPostmortem ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedPostmortem ? "Copied!" : "Copy Markdown"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => setShowPostmortemModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
