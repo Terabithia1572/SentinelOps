@@ -27,6 +27,7 @@ import {
   Network,
   Globe,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/context/auth-context";
@@ -56,6 +57,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "API Keys", href: "/api-keys", icon: Key },
   { name: "Team", href: "/team", icon: Users },
+  { name: "Billing & Plans", href: "/billing", icon: CreditCard },
   { name: "Audit Logs", href: "/audit-logs", icon: ScrollText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

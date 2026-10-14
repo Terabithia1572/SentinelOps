@@ -1857,6 +1857,228 @@ export async function completeOnboarding(): Promise<boolean> {
   return res.data.data;
 }
 
+// ==========================================
+// Phase 12: SaaS Billing & Subscription APIs
+// ==========================================
+
+export interface SubscriptionPlanDto {
+  id: string;
+  name: string;
+  description: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  currency: string;
+  maxApplications: number;
+  maxMembers: number;
+  maxCustomDashboards: number;
+  maxMonthlyLogs: number;
+  maxMonthlyTraces: number;
+  maxMonthlyAiTokens: number;
+  dataRetentionDays: number;
+  allowCustomReports: boolean;
+  allowPrioritySupport: boolean;
+}
+
+export interface OrganizationSubscriptionDto {
+  id: string;
+  organizationId: string;
+  planId: string;
+  planName: string;
+  status: string;
+  billingInterval: string;
+  currentPeriodStartUtc: string;
+  currentPeriodEndUtc: string;
+  trialEndsAtUtc?: string;
+  gracePeriodEndsAtUtc?: string;
+  canceledAtUtc?: string;
+  cancelAtPeriodEnd: boolean;
+  concurrencyToken: string;
+}
+
+export interface SaaSInvoiceDto {
+  id: string;
+  organizationId: string;
+  invoiceNumber: string;
+  status: string;
+  subtotal: number;
+  taxAmount: number;
+  taxRatePercent: number;
+  total: number;
+  amountPaid: number;
+  amountDue: number;
+  currency: string;
+  periodStartUtc: string;
+  periodEndUtc: string;
+  dueDateUtc: string;
+  paidAtUtc?: string;
+  hostedInvoiceUrl?: string;
+  invoicePdfUrl?: string;
+  createdAtUtc: string;
+  lineItems: SaaSInvoiceLineItemDto[];
+}
+
+export interface SaaSInvoiceLineItemDto {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface TenantEntitlementsDto {
+  organizationId: string;
+  planTier: string;
+  subscriptionStatus: string;
+  isSubscriptionActive: boolean;
+  canRegisterApplication: boolean;
+  canInviteMember: boolean;
+  canCreateDashboard: boolean;
+  canIngestLogs: boolean;
+  canIngestTraces: boolean;
+  canIngestMetrics: boolean;
+  canExecuteAiAnalysis: boolean;
+  allowCustomReports: boolean;
+  allowApiAccess: boolean;
+  allowExportData: boolean;
+  dataRetentionDays: number;
+}
+
+export interface TenantUsageSummaryDto {
+  organizationId: string;
+  planTier: string;
+  currentPeriodStartUtc: string;
+  currentPeriodEndUtc: string;
+  applicationsUsed: number;
+  applicationsQuota: number;
+  applicationsPercentUsed: number;
+  membersUsed: number;
+  membersQuota: number;
+  membersPercentUsed: number;
+  dashboardsUsed: number;
+  dashboardsQuota: number;
+  dashboardsPercentUsed: number;
+  logsUsed: number;
+  logsQuota: number;
+  logsPercentUsed: number;
+  isLogsWarning: boolean;
+  isLogsExceeded: boolean;
+  tracesUsed: number;
+  tracesQuota: number;
+  tracesPercentUsed: number;
+  isTracesWarning: boolean;
+  isTracesExceeded: boolean;
+  aiTokensUsed: number;
+  aiTokensQuota: number;
+  aiTokensPercentUsed: number;
+  isAiTokensWarning: boolean;
+  isAiTokensExceeded: boolean;
+  estimatedStorageBytes: number;
+  hasAnyWarning: boolean;
+  hasAnyExceeded: boolean;
+}
+
+export interface CheckoutSessionResponse {
+  sessionId: string;
+  checkoutUrl: string;
+  provider: string;
+}
+
+export interface CustomerPortalResponse {
+  portalUrl: string;
+  provider: string;
+}
+
+export interface TenantDataExportDto {
+  exportedAtUtc: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+  createdAtUtc: string;
+  settings?: any;
+  subscription?: any;
+  members: any[];
+  applications: any[];
+  alertRules: any[];
+  dashboards: any[];
+  recentAuditEvents: any[];
+}
+
+export async function getSubscription(): Promise<OrganizationSubscriptionDto> {
+  const res = await apiClient.get<ApiResponse<OrganizationSubscriptionDto>>("/billing/subscription");
+  return res.data.data;
+}
+
+export async function getPlans(): Promise<SubscriptionPlanDto[]> {
+  const res = await apiClient.get<ApiResponse<SubscriptionPlanDto[]>>("/billing/plans");
+  return res.data.data;
+}
+
+export async function changePlan(req: { newPlanName: string; billingInterval?: string }): Promise<OrganizationSubscriptionDto> {
+  const res = await apiClient.post<ApiResponse<OrganizationSubscriptionDto>>("/billing/subscription/change-plan", req);
+  return res.data.data;
+}
+
+export async function cancelSubscription(req: { cancelImmediately?: boolean }): Promise<OrganizationSubscriptionDto> {
+  const res = await apiClient.post<ApiResponse<OrganizationSubscriptionDto>>("/billing/subscription/cancel", req);
+  return res.data.data;
+}
+
+export async function reactivateSubscription(): Promise<OrganizationSubscriptionDto> {
+  const res = await apiClient.post<ApiResponse<OrganizationSubscriptionDto>>("/billing/subscription/reactivate");
+  return res.data.data;
+}
+
+export async function getInvoices(): Promise<SaaSInvoiceDto[]> {
+  const res = await apiClient.get<ApiResponse<SaaSInvoiceDto[]>>("/billing/invoices");
+  return res.data.data;
+}
+
+export async function getInvoiceById(id: string): Promise<SaaSInvoiceDto> {
+  const res = await apiClient.get<ApiResponse<SaaSInvoiceDto>>(`/billing/invoices/${id}`);
+  return res.data.data;
+}
+
+export async function getEntitlements(): Promise<TenantEntitlementsDto> {
+  const res = await apiClient.get<ApiResponse<TenantEntitlementsDto>>("/billing/entitlements");
+  return res.data.data;
+}
+
+export async function getTenantUsage(): Promise<TenantUsageSummaryDto> {
+  const res = await apiClient.get<ApiResponse<TenantUsageSummaryDto>>("/billing/usage");
+  return res.data.data;
+}
+
+export async function createCheckoutSession(req: { planName: string; interval?: string }): Promise<CheckoutSessionResponse> {
+  const res = await apiClient.post<ApiResponse<CheckoutSessionResponse>>("/billing/checkout-session", req);
+  return res.data.data;
+}
+
+export async function createCustomerPortalSession(): Promise<CustomerPortalResponse> {
+  const res = await apiClient.post<ApiResponse<CustomerPortalResponse>>("/billing/customer-portal");
+  return res.data.data;
+}
+
+export async function transferOwnership(orgId: string, newOwnerUserId: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<any>>(`/organizations/${orgId}/ownership-transfer`, {
+    newOwnerUserId
+  });
+  return res.data.success;
+}
+
+export async function exportTenantData(orgId: string): Promise<TenantDataExportDto> {
+  const res = await apiClient.post<ApiResponse<TenantDataExportDto>>(`/organizations/${orgId}/export`);
+  return res.data.data;
+}
+
+export async function deleteOrganizationAccount(orgId: string, confirmationPhrase: string): Promise<boolean> {
+  const res = await apiClient.delete<ApiResponse<any>>(`/organizations/${orgId}/account`, {
+    data: { confirmationPhrase }
+  });
+  return res.data.success;
+}
+
 
 
 

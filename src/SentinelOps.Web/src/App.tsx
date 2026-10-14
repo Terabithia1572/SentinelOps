@@ -31,6 +31,7 @@ import { PublicStatusPage } from "@/pages/public-status";
 import { StatusPagesPage } from "@/pages/status-pages";
 import { AiObservabilityPage } from "@/pages/ai-observability";
 import { OnboardingPage } from "@/pages/onboarding";
+import { BillingPage } from "@/pages/billing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +98,8 @@ function App() {
                   <Route path="team" element={<UsersPage />} />
                   <Route path="users" element={<UsersPage />} />
                   <Route path="audit-logs" element={<AuditLogsPage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                  <Route path="subscription" element={<BillingPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
