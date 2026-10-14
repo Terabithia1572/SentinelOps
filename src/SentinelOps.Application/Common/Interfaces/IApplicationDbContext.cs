@@ -46,6 +46,14 @@ public interface IApplicationDbContext
     DbSet<LogPattern> LogPatterns { get; }
     DbSet<IncidentRca> IncidentRcas { get; }
     DbSet<PredictiveForecast> PredictiveForecasts { get; }
+    DbSet<SubscriptionPlan> SubscriptionPlans { get; }
+    DbSet<BillingAccount> BillingAccounts { get; }
+    DbSet<OrganizationSubscription> OrganizationSubscriptions { get; }
+    DbSet<SubscriptionHistory> SubscriptionHistories { get; }
+    DbSet<SaaSInvoice> Invoices { get; }
+    DbSet<InvoiceLineItem> InvoiceLineItems { get; }
+    DbSet<PaymentTransaction> PaymentTransactions { get; }
+    DbSet<PaymentWebhookEvent> PaymentWebhookEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

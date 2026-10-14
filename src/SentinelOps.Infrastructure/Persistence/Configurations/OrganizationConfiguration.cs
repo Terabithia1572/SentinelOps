@@ -45,5 +45,20 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
             .WithOne(u => u.Organization)
             .HasForeignKey<OrganizationUsage>(u => u.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(o => o.BillingAccount)
+            .WithOne(b => b.Organization)
+            .HasForeignKey<BillingAccount>(b => b.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(o => o.Subscription)
+            .WithOne(s => s.Organization)
+            .HasForeignKey<OrganizationSubscription>(s => s.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(o => o.Invoices)
+            .WithOne(i => i.Organization)
+            .HasForeignKey(i => i.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

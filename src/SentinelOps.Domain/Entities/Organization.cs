@@ -14,4 +14,7 @@ public class Organization : Entity
     public ICollection<Application> Applications { get; set; } = new List<Application>();
     public OrganizationSettings? Settings { get; set; }
     public OrganizationUsage? Usage { get; set; }
+    public OrganizationSubscription? Subscription { get; set; }
+    public BillingAccount? BillingAccount { get; set; }
+    public ICollection<SaaSInvoice> Invoices { get; set; } = new List<SaaSInvoice>();
 }
