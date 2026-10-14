@@ -12,10 +12,14 @@ namespace SentinelOps.Api.Controllers;
 public class IncidentIntelligenceController : ControllerBase
 {
     private readonly IIncidentIntelligenceProvider _intelligenceProvider;
+    private readonly IRootCauseAnalysisService _rcaService;
 
-    public IncidentIntelligenceController(IIncidentIntelligenceProvider intelligenceProvider)
+    public IncidentIntelligenceController(
+        IIncidentIntelligenceProvider intelligenceProvider,
+        IRootCauseAnalysisService rcaService)
     {
         _intelligenceProvider = intelligenceProvider;
+        _rcaService = rcaService;
     }
 
     [HttpPost("analyze")]
@@ -34,6 +38,32 @@ public class IncidentIntelligenceController : ControllerBase
     {
         var result = await _intelligenceProvider.AnalyzeIncidentAsync(incidentId, cancellationToken);
         return Ok(ApiResponse<IncidentAnalysisResult>.SuccessResponse(result));
+    }
+
+    [HttpPost("rca")]
+    public async Task<ActionResult<ApiResponse<RcaAnalysisResult>>> PerformRca(
+        Guid incidentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _rcaService.PerformRcaAsync(incidentId, cancellationToken);
+        return Ok(ApiResponse<RcaAnalysisResult>.SuccessResponse(result));
+    }
+
+    [HttpPost("rca/{rcaId:guid}/verify")]
+    public async Task<ActionResult<ApiResponse<bool>>> VerifyRcaHypothesis(
+        Guid incidentId,
+        Guid rcaId,
+        [FromQuery] string hypothesis,
+        [FromQuery] bool isConfirmed,
+        [FromQuery] string? notes,
+        CancellationToken cancellationToken)
+    {
+        var success = await _rcaService.VerifyHypothesisAsync(rcaId, hypothesis, isConfirmed, notes, cancellationToken);
+        if (!success)
+        {
+            return NotFound(ApiResponse<bool>.FailureResponse("RCA record not found."));
+        }
+        return Ok(ApiResponse<bool>.SuccessResponse(true, "RCA hypothesis verification recorded."));
     }
 
     [HttpPost("postmortem")]
