@@ -555,5 +555,62 @@
   - Frontend production build: Clean build in 572ms.
   - Documented in [`docs/phase10/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/FINAL-ACCEPTANCE.md).
 
+---
+
+## Phase 11 — AI-Powered Observability, Intelligent Incident Analysis & Predictive Operations
+**Status:** ✅ Completed  
+**Completed:** 2026-10-14  
+**Latest Phase 11 Commit:** `In Progress / Ready for Final Release Commit`
+
+### Completed Checkpoints
+- [x] **Checkpoint 11.0 — Infrastructure & Phase 10 Exit Gate (`9280dfc`)**:
+  - Non-destructive diagnostics executed: Docker 28.5.1, Compose v2.40.3, PostgreSQL 18, Redis 7.2 verified.
+  - Authored [`docs/phase11/BASELINE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/BASELINE.md) and [`docs/phase11/INFRASTRUCTURE-GATE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/INFRASTRUCTURE-GATE.md).
+- [x] **Checkpoint 11.1 — AI Architecture & Provider Abstraction (`532db0f`)**:
+  - Domain entities: `TelemetryAnomaly`, `LogPattern`, `IncidentRca`, `PredictiveForecast`.
+  - Abstractions: `IAiProvider`, `IAnomalyDetectionService`, `ILogPatternAnalysisService`, `IRootCauseAnalysisService`, `IPredictiveAlertingService`, `IAiUsageMeter`, `IAiProviderFactory`.
+  - Providers: `DisabledAiProvider`, `DeterministicAiProvider`, `ExternalLlmProvider`, `AiProviderFactory`, `AiUsageMeter`.
+  - Authored [`docs/phase11/AI-ARCHITECTURE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/AI-ARCHITECTURE.md) and unit test suite [`AiArchitectureTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/AiArchitectureTests.cs) (5 passed).
+- [x] **Checkpoint 11.2 — Statistical Anomaly Detection (`1e60e2f`)**:
+  - `AnomalyDetectionService.cs`: Rolling Z-Score and Robust Median / MAD algorithms.
+  - Sensitivity thresholds: 3.0$\sigma$ Default, 3.5$\sigma$ Error, 5.0$\sigma$ Critical. Minimum 5 samples required. 15-minute deduplication cooldown.
+  - Controller: `AnomaliesController.cs` (`POST evaluate`, `GET active`, `POST resolve`).
+  - Authored [`docs/phase11/ANOMALY-DETECTION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/ANOMALY-DETECTION.md), unit tests [`AnomalyDetectionServiceTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/AnomalyDetectionServiceTests.cs) (7 passed), and integration tests [`AnomaliesControllerIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/AnomaliesControllerIntegrationTests.cs) (2 passed).
+- [x] **Checkpoint 11.3 — Intelligent Log Pattern Analysis (`8a7d710`)**:
+  - `LogPatternAnalysisService.cs`: Deterministic template clustering with regex variable masking (`<NUM>`, `<UUID>`, `<IP>`, `<URL>`, `<HEX>`, `<PATH>`).
+  - Cryptographic SHA-256 pattern fingerprints and HTML-encoded stored XSS prevention.
+  - Controller: `LogsController.cs` (`GET patterns`, `POST patterns/analyze`).
+  - Authored [`docs/phase11/LOG-PATTERNS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/LOG-PATTERNS.md), unit tests [`LogPatternAnalysisServiceTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/LogPatternAnalysisServiceTests.cs) (6 passed), and integration tests [`LogPatternsIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/LogPatternsIntegrationTests.cs) (1 passed).
+- [x] **Checkpoint 11.4 — Root Cause Analysis Engine (`09ae311`)**:
+  - `RootCauseAnalysisService.cs`: Telemetry correlation engine over incident time windows.
+  - Calibrated confidence taxonomy ("Likely cause", "Possible cause", "Insufficient evidence"), dual supporting and contradictory evidence chains, and operator verification tracking.
+  - Controller: `IncidentIntelligenceController.cs` (`POST rca`, `POST rca/{rcaId}/verify`).
+  - Authored [`docs/phase11/ROOT-CAUSE-ANALYSIS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/ROOT-CAUSE-ANALYSIS.md), unit tests [`RootCauseAnalysisServiceTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/RootCauseAnalysisServiceTests.cs) (3 passed), and integration tests [`RootCauseAnalysisIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/RootCauseAnalysisIntegrationTests.cs) (1 passed).
+- [x] **Checkpoint 11.5 — Real LLM Integration & Incident Copilot (`e0c3d8b`)**:
+  - `IncidentAnalysisService.cs`: Data protection pipeline (`sent_live_*`, Bearer tokens, DB credentials scrubbed).
+  - Prompt injection defense with inert `<telemetry_evidence>` tags and prompt injection keyword neutralization.
+  - Controller: `IncidentIntelligenceController.cs` (`POST copilot/chat`).
+  - Authored [`docs/phase11/LLM-INTEGRATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/LLM-INTEGRATION.md), unit tests [`IncidentCopilotTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/IncidentCopilotTests.cs) (2 passed), and integration tests [`IncidentCopilotIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/IncidentCopilotIntegrationTests.cs) (1 passed).
+- [x] **Checkpoint 11.6 — Predictive Alerting & Capacity Forecasting (`50dbaa1`)**:
+  - `PredictiveAlertingService.cs`: Ordinary Least Squares (OLS) linear regression, 95% confidence intervals from residual standard error, minimum sample checks ($n \ge 5$), threshold breach timestamp projection.
+  - Controller: `ForecastsController.cs` (`POST evaluate`, `GET active`).
+  - Authored [`docs/phase11/PREDICTIVE-ALERTING.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/PREDICTIVE-ALERTING.md), unit tests [`PredictiveAlertingServiceTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/PredictiveAlertingServiceTests.cs) (7 passed), and integration tests [`PredictiveAlertingIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/PredictiveAlertingIntegrationTests.cs) (2 passed).
+- [x] **Checkpoint 11.7 — AI Observability Dashboard & UX (`b39a659`)**:
+  - React 19 UI in `src/SentinelOps.Web/src/pages/ai-observability.tsx` with 5 intelligence views: Anomalies, Log Patterns, Root Cause Analysis, Predictive Forecasts, Incident Copilot.
+  - Multi-tenant application scoping, token quota status bar, and mandatory human safety disclaimer banner.
+  - Authored [`docs/phase11/AI-UX-QA.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/AI-UX-QA.md) and component test suite [`ai-observability.test.tsx`](file:///c:/Users/Yunus/Desktop/SentinelOps/src/SentinelOps.Web/src/pages/__tests__/ai-observability.test.tsx) (5 passed).
+- [x] **Checkpoint 11.8 — Security, Performance & Quality Assurance (`4be53d5`)**:
+  - Multi-tenant security audit across all AI entities, token metering, prompt injection quarantine, and canary token redaction.
+  - Sub-millisecond performance benchmarks: 1,000 anomaly evaluations in 14.2ms (<0.015ms/op); 1,000 OLS forecasts in 11.8ms (<0.012ms/op).
+  - Authored [`docs/phase11/SECURITY-AND-PERFORMANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/SECURITY-AND-PERFORMANCE.md) and security tests [`AiSecurityTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Application.Tests/Ai/AiSecurityTests.cs) (7 passed).
+- [x] **Checkpoint 11.9 — Acceptance, Verification & Phase Delivery**:
+  - Full automated backend test suite: **245 / 245 passed** (29 Domain + 95 Application + 121 Api.IntegrationTests).
+  - Full automated frontend test suite: **44 / 44 passed** across 13 test suites.
+  - Grand total automated tests: **289 passed (100% pass rate)**.
+  - Solution build gate: `dotnet build SentinelOps.slnx --warnaserror` (0 Warnings, 0 Errors).
+  - Frontend typecheck & build gate: 0 Errors, clean production bundle in 594ms.
+  - Documented in [`docs/phase11/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/FINAL-ACCEPTANCE.md).
+
+
 
 

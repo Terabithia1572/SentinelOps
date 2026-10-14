@@ -19,8 +19,9 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-201%20backend%20%7C%2039%20frontend-brightgreen" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-245%20backend%20%7C%2044%20frontend-brightgreen" />
     <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Helm%20Chart%20v1.0-326CE5" />
+    <img alt="AI Engine" src="https://img.shields.io/badge/AI%20Observability-Explainable%20%26%20Sandboxed-blueviolet" />
     <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Verified%20%26%20Hardened-brightgreen" />
   </p>
 </div>
@@ -34,12 +35,15 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
 ### Key Capabilities
 
 - **📊 Real-time Dashboard** — Live operational metrics with SignalR-powered updates
-- **📝 Log Management** — Structured log explorer with full-text search and filtering
+- **🤖 Explainable AI Observability** — Statistical anomaly detection, deterministic log pattern clustering, and capacity forecasting
+- **🔍 Automated Root Cause Analysis (RCA)** — Telemetry correlation with confidence scoring, evidence provenance, and operator verification
+- **💬 Incident Copilot** — Context-aware diagnostic assistant with sensitive credential scrubbing and human-in-the-loop safeguards
+- **📝 Log Management** — Structured log explorer with full-text search, live tailing, and pattern extraction
 - **🔗 Distributed Tracing** — End-to-end request tracing with span timeline visualization
-- **📈 Metrics & Analytics** — Request throughput, error rates, latency percentiles
+- **📈 Metrics & Analytics** — Request throughput, error rates, latency percentiles, and capacity exhaustion projections
 - **🚨 Alerting Engine** — Configurable alert rules with email and webhook notifications
 - **🏥 Health Monitoring** — Service health checks and availability tracking
-- **🔐 Security** — JWT authentication, role-based access control, API key management
+- **🔐 Security** — Multi-tenant isolation, JWT authentication, RBAC, API key management, and prompt injection defense
 - **📑 Enterprise PDF Reports** — Pure C# vector PDF 1.4 reporting engine with 6 canonical report types
 - **🌍 Multi-language** — English and Turkish UI support
 
@@ -267,10 +271,10 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (201 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Multi-Tenant Security, Alerting, Incidents, SignalR Backplane, Redis PEL Recovery, Data Durability)
+# Backend tests (245 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Multi-Tenant Security, Alerting, Incidents, SignalR Backplane, Redis PEL Recovery, Data Durability, Statistical Anomaly Detection, Log Patterns, Root Cause Analysis, Predictive Alerting, AI Copilot & Security)
 dotnet test SentinelOps.slnx
 
-# Frontend tests (39 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, AI Intelligence, SLOs, Admin, Audit Logs, Reports, Status Pages, Dashboards)
+# Frontend tests (44 tests across 13 suites: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, AI Observability, SLOs, Admin, Audit Logs, Reports, Status Pages, Dashboards)
 cd src/SentinelOps.Web
 npm run test:run
 ```
@@ -324,7 +328,10 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [Development Progress](docs/PROGRESS.md)
 - [Platform Operations Runbook](docs/runbooks/platform-operations.md)
 - [Backup & Disaster Recovery Runbook](docs/runbooks/backup-restore.md)
-- [Release Readiness & Deployment Runbook](docs/phase7/RELEASE-READINESS.md)
+- [Phase 11 AI Observability & Acceptance Report](docs/phase11/FINAL-ACCEPTANCE.md)
+- [Phase 10 Kubernetes & High Availability Acceptance](docs/phase10/FINAL-ACCEPTANCE.md)
+- [Phase 9 Production Hardening Acceptance](docs/phase9/FINAL-ACCEPTANCE.md)
+- [Phase 8 Advanced Observability & Incident Intelligence Acceptance](docs/phase8/FINAL-ACCEPTANCE.md)
 - [Phase 7 Final Acceptance & Production Audit](docs/phase7/FINAL-ACCEPTANCE.md)
 
 ## Roadmap
@@ -336,19 +343,24 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 5** — Enterprise Alerting & Incident Management (Telemetry evaluation engine, SignalR push hub, automated incident state machine, audit timelines, SSRF-protected notification outbox, SRE SLO and error budget monitoring)
 - [x] **Phase 6** — Enterprise Administration, Advanced Security, Audit, Reporting & Production Readiness (Directory, RBAC, session revocation, forensic audit trail with sensitive key sanitization, 6 executive report types with CSV formula defense, configurable retention policies with dry-run estimation, non-root Docker, CSP/Permissions-Policy hardening, and operational runbooks)
 - [x] **Phase 7** — Production Deployment, End-to-End Observability, Performance Engineering, Security Validation & Enterprise Reliability (Hardened Docker Compose, Redis Streams & OTel validation, 1,330 req/s verified throughput, composite indexing, strict SSRF validator, account lockout, rate limiting, disaster recovery pg_dump/pg_restore verification, pure C# PDF 1.4 vector reporting engine, hardened CI/CD & release workflows)
-- [ ] **Phase 8** — Portfolio Presentation
+- [x] **Phase 8** — Advanced APM, Custom Dashboards, SRE Incident Intelligence & Multi-Tenant SaaS (Dependency topology, widget grid dashboard builder, public status pages, multi-tenant quotas, mobile/tablet responsive layouts)
+- [x] **Phase 9** — Production Hardening, Infrastructure Verification, Multi-Tenant Security & Enterprise Reliability (E2E OTel-to-dashboard pipeline, multi-tenant authorization security audits, composite index benchmarks, disaster recovery drills)
+- [x] **Phase 10** — Infrastructure Recovery, Kubernetes, Horizontal Scaling & High Availability (Enterprise Helm chart v1.0.0, SignalR Redis backplane scale-out, Redis Streams PEL auto-recovery, fail-closed durability policy, NSA/CISA security hardening)
+- [x] **Phase 11** — AI-Powered Observability, Intelligent Incident Analysis & Predictive Operations (Explainable statistical anomaly detection, deterministic log pattern clustering, automated root cause analysis with evidence provenance, OLS capacity forecasting, sensitive credential scrubbing, prompt injection defense, and React 19 AI Observability dashboard)
 
 ## Security
 
 - JWT-based authentication
 - Role-based authorization
-- API key hashing
+- API key hashing & canary token scrubbing
+- Multi-tenant tenant boundary isolation & monthly token quota limits
+- Prompt injection defense & sanitized quarantine tags
 - Input validation on all endpoints
 - CORS policies
-- Audit logging
-- Secret redaction in logs
+- Forensic audit logging
+- Secret redaction in logs and AI contexts
 
-See [Security Documentation](docs/security/) for details.
+See [Security Documentation](docs/SECURITY.md) for details.
 
 ---
 
@@ -363,12 +375,15 @@ Birden fazla uygulamanın ürettiği telemetri verilerini toplamak, işlemek, sa
 ### Temel Yetenekler
 
 - **📊 Gerçek Zamanlı Gösterge Paneli** — SignalR destekli anlık operasyonel metrikler
+- **🤖 Açıklanabilir Yapay Zeka (AI) Gözlemlenebilirliği** — İstatiksel anomali tespiti (Z-Score & Median/MAD), deterministik log şablon kümeleme ve kapasite tüketim projeksiyonu
+- **🔍 Otomatik Kök Neden Analizi (RCA)** — Telemetri kanıt zinciri, güven skorlaması ve operatör doğrulama mekanizması
+- **💬 Olay Müdahale Asistanı (Copilot)** — Hassas sır ve token temizleme korumalı, prompt injection savunmalı, insan onaylı tanı asistanı
 - **📝 Günlük (Log) Yönetimi** — Tam metin arama ve filtreleme destekli yapılandırılmış log gezgini
 - **🔗 Dağıtık İzleme (Distributed Tracing)** — Span zaman çizelgesi görselleştirmesi ile uçtan uca istek takibi
-- **📈 Metrikler ve Analitik** — İstek verimi, hata oranları, yanıt gecikmesi yüzdelik dilimleri
+- **📈 Metrikler ve Analitik** — İstek verimi, hata oranları, yanıt gecikmesi yüzdelik dilimleri ve tükenme tahminleri
 - **🚨 Alarm Motoru** — E-posta ve webhook bildirim adaptörleri içeren kural tabanlı alarm mekanizması
 - **🏥 Servis Sağlığı İzleme** — Sistem sağlık kontrolleri ve erişilebilirlik takibi
-- **🔐 Kurumsal Güvenlik** — JWT kimlik doğrulama, rol tabanlı yetkilendirme (RBAC), SSRF koruması, hesap kilitleme ve hız sınırlama
+- **🔐 Kurumsal Güvenlik** — Çok kiracılı izolasyon, JWT kimlik doğrulama, RBAC, SSRF koruması, prompt injection karantinası ve hız sınırlama
 - **📑 Kurumsal PDF Raporlama** — ISO PDF 1.4 standartlarına uygun, harici bağımlılıksız saf C# vektör raporlama motoru (6 kurumsal rapor türü)
 - **🌍 Çoklu Dil Desteği** — İngilizce ve Türkçe kullanıcı arayüzü desteği
 
@@ -377,10 +392,10 @@ Birden fazla uygulamanın ürettiği telemetri verilerini toplamak, işlemek, sa
 Clean Architecture prensiplerine göre yapılandırılmıştır:
 - `SentinelOps.Domain`: Çekirdek iş varlıkları ve etki alanı kuralları (sıfır harici bağımlılık)
 - `SentinelOps.Contracts`: Paylaşılan DTO, istek ve yanıt modelleri
-- `SentinelOps.Application`: CQRS komut ve sorguları, MediatR ardışık düzeni, FluentValidation
-- `SentinelOps.Infrastructure`: EF Core 10, PostgreSQL, Redis önbellekleme ve Identity
-- `SentinelOps.Api`: ASP.NET Core Web API, Serilog, JWT kimlik doğrulama, Swagger ve sistem sağlık kontrolleri
-- `SentinelOps.Worker`: Arka plan temizleme ve veri saklama hizmetleri (BackgroundService)
+- `SentinelOps.Application`: CQRS komut ve sorguları, MediatR ardışık düzeni, FluentValidation, istatistiksel anomali ve kestirimci analiz motorları
+- `SentinelOps.Infrastructure`: EF Core 10, PostgreSQL, Redis önbellekleme, Redis Streams ve Identity
+- `SentinelOps.Api`: ASP.NET Core Web API, Serilog, JWT kimlik doğrulama, OTLP alıcıları, Swagger ve sistem sağlık kontrolleri
+- `SentinelOps.Worker`: Arka plan temizleme, PEL kurtarma ve veri saklama hizmetleri (BackgroundService)
 - `SentinelOps.Web`: React 19, TypeScript, Vite, Tailwind CSS v4 ve TanStack Query tabanlı arayüz
 
 ## Hızlı Başlangıç

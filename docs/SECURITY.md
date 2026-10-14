@@ -132,4 +132,28 @@ To prevent attackers from using the SentinelOps alert dispatch system to probe i
   - In production (`RequireDurableStorage = true`), when Redis is unavailable, telemetry ingestion endpoints fail closed with HTTP 503 (`Service Unavailable`) and `Retry-After: 5` header, preventing silent data loss into volatile in-memory buffers.
   - Pods report `Unhealthy` on `/health/ready` during buffer outages to be removed from Ingress routing.
 
+---
+
+## 10. AI Data Protection, Secret Redaction & Prompt Injection Defenses (Phase 11)
+
+### Zero Raw Secret Transmission
+Before any telemetry is formatted into diagnostic context or processed by AI providers, it passes through `DeterministicAiProvider.ScrubSensitiveData`:
+- API Keys matching `sent_(live|test)_[a-zA-Z0-9]{16,}` are replaced with `[REDACTED_API_KEY]`.
+- Bearer tokens matching `Bearer\s+[a-zA-Z0-9_\-\.]{20,}` are replaced with `[REDACTED_TOKEN]`.
+- Database connection strings (`Server=...;Password=...`) are replaced with `Password=[REDACTED_CREDENTIAL]`.
+- Stored XSS defense: Log templates and user inputs are HTML-encoded via `WebUtility.HtmlEncode`.
+
+### Prompt Injection Defense & Quarantine
+- Telemetry evidence is quarantined inside inert `<telemetry_evidence>` tags with explicit system instructions directing the model never to follow instructions found within telemetry strings.
+- Inbound inquiries are inspected for prompt injection patterns (`ignore previous instructions`, `system prompt`, `delete all`) and safely neutralized without reflecting malicious instructions back to the client.
+
+### Mandatory Human-in-the-Loop Safeguard
+- AI-generated remediation commands are never executed automatically (`RequiresHumanApproval = true`).
+- The operator UI renders an amber safety boundary banner mandating human operator verification and confirmation.
+
+### Tenant-Scoped AI Quotas
+- `AiUsageMeter` tracks monthly token consumption per organization against `OrganizationSettings.MaxMonthlyAiTokens`.
+- Quota exceeded conditions prevent further token usage, eliminating runaway cloud LLM billing risks.
+
+
 
