@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-config
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.environment | quote }}
+  ASPNETCORE_URLS: "http://+:8080"
+  DOTNET_PRINT_TELEMETRY_MESSAGE: "false"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  POSTGRES_HOST: {{ .Values.postgresql.host | quote }}
+  POSTGRES_PORT: {{ .Values.postgresql.port | quote }}
+  POSTGRES_DB: {{ .Values.postgresql.database | quote }}
+  POSTGRES_USER: {{ .Values.postgresql.user | quote }}
+  REDIS_HOST: {{ .Values.redis.host | quote }}
+  REDIS_PORT: {{ .Values.redis.port | quote }}
+  JwtSettings__Issuer: {{ .Values.jwt.issuer | quote }}
+  JwtSettings__Audience: {{ .Values.jwt.audience | quote }}
+  JwtSettings__ExpirationMinutes: {{ .Values.jwt.expirationMinutes | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://{{ include "sentinelops.fullname" . }}-collector:4318"

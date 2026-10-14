@@ -1,0 +1,22 @@
+apiVersion: v2
+name: sentinelops
+description: Enterprise Multi-Tenant Observability Platform (APM, Logs, Traces, Metrics, Alerting)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - observability
+  - apm
+  - logging
+  - tracing
+  - opentelemetry
+  - metrics
+  - alerting
+  - multi-tenant
+home: https://github.com/Terabithia1572/SentinelOps
+sources:
+  - https://github.com/Terabithia1572/SentinelOps
+maintainers:
+  - name: SentinelOps Platform Engineering Team
+    email: platform@sentinelops.local
+icon: https://raw.githubusercontent.com/Terabithia1572/SentinelOps/main/src/SentinelOps.Web/public/favicon.ico

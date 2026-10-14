@@ -1,0 +1,24 @@
+SentinelOps Multi-Tenant Observability Platform has been deployed!
+
+Release Name: {{ .Release.Name }}
+Namespace:    {{ .Release.Namespace }}
+
+Components Deployed:
+- SentinelOps API:    {{ .Values.api.replicaCount }} replicas
+- SentinelOps Worker: {{ .Values.worker.replicaCount }} replicas
+- SentinelOps Web:    {{ .Values.web.replicaCount }} replicas
+{{- if .Values.otelCollector.enabled }}
+- OTel Collector:     {{ .Values.otelCollector.replicaCount }} replica
+{{- end }}
+
+Accessing the Platform:
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+  Forward API port:
+    kubectl port-forward svc/{{ include "sentinelops.fullname" . }}-api 8080:8080 -n {{ .Release.Namespace }}
+  Forward Web port:
+    kubectl port-forward svc/{{ include "sentinelops.fullname" . }}-web 3000:80 -n {{ .Release.Namespace }}
+{{- end }}

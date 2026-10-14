@@ -1,0 +1,48 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-api-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: web
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: collector
+        - namespaceSelector: {} # Ingress controller namespace
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to: [] # Allow outbound egress to PostgreSQL, Redis, and internal services
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-worker-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  policyTypes:
+    - Egress
+  egress:
+    - to: [] # Outbound only to PostgreSQL, Redis, and Webhook/Email endpoints
+{{- end }}
