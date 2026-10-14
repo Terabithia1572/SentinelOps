@@ -46,7 +46,8 @@ public class Program
                 "Applications", "LogEntries", "TraceRecords", "SpanRecords",
                 "MetricRecords", "AlertRules", "AlertIncidents", "AuditEvents",
                 "AspNetUsers", "AspNetRoles", "ApiKeys", "NotificationChannels",
-                "Environments", "Services"
+                "Environments", "Services", "Organizations", "OrganizationMembers",
+                "OrganizationSettings", "CustomDashboards", "StatusPages"
             };
 
             foreach (var table in tables)
