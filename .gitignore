@@ -10,8 +10,10 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
-[Ll]og/
-[Ll]ogs/
+# Runtime logs
+*.log
+/logs/
+/Logs/
 
 ## Visual Studio
 .vs/

@@ -14,10 +14,12 @@ public record GetExceptionsQuery(GetExceptionsRequest Request) : IRequest<IReadO
 public class GetExceptionsQueryHandler : IRequestHandler<GetExceptionsQuery, IReadOnlyList<ExceptionGroupDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentTenantService _tenantService;
 
-    public GetExceptionsQueryHandler(IApplicationDbContext context)
+    public GetExceptionsQueryHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<IReadOnlyList<ExceptionGroupDto>> Handle(GetExceptionsQuery request, CancellationToken cancellationToken)
@@ -27,7 +29,28 @@ public class GetExceptionsQueryHandler : IRequestHandler<GetExceptionsQuery, IRe
             .AsNoTracking()
             .Where(l => l.ExceptionDetail != null || l.Severity == Severity.Error || l.Severity == Severity.Critical);
 
-        if (req.ApplicationId.HasValue)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (req.ApplicationId.HasValue)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == req.ApplicationId.Value && a.OrganizationId == tenantOrgId, cancellationToken);
+                if (!isAppInTenant)
+                {
+                    return [];
+                }
+                query = query.Where(l => l.ApplicationId == req.ApplicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(l => tenantAppIds.Contains(l.ApplicationId));
+            }
+        }
+        else if (req.ApplicationId.HasValue)
         {
             query = query.Where(l => l.ApplicationId == req.ApplicationId.Value);
         }

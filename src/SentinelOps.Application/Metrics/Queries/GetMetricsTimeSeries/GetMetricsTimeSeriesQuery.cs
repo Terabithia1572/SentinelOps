@@ -11,10 +11,12 @@ public record GetMetricsTimeSeriesQuery(GetMetricsRequest Request) : IRequest<Me
 public class GetMetricsTimeSeriesQueryHandler : IRequestHandler<GetMetricsTimeSeriesQuery, MetricSeriesResponse>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentTenantService _tenantService;
 
-    public GetMetricsTimeSeriesQueryHandler(IApplicationDbContext context)
+    public GetMetricsTimeSeriesQueryHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<MetricSeriesResponse> Handle(GetMetricsTimeSeriesQuery request, CancellationToken cancellationToken)
@@ -28,7 +30,36 @@ public class GetMetricsTimeSeriesQueryHandler : IRequestHandler<GetMetricsTimeSe
             .AsNoTracking()
             .Where(t => t.StartedAtUtc >= fromUtc && t.StartedAtUtc <= toUtc);
 
-        if (req.ApplicationId.HasValue)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (req.ApplicationId.HasValue)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == req.ApplicationId.Value && a.OrganizationId == tenantOrgId, cancellationToken);
+                if (!isAppInTenant)
+                {
+                    return new MetricSeriesResponse
+                    {
+                        Points = [],
+                        AvgLatencyMs = 0,
+                        P95LatencyMs = 0,
+                        OverallErrorRate = 0,
+                        TotalThroughputRps = 0,
+                        TotalRequests = 0
+                    };
+                }
+                query = query.Where(t => t.ApplicationId == req.ApplicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(t => tenantAppIds.Contains(t.ApplicationId));
+            }
+        }
+        else if (req.ApplicationId.HasValue)
         {
             query = query.Where(t => t.ApplicationId == req.ApplicationId.Value);
         }

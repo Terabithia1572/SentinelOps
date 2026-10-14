@@ -11,10 +11,12 @@ public record GetTraceByIdQuery(string TraceId) : IRequest<TraceDetailDto?>;
 public class GetTraceByIdQueryHandler : IRequestHandler<GetTraceByIdQuery, TraceDetailDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentTenantService _tenantService;
 
-    public GetTraceByIdQueryHandler(IApplicationDbContext context)
+    public GetTraceByIdQueryHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<TraceDetailDto?> Handle(GetTraceByIdQuery request, CancellationToken cancellationToken)
@@ -26,6 +28,16 @@ public class GetTraceByIdQueryHandler : IRequestHandler<GetTraceByIdQuery, Trace
         if (trace == null)
         {
             return null;
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == trace.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value, cancellationToken);
+            if (!isOwned)
+            {
+                return null;
+            }
         }
 
         var spans = await _context.SpanRecords

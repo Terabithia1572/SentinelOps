@@ -13,10 +13,12 @@ public record GetTracesQuery(GetTracesRequest Request) : IRequest<PagedResponse<
 public class GetTracesQueryHandler : IRequestHandler<GetTracesQuery, PagedResponse<TraceDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentTenantService _tenantService;
 
-    public GetTracesQueryHandler(IApplicationDbContext context)
+    public GetTracesQueryHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<PagedResponse<TraceDto>> Handle(GetTracesQuery request, CancellationToken cancellationToken)
@@ -24,7 +26,28 @@ public class GetTracesQueryHandler : IRequestHandler<GetTracesQuery, PagedRespon
         var req = request.Request;
         var query = _context.TraceRecords.AsNoTracking();
 
-        if (req.ApplicationId.HasValue)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (req.ApplicationId.HasValue)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == req.ApplicationId.Value && a.OrganizationId == tenantOrgId, cancellationToken);
+                if (!isAppInTenant)
+                {
+                    return PagedResponse<TraceDto>.Create([], 0, req.Page, req.PageSize);
+                }
+                query = query.Where(t => t.ApplicationId == req.ApplicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(t => tenantAppIds.Contains(t.ApplicationId));
+            }
+        }
+        else if (req.ApplicationId.HasValue)
         {
             query = query.Where(t => t.ApplicationId == req.ApplicationId.Value);
         }

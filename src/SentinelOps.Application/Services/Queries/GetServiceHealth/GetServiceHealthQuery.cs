@@ -10,17 +10,45 @@ public record GetServiceHealthQuery(Guid? ApplicationId = null) : IRequest<IRead
 public class GetServiceHealthQueryHandler : IRequestHandler<GetServiceHealthQuery, IReadOnlyList<ServiceHealthSummaryDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentTenantService _tenantService;
 
-    public GetServiceHealthQueryHandler(IApplicationDbContext context)
+    public GetServiceHealthQueryHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
     {
         _context = context;
+        _tenantService = tenantService;
     }
 
     public async Task<IReadOnlyList<ServiceHealthSummaryDto>> Handle(GetServiceHealthQuery request, CancellationToken cancellationToken)
     {
         var sinceUtc = DateTime.UtcNow.AddHours(-24);
 
-        // Fetch applications dictionary for names
+        List<Guid>? tenantAppIds = null;
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (request.ApplicationId.HasValue)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == request.ApplicationId.Value && a.OrganizationId == tenantOrgId, cancellationToken);
+                if (!isAppInTenant)
+                {
+                    return [];
+                }
+                tenantAppIds = [request.ApplicationId.Value];
+            }
+            else
+            {
+                tenantAppIds = await _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id)
+                    .ToListAsync(cancellationToken);
+            }
+        }
+        else if (request.ApplicationId.HasValue)
+        {
+            tenantAppIds = [request.ApplicationId.Value];
+        }
+
         var appDict = await _context.Applications
             .AsNoTracking()
             .ToDictionaryAsync(a => a.Id, a => a.DisplayName ?? a.Name, cancellationToken);
@@ -29,9 +57,9 @@ public class GetServiceHealthQueryHandler : IRequestHandler<GetServiceHealthQuer
             .AsNoTracking()
             .Where(t => t.StartedAtUtc >= sinceUtc);
 
-        if (request.ApplicationId.HasValue)
+        if (tenantAppIds != null)
         {
-            tracesQuery = tracesQuery.Where(t => t.ApplicationId == request.ApplicationId.Value);
+            tracesQuery = tracesQuery.Where(t => tenantAppIds.Contains(t.ApplicationId));
         }
 
         var traceData = await tracesQuery
@@ -47,9 +75,9 @@ public class GetServiceHealthQueryHandler : IRequestHandler<GetServiceHealthQuer
             .ToListAsync(cancellationToken);
 
         var registeredServicesQuery = _context.Services.AsNoTracking();
-        if (request.ApplicationId.HasValue)
+        if (tenantAppIds != null)
         {
-            registeredServicesQuery = registeredServicesQuery.Where(s => s.ApplicationId == request.ApplicationId.Value);
+            registeredServicesQuery = registeredServicesQuery.Where(s => tenantAppIds.Contains(s.ApplicationId));
         }
         var registeredServices = await registeredServicesQuery.ToListAsync(cancellationToken);
 
