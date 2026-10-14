@@ -13,6 +13,7 @@ using SentinelOps.Api.Middleware;
 using SentinelOps.Application;
 using SentinelOps.Domain.Constants;
 using SentinelOps.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -217,7 +218,18 @@ if (!string.IsNullOrEmpty(redisConn))
 }
 healthCheckBuilder.AddCheck<SentinelOps.Infrastructure.Services.TelemetryBufferHealthCheck>("telemetry_buffer", tags: ["ready"]);
 
+// Forwarded headers for reverse proxy & Kubernetes Ingress
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Reverse proxy forwarded headers (must be first in pipeline)
+app.UseForwardedHeaders();
 
 // Middleware pipeline
 app.UseMiddleware<SecurityHeadersMiddleware>();
