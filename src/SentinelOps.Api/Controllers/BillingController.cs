@@ -15,10 +15,12 @@ namespace SentinelOps.Api.Controllers;
 public class BillingController : ControllerBase
 {
     private readonly IBillingService _billingService;
+    private readonly IPaymentProvider _paymentProvider;
 
-    public BillingController(IBillingService billingService)
+    public BillingController(IBillingService billingService, IPaymentProvider paymentProvider)
     {
         _billingService = billingService;
+        _paymentProvider = paymentProvider;
     }
 
     [HttpGet("account")]
@@ -124,6 +126,63 @@ public class BillingController : ControllerBase
             return BadRequest(ApiResponse<bool>.Fail(error ?? "Failed to settle invoice administratively."));
 
         return Ok(ApiResponse<bool>.Ok(true, "Invoice settled administratively."));
+    }
+
+    [HttpPost("checkout-session")]
+    public async Task<ActionResult<ApiResponse<CheckoutSessionDto>>> CreateCheckoutSession(
+        [FromBody] CreateCheckoutSessionRequest request,
+        [FromHeader(Name = "X-Organization-Id")] Guid? orgIdHeader,
+        [FromQuery] Guid? organizationId,
+        CancellationToken ct)
+    {
+        var orgId = orgIdHeader ?? organizationId;
+        if (!orgId.HasValue || orgId.Value == Guid.Empty)
+            return BadRequest(ApiResponse<CheckoutSessionDto>.Fail("Organization ID is required."));
+
+        var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "billing-user@sentinelops.local";
+        var (success, session, error) = await _paymentProvider.CreateCheckoutSessionAsync(orgId.Value, userEmail, request, ct);
+        if (!success || session == null)
+            return BadRequest(ApiResponse<CheckoutSessionDto>.Fail(error ?? "Failed to create checkout session."));
+
+        return Ok(ApiResponse<CheckoutSessionDto>.Ok(session));
+    }
+
+    [HttpPost("customer-portal")]
+    public async Task<ActionResult<ApiResponse<CustomerPortalSessionDto>>> CreateCustomerPortal(
+        [FromBody] CreatePortalSessionRequest request,
+        [FromHeader(Name = "X-Organization-Id")] Guid? orgIdHeader,
+        [FromQuery] Guid? organizationId,
+        CancellationToken ct)
+    {
+        var orgId = orgIdHeader ?? organizationId;
+        if (!orgId.HasValue || orgId.Value == Guid.Empty)
+            return BadRequest(ApiResponse<CustomerPortalSessionDto>.Fail("Organization ID is required."));
+
+        var (success, session, error) = await _paymentProvider.CreateCustomerPortalSessionAsync(orgId.Value, request, ct);
+        if (!success || session == null)
+            return BadRequest(ApiResponse<CustomerPortalSessionDto>.Fail(error ?? "Failed to create customer portal session."));
+
+        return Ok(ApiResponse<CustomerPortalSessionDto>.Ok(session));
+    }
+
+    [HttpPost("transactions/{transactionId}/refund")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<ApiResponse<RefundResultDto>>> RefundTransaction(
+        string transactionId,
+        [FromBody] RefundTransactionRequest request,
+        [FromHeader(Name = "X-Organization-Id")] Guid? orgIdHeader,
+        [FromQuery] Guid? organizationId,
+        CancellationToken ct)
+    {
+        var orgId = orgIdHeader ?? organizationId;
+        if (!orgId.HasValue || orgId.Value == Guid.Empty)
+            return BadRequest(ApiResponse<RefundResultDto>.Fail("Organization ID is required."));
+
+        var result = await _paymentProvider.RefundTransactionAsync(orgId.Value, transactionId, request, ct);
+        if (!result.Success)
+            return BadRequest(ApiResponse<RefundResultDto>.Fail(result.Error ?? "Refund failed."));
+
+        return Ok(ApiResponse<RefundResultDto>.Ok(result, "Transaction refund processed."));
     }
 
     private string? GetCurrentUserId()

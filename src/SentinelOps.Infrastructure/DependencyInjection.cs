@@ -66,6 +66,28 @@ public static class DependencyInjection
         services.AddScoped<ITaxCalculationService, DefaultTaxCalculationService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IBillingService, BillingService>();
+        services.AddSingleton<IPaymentWebhookVerifier, Services.Payments.SandboxPaymentWebhookVerifier>();
+        services.AddScoped<Services.Payments.SandboxPaymentProvider>();
+        services.AddScoped<Services.Payments.DisabledPaymentProvider>();
+        services.AddScoped<IPaymentProvider>(sp =>
+        {
+            var config = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+            var providerType = config["PaymentSettings:Provider"] ?? "Sandbox";
+            if (providerType.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                return sp.GetRequiredService<Services.Payments.DisabledPaymentProvider>();
+            }
+            if (providerType.Equals("Stripe", StringComparison.OrdinalIgnoreCase))
+            {
+                var secretKey = config["PaymentSettings:Stripe:SecretKey"];
+                if (string.IsNullOrWhiteSpace(secretKey))
+                {
+                    return sp.GetRequiredService<Services.Payments.DisabledPaymentProvider>();
+                }
+            }
+            return sp.GetRequiredService<Services.Payments.SandboxPaymentProvider>();
+        });
+        services.AddScoped<IPaymentWebhookHandler, Services.Payments.PaymentWebhookHandler>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IApmService, ApmService>();
         services.AddScoped<IIncidentIntelligenceProvider, Services.Intelligence.DeterministicIncidentIntelligenceProvider>();
