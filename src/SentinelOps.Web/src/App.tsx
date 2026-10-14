@@ -29,6 +29,7 @@ import { ReportsPage } from "@/pages/reports";
 import { SettingsPage } from "@/pages/settings";
 import { PublicStatusPage } from "@/pages/public-status";
 import { StatusPagesPage } from "@/pages/status-pages";
+import { AiObservabilityPage } from "@/pages/ai-observability";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function App() {
                   <Route path="overview" element={<OverviewPage />} />
                   <Route path="dashboards" element={<DashboardsPage />} />
                   <Route path="apm" element={<ApmPage />} />
+                  <Route path="ai-observability" element={<AiObservabilityPage />} />
                   <Route path="organizations" element={<OrganizationsPage />} />
                   <Route path="applications" element={<ApplicationsPage />} />
                   <Route path="api-keys" element={<ApiKeysPage />} />

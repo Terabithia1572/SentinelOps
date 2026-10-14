@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   Network,
   Globe,
+  Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/context/auth-context";
@@ -38,6 +39,7 @@ const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Dashboards", href: "/dashboards", icon: LayoutGrid },
   { name: "APM & Service Map", href: "/apm", icon: Network },
+  { name: "AI Observability", href: "/ai-observability", icon: Sparkles },
   { name: "Organizations", href: "/organizations", icon: Building2 },
   { name: "Applications", href: "/applications", icon: AppWindow },
   { name: "Services", href: "/services", icon: Server },

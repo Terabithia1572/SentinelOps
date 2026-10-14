@@ -1556,6 +1556,232 @@ export async function getAllQuotasSummary(): Promise<OrganizationQuotaStatusDto[
   return res.data.data;
 }
 
+// ==========================================
+// AI Observability & Predictive Intelligence APIs
+// ==========================================
+
+export interface TelemetryAnomalyDto {
+  id: string;
+  organizationId: string;
+  applicationId: string;
+  serviceName: string;
+  signalType: string;
+  detectionTimestamp: string;
+  baselineValue: number;
+  observedValue: number;
+  deviationScore: number;
+  confidenceScore: number;
+  severity: string;
+  detectionMethod: string;
+  explanation: string;
+  status: string;
+  resolvedAtUtc?: string | null;
+}
+
+export interface AnomalyEvaluationRequest {
+  organizationId: string;
+  applicationId: string;
+  serviceName: string;
+  signalType: string;
+  currentValue: number;
+  historicalValues: number[];
+}
+
+export interface AnomalyDetectionResult {
+  isAnomaly: boolean;
+  severity: string;
+  deviationScore: number;
+  baselineValue: number;
+  observedValue: number;
+  confidenceScore: number;
+  detectionMethod: string;
+  explanation: string;
+}
+
+export interface LogPatternDto {
+  id: string;
+  organizationId: string;
+  applicationId: string;
+  serviceName: string;
+  patternFingerprint: string;
+  template: string;
+  severity: string;
+  totalOccurrences: number;
+  firstSeenAtUtc: string;
+  lastSeenAtUtc: string;
+  sampleMessage: string;
+  sampleTraceId?: string | null;
+}
+
+export interface LogPatternAnalysisResult {
+  totalLogsAnalyzed: number;
+  patternsFound: number;
+  patterns: LogPatternDto[];
+}
+
+export interface RcaHypothesisDto {
+  hypothesis: string;
+  confidenceLevel: string; // "Likely cause" | "Possible cause" | "Insufficient evidence"
+  confidenceScore: number;
+  supportingEvidence: string[];
+  contradictoryEvidence: string[];
+  recommendedSteps: string[];
+  isVerifiedByOperator: boolean;
+  operatorNotes?: string | null;
+}
+
+export interface RcaAnalysisResult {
+  incidentId: string;
+  summary: string;
+  impactedServices: string[];
+  hypotheses: RcaHypothesisDto[];
+  correlatedAnomalies: string[];
+  correlatedTraceIds: string[];
+  providerName: string;
+  isDeterministic: boolean;
+  generatedAtUtc: string;
+}
+
+export interface CapacityForecastRequest {
+  organizationId: string;
+  applicationId: string;
+  serviceName: string;
+  metricName: string;
+  horizonMinutes: number;
+  alertThreshold: number;
+}
+
+export interface CapacityForecastResult {
+  applicationId: string;
+  serviceName: string;
+  metricName: string;
+  currentValue: number;
+  predictedValue: number;
+  trendSlope: number;
+  horizonMinutes: number;
+  projectedBreachTimeUtc?: string | null;
+  confidenceIntervalLower: number;
+  confidenceIntervalUpper: number;
+  sampleCount: number;
+  calculationMethod: string;
+  willBreachThreshold: boolean;
+}
+
+export interface PredictiveForecastDto {
+  id: string;
+  organizationId: string;
+  applicationId: string;
+  serviceName: string;
+  metricName: string;
+  currentValue: number;
+  predictedValue: number;
+  trendSlope: number;
+  forecastHorizonMinutes: number;
+  projectedBreachTimeUtc?: string | null;
+  confidenceIntervalLower: number;
+  confidenceIntervalUpper: number;
+  calculationMethod: string;
+  sampleCount: number;
+  calculatedAtUtc: string;
+  expiresAtUtc: string;
+}
+
+export interface CopilotChatRequest {
+  incidentId: string;
+  question: string;
+  organizationId?: string;
+}
+
+export interface CopilotChatResponse {
+  response: string;
+  hypothesis: string;
+  confidenceScore: number;
+  safetyChecksPassed: boolean;
+  recommendedActions: string[];
+  requiresHumanApproval: boolean;
+}
+
+export interface AiUsageDto {
+  organizationId: string;
+  tokensUsedMonthToDate: number;
+  invocationsMonthToDate: number;
+  monthlyTokenBudget: number;
+  remainingTokens: number;
+  isQuotaExceeded: boolean;
+  estimatedCostUsd: number;
+}
+
+export async function getAnomalies(applicationId: string): Promise<TelemetryAnomalyDto[]> {
+  const res = await apiClient.get<ApiResponse<TelemetryAnomalyDto[]>>("/anomalies", {
+    params: { applicationId }
+  });
+  return res.data.data;
+}
+
+export async function evaluateAnomaly(req: AnomalyEvaluationRequest): Promise<AnomalyDetectionResult> {
+  const res = await apiClient.post<ApiResponse<AnomalyDetectionResult>>("/anomalies/evaluate", req);
+  return res.data.data;
+}
+
+export async function resolveAnomaly(id: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/anomalies/${id}/resolve`);
+  return res.data.success;
+}
+
+export async function getLogPatterns(applicationId: string, serviceName?: string): Promise<LogPatternDto[]> {
+  const res = await apiClient.get<ApiResponse<LogPatternDto[]>>("/logs/patterns", {
+    params: { applicationId, serviceName }
+  });
+  return res.data.data;
+}
+
+export async function analyzeLogPatterns(applicationId: string, hours = 1): Promise<LogPatternAnalysisResult> {
+  const res = await apiClient.post<ApiResponse<LogPatternAnalysisResult>>("/logs/patterns/analyze", null, {
+    params: { applicationId, hours }
+  });
+  return res.data.data;
+}
+
+export async function performRca(req: { incidentId: string; correlationWindowMinutes?: number }): Promise<RcaAnalysisResult> {
+  const res = await apiClient.post<ApiResponse<RcaAnalysisResult>>("/incidentintelligence/rca", {
+    incidentId: req.incidentId,
+    correlationWindow: req.correlationWindowMinutes ? `${req.correlationWindowMinutes * 60}s` : undefined
+  });
+  return res.data.data;
+}
+
+export async function verifyRcaHypothesis(rcaId: string, hypothesisIndex: number, verified: boolean, notes?: string): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>(`/incidentintelligence/rca/${rcaId}/verify`, {
+    hypothesisIndex,
+    verified,
+    notes
+  });
+  return res.data.success;
+}
+
+export async function getActiveForecasts(applicationId: string): Promise<PredictiveForecastDto[]> {
+  const res = await apiClient.get<ApiResponse<PredictiveForecastDto[]>>("/forecasts", {
+    params: { applicationId }
+  });
+  return res.data.data;
+}
+
+export async function evaluateForecast(req: CapacityForecastRequest): Promise<CapacityForecastResult> {
+  const res = await apiClient.post<ApiResponse<CapacityForecastResult>>("/forecasts/evaluate", req);
+  return res.data.data;
+}
+
+export async function askCopilot(req: CopilotChatRequest): Promise<CopilotChatResponse> {
+  const res = await apiClient.post<ApiResponse<CopilotChatResponse>>("/incidentintelligence/copilot/chat", req);
+  return res.data.data;
+}
+
+export async function getAiUsage(): Promise<AiUsageDto> {
+  const res = await apiClient.get<ApiResponse<AiUsageDto>>("/incidentintelligence/copilot/usage");
+  return res.data.data;
+}
+
+
 
 
 
