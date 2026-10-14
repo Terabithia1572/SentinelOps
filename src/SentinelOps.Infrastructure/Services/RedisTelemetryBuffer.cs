@@ -158,10 +158,21 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
     {
         if (_redis != null && _redis.IsConnected)
         {
-            var db = _redis.GetDatabase();
-            var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+            IDatabase? db = null;
+            try
+            {
+                db = _redis.GetDatabase();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get Redis database for logs stream; falling back to in-memory channel.");
+            }
 
-            while (!cancellationToken.IsCancellationRequested)
+            if (db != null)
+            {
+                var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+
+                while (!cancellationToken.IsCancellationRequested)
             {
                 while (_fallbackLogChannel.Reader.TryRead(out var fallbackMsg))
                 {
@@ -215,6 +226,7 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 }
             }
         }
+    }
 
         // Read from in-memory fallback channel
         while (await _fallbackLogChannel.Reader.WaitToReadAsync(cancellationToken))
@@ -230,10 +242,21 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
     {
         if (_redis != null && _redis.IsConnected)
         {
-            var db = _redis.GetDatabase();
-            var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+            IDatabase? db = null;
+            try
+            {
+                db = _redis.GetDatabase();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get Redis database for traces stream; falling back to in-memory channel.");
+            }
 
-            while (!cancellationToken.IsCancellationRequested)
+            if (db != null)
+            {
+                var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+
+                while (!cancellationToken.IsCancellationRequested)
             {
                 while (_fallbackTraceChannel.Reader.TryRead(out var fallbackMsg))
                 {
@@ -287,6 +310,7 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 }
             }
         }
+    }
 
         while (await _fallbackTraceChannel.Reader.WaitToReadAsync(cancellationToken))
         {
@@ -301,10 +325,21 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
     {
         if (_redis != null && _redis.IsConnected)
         {
-            var db = _redis.GetDatabase();
-            var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+            IDatabase? db = null;
+            try
+            {
+                db = _redis.GetDatabase();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get Redis database for metrics stream; falling back to in-memory channel.");
+            }
 
-            while (!cancellationToken.IsCancellationRequested)
+            if (db != null)
+            {
+                var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
+
+                while (!cancellationToken.IsCancellationRequested)
             {
                 while (_fallbackMetricChannel.Reader.TryRead(out var fallbackMsg))
                 {
@@ -358,6 +393,7 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 }
             }
         }
+    }
 
         while (await _fallbackMetricChannel.Reader.WaitToReadAsync(cancellationToken))
         {

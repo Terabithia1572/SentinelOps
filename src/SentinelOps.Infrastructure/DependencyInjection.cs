@@ -22,7 +22,10 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(postgresConnection, b =>
-                b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            {
+                b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                b.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null);
+            }));
 
         services.AddScoped<IApplicationDbContext>(sp =>
             sp.GetRequiredService<ApplicationDbContext>());
