@@ -18,13 +18,19 @@ public class IncidentsController : BaseApiController
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ICurrentTenantService _tenantService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
     public IncidentsController(
         IApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICurrentTenantService tenantService,
+        IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _tenantService = tenantService;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     [HttpGet]
@@ -45,7 +51,29 @@ public class IncidentsController : BaseApiController
             .AsNoTracking()
             .AsQueryable();
 
-        if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == applicationId.Value && a.OrganizationId == tenantOrgId);
+                if (!isAppInTenant)
+                {
+                    return Ok(ApiResponse<PagedResponse<IncidentDto>>.SuccessResponse(
+                        PagedResponse<IncidentDto>.Create([], 0, page, pageSize)));
+                }
+                query = query.Where(i => i.ApplicationId == applicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(i => tenantAppIds.Contains(i.ApplicationId));
+            }
+        }
+        else if (applicationId.HasValue && applicationId.Value != Guid.Empty)
         {
             query = query.Where(i => i.ApplicationId == applicationId.Value);
         }
@@ -95,6 +123,16 @@ public class IncidentsController : BaseApiController
             return NotFound(ApiResponse<IncidentDetailDto>.FailureResponse("Incident not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == incident.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<IncidentDetailDto>.FailureResponse("Incident not found."));
+            }
+        }
+
         return Ok(ApiResponse<IncidentDetailDto>.SuccessResponse(incident.ToDetailDto()));
     }
 
@@ -108,7 +146,7 @@ public class IncidentsController : BaseApiController
         }
 
         var app = await _context.Applications.FindAsync(request.ApplicationId);
-        if (app == null)
+        if (app == null || (_tenantService.OrganizationId.HasValue && app.OrganizationId != _tenantService.OrganizationId.Value))
         {
             return BadRequest(ApiResponse<IncidentDto>.FailureResponse("Application not found."));
         }
@@ -162,6 +200,8 @@ public class IncidentsController : BaseApiController
         _context.Incidents.Add(incident);
         await _context.SaveChangesAsync();
 
+        await _realtimeNotifier.NotifyIncidentCreatedAsync(incident.ApplicationId, app.OrganizationId, incident.ToDto());
+
         return CreatedAtAction(nameof(GetIncident), new { id = incident.Id }, ApiResponse<IncidentDto>.SuccessResponse(incident.ToDto(), "Incident created successfully."));
     }
 
@@ -176,6 +216,16 @@ public class IncidentsController : BaseApiController
         if (incident == null)
         {
             return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == incident.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
+            }
         }
 
         var actorId = _currentUserService.UserId ?? "usr_operator";
@@ -197,6 +247,10 @@ public class IncidentsController : BaseApiController
         }
 
         await _context.SaveChangesAsync();
+
+        var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == incident.ApplicationId);
+        await _realtimeNotifier.NotifyIncidentUpdatedAsync(incident.ApplicationId, app?.OrganizationId, incident.ToDto());
+
         return Ok(ApiResponse<IncidentDto>.SuccessResponse(incident.ToDto(), "Incident updated successfully."));
     }
 
@@ -213,6 +267,16 @@ public class IncidentsController : BaseApiController
             return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == incident.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.UserName))
         {
             return BadRequest(ApiResponse<IncidentDto>.FailureResponse("User ID and User Name are required."));
@@ -225,6 +289,9 @@ public class IncidentsController : BaseApiController
         var lastEvent = incident.TimelineEvents.Last();
         _context.IncidentTimelineEvents.Add(lastEvent);
         await _context.SaveChangesAsync();
+
+        var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == incident.ApplicationId);
+        await _realtimeNotifier.NotifyIncidentUpdatedAsync(incident.ApplicationId, app?.OrganizationId, incident.ToDto());
 
         return Ok(ApiResponse<IncidentDto>.SuccessResponse(incident.ToDto(), $"Assigned to {request.UserName}."));
     }
@@ -240,6 +307,16 @@ public class IncidentsController : BaseApiController
         if (incident == null)
         {
             return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == incident.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<IncidentDto>.FailureResponse("Incident not found."));
+            }
         }
 
         if (!Enum.TryParse<IncidentStatus>(request.TargetStatus, true, out var targetStatus))
@@ -284,6 +361,10 @@ public class IncidentsController : BaseApiController
             }
 
             await _context.SaveChangesAsync();
+
+            var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == incident.ApplicationId);
+            await _realtimeNotifier.NotifyIncidentUpdatedAsync(incident.ApplicationId, app?.OrganizationId, incident.ToDto());
+
             return Ok(ApiResponse<IncidentDto>.SuccessResponse(incident.ToDto(), $"Incident transitioned to {targetStatus}."));
         }
         catch (InvalidOperationException ex)
@@ -313,6 +394,16 @@ public class IncidentsController : BaseApiController
             return NotFound(ApiResponse<IncidentDetailDto>.FailureResponse("Incident not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == incident.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<IncidentDetailDto>.FailureResponse("Incident not found."));
+            }
+        }
+
         var actorId = _currentUserService.UserId ?? "usr_user";
         var actorName = _currentUserService.UserName ?? "User";
 
@@ -323,6 +414,9 @@ public class IncidentsController : BaseApiController
         _context.IncidentTimelineEvents.Add(lastEvent);
 
         await _context.SaveChangesAsync();
+
+        var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == incident.ApplicationId);
+        await _realtimeNotifier.NotifyIncidentUpdatedAsync(incident.ApplicationId, app?.OrganizationId, incident.ToDto());
 
         return Ok(ApiResponse<IncidentDetailDto>.SuccessResponse(incident.ToDetailDto(), "Comment added."));
     }

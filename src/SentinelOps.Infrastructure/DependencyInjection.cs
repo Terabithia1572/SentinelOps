@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<IRetentionService, RetentionService>();
         services.AddScoped<IAlertEvaluationService, Services.Alerting.AlertEvaluationService>();
+        services.AddScoped<IRealtimeNotifier, Services.NullRealtimeNotifier>();
 
         // Notifications with SSRF DNS Rebinding & Redirect Hijacking Hardening
         services.AddHttpClient<Services.Notifications.WebhookNotificationProvider>()

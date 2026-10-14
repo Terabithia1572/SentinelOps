@@ -156,6 +156,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddSignalR();
+builder.Services.AddScoped<SentinelOps.Application.Common.Interfaces.IRealtimeNotifier, SentinelOps.Api.Services.RealtimeNotifier>();
 
 builder.Services.AddAuthorization(options =>
 {

@@ -17,13 +17,16 @@ public class AlertsController : BaseApiController
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ICurrentTenantService _tenantService;
 
     public AlertsController(
         IApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICurrentTenantService tenantService)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -42,7 +45,29 @@ public class AlertsController : BaseApiController
             .AsNoTracking()
             .AsQueryable();
 
-        if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == applicationId.Value && a.OrganizationId == tenantOrgId);
+                if (!isAppInTenant)
+                {
+                    return Ok(ApiResponse<PagedResponse<AlertEventDto>>.SuccessResponse(
+                        PagedResponse<AlertEventDto>.Create([], 0, page, pageSize)));
+                }
+                query = query.Where(e => e.AlertRule != null && e.AlertRule.ApplicationId == applicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(e => e.AlertRule != null && tenantAppIds.Contains(e.AlertRule.ApplicationId));
+            }
+        }
+        else if (applicationId.HasValue && applicationId.Value != Guid.Empty)
         {
             query = query.Where(e => e.AlertRule != null && e.AlertRule.ApplicationId == applicationId.Value);
         }
@@ -76,7 +101,29 @@ public class AlertsController : BaseApiController
         [FromQuery] Guid? applicationId)
     {
         var rulesQuery = _context.AlertRules.AsNoTracking().AsQueryable();
-        if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == applicationId.Value && a.OrganizationId == tenantOrgId);
+                if (!isAppInTenant)
+                {
+                    return Ok(ApiResponse<AlertSummaryDto>.SuccessResponse(new AlertSummaryDto()));
+                }
+                rulesQuery = rulesQuery.Where(r => r.ApplicationId == applicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                rulesQuery = rulesQuery.Where(r => tenantAppIds.Contains(r.ApplicationId));
+            }
+        }
+        else if (applicationId.HasValue && applicationId.Value != Guid.Empty)
         {
             rulesQuery = rulesQuery.Where(r => r.ApplicationId == applicationId.Value);
         }
@@ -115,6 +162,16 @@ public class AlertsController : BaseApiController
             return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == rule.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
+            }
+        }
+
         return Ok(ApiResponse<AlertRuleDto>.SuccessResponse(rule.ToDto()));
     }
 
@@ -128,6 +185,16 @@ public class AlertsController : BaseApiController
         if (rule == null)
         {
             return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == rule.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
+            }
         }
 
         rule.Acknowledge(_currentUserService.UserName ?? "operator", DateTime.UtcNow);
@@ -146,6 +213,16 @@ public class AlertsController : BaseApiController
         if (rule == null)
         {
             return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == rule.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<AlertRuleDto>.FailureResponse("Alert not found."));
+            }
         }
 
         rule.Resolve(_currentUserService.UserName ?? "operator", DateTime.UtcNow, request?.Reason ?? "Manually resolved");

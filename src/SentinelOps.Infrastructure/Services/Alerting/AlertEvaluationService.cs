@@ -11,13 +11,16 @@ public class AlertEvaluationService : IAlertEvaluationService
 {
     private readonly IApplicationDbContext _context;
     private readonly ILogger<AlertEvaluationService> _logger;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
     public AlertEvaluationService(
         IApplicationDbContext context,
-        ILogger<AlertEvaluationService> logger)
+        ILogger<AlertEvaluationService> logger,
+        IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _logger = logger;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<int> EvaluateAllPendingRulesAsync(CancellationToken cancellationToken = default)
@@ -131,6 +134,32 @@ public class AlertEvaluationService : IAlertEvaluationService
 
             // Enqueue notifications
             EnqueueNotifications(rule, alertEvent);
+
+            var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == rule.ApplicationId, cancellationToken);
+            var orgId = app?.OrganizationId;
+
+            var eventDto = new SentinelOps.Contracts.DTOs.AlertEventDto
+            {
+                Id = alertEvent.Id,
+                AlertRuleId = rule.Id,
+                AlertRuleName = rule.Name,
+                OldStatus = alertEvent.OldStatus.ToString(),
+                NewStatus = alertEvent.NewStatus.ToString(),
+                Severity = rule.Severity.ToString(),
+                MeasuredValue = alertEvent.MeasuredValue,
+                Threshold = alertEvent.Threshold,
+                TriggeredAtUtc = alertEvent.TriggeredAtUtc,
+                Message = alertEvent.Message
+            };
+
+            if (alertEvent.NewStatus == AlertStatus.Firing)
+            {
+                await _realtimeNotifier.NotifyAlertFiredAsync(rule.ApplicationId, orgId, eventDto, cancellationToken);
+            }
+            else if (alertEvent.NewStatus == AlertStatus.Resolved)
+            {
+                await _realtimeNotifier.NotifyAlertResolvedAsync(rule.ApplicationId, orgId, eventDto, cancellationToken);
+            }
         }
 
         return new AlertEvaluationResult(
@@ -370,6 +399,23 @@ public class AlertEvaluationService : IAlertEvaluationService
             });
 
             _context.Incidents.Add(incident);
+
+            var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == rule.ApplicationId, cancellationToken);
+            var incidentDto = new SentinelOps.Contracts.DTOs.IncidentDto
+            {
+                Id = incident.Id,
+                IncidentNumber = incident.IncidentNumber,
+                Title = incident.Title,
+                Description = incident.Description,
+                Severity = incident.Severity.ToString(),
+                Status = incident.Status.ToString(),
+                ApplicationId = incident.ApplicationId,
+                EnvironmentName = incident.EnvironmentName,
+                ServiceName = incident.ServiceName,
+                CreatedAtUtc = incident.CreatedAtUtc
+            };
+
+            await _realtimeNotifier.NotifyIncidentCreatedAsync(rule.ApplicationId, app?.OrganizationId, incidentDto, cancellationToken);
         }
     }
 

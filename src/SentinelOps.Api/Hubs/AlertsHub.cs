@@ -31,13 +31,29 @@ public class AlertsHub : Hub<IAlertsHubClient>
         _logger = logger;
     }
 
+    private string? GetCurrentUserId()
+    {
+        return Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? Context.User?.FindFirst("sub")?.Value;
+    }
+
     public async Task JoinApplication(Guid applicationId)
     {
-        // Server-side verification of application existence and active state
         var app = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == applicationId);
         if (app == null || !app.IsActive)
         {
             throw new HubException("Application not found or inactive.");
+        }
+
+        var userId = GetCurrentUserId();
+        if (!string.IsNullOrEmpty(userId) && Context.User?.IsInRole(SentinelOps.Domain.Constants.Roles.Admin) != true)
+        {
+            var isMember = await _context.OrganizationMembers.AsNoTracking()
+                .AnyAsync(m => m.OrganizationId == app.OrganizationId && m.UserId == userId);
+            if (!isMember)
+            {
+                throw new HubException("Access denied: You are not a member of the organization owning this application.");
+            }
         }
 
         var groupName = $"app_{applicationId}";
@@ -45,11 +61,74 @@ public class AlertsHub : Hub<IAlertsHubClient>
         _logger.LogDebug("Client {ConnectionId} joined real-time telemetry group {GroupName}", Context.ConnectionId, groupName);
     }
 
+    public async Task JoinApplicationGroup(string applicationIdStr)
+    {
+        if (Guid.TryParse(applicationIdStr, out var appId))
+        {
+            await JoinApplication(appId);
+        }
+    }
+
     public async Task LeaveApplication(Guid applicationId)
     {
         var groupName = $"app_{applicationId}";
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
         _logger.LogDebug("Client {ConnectionId} left real-time telemetry group {GroupName}", Context.ConnectionId, groupName);
+    }
+
+    public async Task LeaveApplicationGroup(string applicationIdStr)
+    {
+        if (Guid.TryParse(applicationIdStr, out var appId))
+        {
+            await LeaveApplication(appId);
+        }
+    }
+
+    public async Task JoinOrganization(Guid organizationId)
+    {
+        var org = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.Id == organizationId);
+        if (org == null || !org.IsActive)
+        {
+            throw new HubException("Organization not found or inactive.");
+        }
+
+        var userId = GetCurrentUserId();
+        if (!string.IsNullOrEmpty(userId) && Context.User?.IsInRole(SentinelOps.Domain.Constants.Roles.Admin) != true)
+        {
+            var isMember = await _context.OrganizationMembers.AsNoTracking()
+                .AnyAsync(m => m.OrganizationId == organizationId && m.UserId == userId);
+            if (!isMember)
+            {
+                throw new HubException("Access denied: You are not a member of this organization.");
+            }
+        }
+
+        var groupName = $"org_{organizationId}";
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        _logger.LogDebug("Client {ConnectionId} joined real-time telemetry group {GroupName}", Context.ConnectionId, groupName);
+    }
+
+    public async Task JoinOrganizationGroup(string organizationIdStr)
+    {
+        if (Guid.TryParse(organizationIdStr, out var orgId))
+        {
+            await JoinOrganization(orgId);
+        }
+    }
+
+    public async Task LeaveOrganization(Guid organizationId)
+    {
+        var groupName = $"org_{organizationId}";
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+        _logger.LogDebug("Client {ConnectionId} left real-time telemetry group {GroupName}", Context.ConnectionId, groupName);
+    }
+
+    public async Task LeaveOrganizationGroup(string organizationIdStr)
+    {
+        if (Guid.TryParse(organizationIdStr, out var orgId))
+        {
+            await LeaveOrganization(orgId);
+        }
     }
 
     public override async Task OnConnectedAsync()

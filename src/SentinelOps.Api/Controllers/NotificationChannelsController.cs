@@ -19,13 +19,16 @@ public class NotificationChannelsController : BaseApiController
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ICurrentTenantService _tenantService;
 
     public NotificationChannelsController(
         IApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICurrentTenantService tenantService)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -34,7 +37,28 @@ public class NotificationChannelsController : BaseApiController
     {
         var query = _context.NotificationChannels.AsNoTracking().AsQueryable();
 
-        if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            if (applicationId.HasValue && applicationId.Value != Guid.Empty)
+            {
+                var isAppInTenant = await _context.Applications
+                    .AnyAsync(a => a.Id == applicationId.Value && a.OrganizationId == tenantOrgId);
+                if (!isAppInTenant)
+                {
+                    return Ok(ApiResponse<List<NotificationChannelDto>>.SuccessResponse([]));
+                }
+                query = query.Where(c => c.ApplicationId == applicationId.Value);
+            }
+            else
+            {
+                var tenantAppIds = _context.Applications
+                    .Where(a => a.OrganizationId == tenantOrgId)
+                    .Select(a => a.Id);
+                query = query.Where(c => c.ApplicationId == null || tenantAppIds.Contains(c.ApplicationId.Value));
+            }
+        }
+        else if (applicationId.HasValue && applicationId.Value != Guid.Empty)
         {
             query = query.Where(c => c.ApplicationId == applicationId.Value || c.ApplicationId == null);
         }
@@ -57,6 +81,16 @@ public class NotificationChannelsController : BaseApiController
         if (channel == null)
         {
             return NotFound(ApiResponse<NotificationChannelDto>.FailureResponse("Notification channel not found."));
+        }
+
+        if (channel.ApplicationId.HasValue && _tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == channel.ApplicationId.Value && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<NotificationChannelDto>.FailureResponse("Notification channel not found."));
+            }
         }
 
         return Ok(ApiResponse<NotificationChannelDto>.SuccessResponse(channel.ToDto()));
@@ -92,6 +126,16 @@ public class NotificationChannelsController : BaseApiController
             }
         }
 
+        if (request.ApplicationId.HasValue && _tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == request.ApplicationId.Value && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return BadRequest(ApiResponse<NotificationChannelDto>.FailureResponse("Application not found or access denied."));
+            }
+        }
+
         var channel = new NotificationChannel
         {
             Name = request.Name.Trim(),
@@ -121,6 +165,16 @@ public class NotificationChannelsController : BaseApiController
         if (channel == null)
         {
             return NotFound(ApiResponse<NotificationChannelDto>.FailureResponse("Notification channel not found."));
+        }
+
+        if (channel.ApplicationId.HasValue && _tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == channel.ApplicationId.Value && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<NotificationChannelDto>.FailureResponse("Notification channel not found."));
+            }
         }
 
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -161,6 +215,16 @@ public class NotificationChannelsController : BaseApiController
         if (channel == null)
         {
             return NotFound(ApiResponse<bool>.FailureResponse("Notification channel not found."));
+        }
+
+        if (channel.ApplicationId.HasValue && _tenantService.OrganizationId.HasValue)
+        {
+            var isOwned = await _context.Applications
+                .AnyAsync(a => a.Id == channel.ApplicationId.Value && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isOwned)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("Notification channel not found."));
+            }
         }
 
         _context.NotificationChannels.Remove(channel);
