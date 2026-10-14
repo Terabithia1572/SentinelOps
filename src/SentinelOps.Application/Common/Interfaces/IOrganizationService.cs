@@ -22,4 +22,8 @@ public interface IOrganizationService
     Task<OrganizationQuotaStatusDto?> GetQuotaStatusAsync(Guid orgId, string userId, CancellationToken ct = default);
     Task<(bool Success, string? Error)> UpdateQuotaAsync(Guid orgId, UpdateOrganizationQuotaRequest request, string userId, CancellationToken ct = default);
     Task<List<OrganizationQuotaStatusDto>> GetAllOrganizationsQuotaSummaryAsync(string userId, CancellationToken ct = default);
+
+    Task<(bool Success, string? Error)> TransferOwnershipAsync(Guid orgId, TransferOwnershipRequest request, string currentUserId, CancellationToken ct = default);
+    Task<(bool Success, TenantDataExportDto? Data, string? Error)> ExportTenantDataAsync(Guid orgId, string userId, CancellationToken ct = default);
+    Task<(bool Success, string? Error)> DeleteOrganizationAccountAsync(Guid orgId, DeleteAccountRequest request, string userId, CancellationToken ct = default);
 }

@@ -120,3 +120,72 @@ public class UpdateOrganizationQuotaRequest
     public long MaxMonthlyLogs { get; set; } = 1_000_000;
     public long MaxMonthlyTraces { get; set; } = 500_000;
 }
+
+public class TenantDataExportDto
+{
+    public DateTime ExportedAtUtc { get; set; } = DateTime.UtcNow;
+    public Guid OrganizationId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public OrganizationSettingsDto? Settings { get; set; }
+    public TenantSubscriptionExportDto? Subscription { get; set; }
+    public List<OrganizationMemberDto> Members { get; set; } = new();
+    public List<TenantApplicationExportDto> Applications { get; set; } = new();
+    public List<TenantAlertRuleExportDto> AlertRules { get; set; } = new();
+    public List<TenantDashboardExportDto> Dashboards { get; set; } = new();
+    public List<TenantAuditEventExportDto> RecentAuditEvents { get; set; } = new();
+}
+
+public class TenantSubscriptionExportDto
+{
+    public Guid Id { get; set; }
+    public string PlanTier { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime CurrentPeriodStartUtc { get; set; }
+    public DateTime CurrentPeriodEndUtc { get; set; }
+    public bool CancelAtPeriodEnd { get; set; }
+}
+
+public class TenantApplicationExportDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public List<string> Environments { get; set; } = new();
+    public List<string> Services { get; set; } = new();
+}
+
+public class TenantAlertRuleExportDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string MetricName { get; set; } = string.Empty;
+    public string Condition { get; set; } = string.Empty;
+    public double Threshold { get; set; }
+    public bool IsEnabled { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+public class TenantDashboardExportDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsDefault { get; set; }
+    public bool IsShared { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+public class TenantAuditEventExportDto
+{
+    public string Action { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+    public string? Details { get; set; }
+    public DateTime Timestamp { get; set; }
+}

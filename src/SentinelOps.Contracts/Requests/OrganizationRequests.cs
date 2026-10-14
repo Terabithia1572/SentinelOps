@@ -35,3 +35,13 @@ public class UpdateOrganizationSettingsRequest
     public bool RequireTwoFactor { get; set; }
     public int DefaultRetentionDays { get; set; } = 30;
 }
+
+public class TransferOwnershipRequest
+{
+    public string NewOwnerUserId { get; set; } = string.Empty;
+}
+
+public class DeleteAccountRequest
+{
+    public string ConfirmationPhrase { get; set; } = string.Empty;
+}

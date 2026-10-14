@@ -252,4 +252,54 @@ public class OrganizationsController : ControllerBase
         var summary = await _organizationService.GetAllOrganizationsQuotaSummaryAsync(userId, ct);
         return Ok(ApiResponse<List<OrganizationQuotaStatusDto>>.Ok(summary));
     }
+
+    [HttpPost("{id:guid}/ownership-transfer")]
+    public async Task<ActionResult<ApiResponse<object>>> TransferOwnership(
+        Guid id,
+        [FromBody] TransferOwnershipRequest request,
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<object>.Fail("Unauthorized."));
+
+        var (success, error) = await _organizationService.TransferOwnershipAsync(id, request, userId, ct);
+        if (!success)
+            return BadRequest(ApiResponse<object>.Fail(error ?? "Failed to transfer ownership."));
+
+        return Ok(ApiResponse<object>.Ok(new { message = "Ownership transferred successfully." }));
+    }
+
+    [HttpPost("{id:guid}/export")]
+    public async Task<ActionResult<ApiResponse<TenantDataExportDto>>> ExportTenantData(
+        Guid id,
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<TenantDataExportDto>.Fail("Unauthorized."));
+
+        var (success, data, error) = await _organizationService.ExportTenantDataAsync(id, userId, ct);
+        if (!success || data == null)
+            return BadRequest(ApiResponse<TenantDataExportDto>.Fail(error ?? "Failed to export tenant data."));
+
+        return Ok(ApiResponse<TenantDataExportDto>.Ok(data));
+    }
+
+    [HttpDelete("{id:guid}/account")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteAccount(
+        Guid id,
+        [FromBody] DeleteAccountRequest request,
+        CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<object>.Fail("Unauthorized."));
+
+        var (success, error) = await _organizationService.DeleteOrganizationAccountAsync(id, request, userId, ct);
+        if (!success)
+            return BadRequest(ApiResponse<object>.Fail(error ?? "Failed to delete organization account."));
+
+        return Ok(ApiResponse<object>.Ok(new { message = "Organization account soft-deleted successfully." }));
+    }
 }

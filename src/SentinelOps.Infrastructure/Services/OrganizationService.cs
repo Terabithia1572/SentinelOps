@@ -718,6 +718,255 @@ public class OrganizationService : IOrganizationService
         return results;
     }
 
+    public async Task<(bool Success, string? Error)> TransferOwnershipAsync(
+        Guid orgId,
+        TransferOwnershipRequest request,
+        string currentUserId,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.NewOwnerUserId))
+            return (false, "New owner user ID is required.");
+
+        var caller = await _context.OrganizationMembers
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == currentUserId, ct);
+
+        if (caller == null || caller.Role != OrganizationRole.Owner)
+            return (false, "Only the organization Owner can transfer ownership.");
+
+        if (request.NewOwnerUserId == currentUserId)
+            return (false, "Cannot transfer ownership to yourself.");
+
+        var targetMember = await _context.OrganizationMembers
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == request.NewOwnerUserId, ct);
+
+        if (targetMember == null)
+            return (false, "Target user is not a member of this organization.");
+
+        targetMember.Role = OrganizationRole.Owner;
+        caller.Role = OrganizationRole.Admin;
+
+        await _context.SaveChangesAsync(ct);
+
+        await _auditService.RecordAsync(
+            action: "Organization.OwnershipTransferred",
+            targetEntityType: "Organization",
+            targetEntityId: orgId.ToString(),
+            outcome: "Success",
+            details: $"Ownership of organization {orgId} transferred from user {currentUserId} to user {request.NewOwnerUserId}.",
+            cancellationToken: ct);
+
+        return (true, null);
+    }
+
+    public async Task<(bool Success, TenantDataExportDto? Data, string? Error)> ExportTenantDataAsync(
+        Guid orgId,
+        string userId,
+        CancellationToken ct = default)
+    {
+        var caller = await _context.OrganizationMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, ct);
+
+        if (caller == null || (caller.Role != OrganizationRole.Owner && caller.Role != OrganizationRole.Admin))
+            return (false, null, "Only organization Owners or Admins can export tenant data.");
+
+        var org = await _context.Organizations
+            .AsNoTracking()
+            .Include(o => o.Settings)
+            .FirstOrDefaultAsync(o => o.Id == orgId, ct);
+
+        if (org == null)
+            return (false, null, "Organization not found.");
+
+        var members = await GetMembersAsync(orgId, userId, ct);
+
+        var apps = await _context.Applications
+            .AsNoTracking()
+            .Include(a => a.Environments)
+            .Include(a => a.Services)
+            .Where(a => a.OrganizationId == orgId)
+            .ToListAsync(ct);
+
+        var appIds = apps.Select(a => a.Id).ToList();
+
+        var alertRules = await _context.AlertRules
+            .AsNoTracking()
+            .Where(r => appIds.Contains(r.ApplicationId))
+            .ToListAsync(ct);
+
+        var dashboards = await _context.Dashboards
+            .AsNoTracking()
+            .Where(d => d.OrganizationId == orgId)
+            .ToListAsync(ct);
+
+        var subscription = await _context.OrganizationSubscriptions
+            .AsNoTracking()
+            .Include(s => s.Plan)
+            .FirstOrDefaultAsync(s => s.OrganizationId == orgId, ct);
+
+        var orgIdStr = orgId.ToString();
+        var recentAudits = await _context.AuditEvents
+            .AsNoTracking()
+            .Where(a => a.TargetEntityId == orgIdStr || a.Details.Contains(orgIdStr))
+            .OrderByDescending(a => a.Timestamp)
+            .Take(50)
+            .ToListAsync(ct);
+
+        var export = new TenantDataExportDto
+        {
+            ExportedAtUtc = DateTime.UtcNow,
+            OrganizationId = org.Id,
+            Name = org.Name,
+            Slug = org.Slug,
+            Description = org.Description,
+            IsActive = org.IsActive,
+            CreatedAtUtc = org.CreatedAtUtc,
+            Settings = org.Settings == null ? null : new OrganizationSettingsDto
+            {
+                AllowMemberInvites = org.Settings.AllowMemberInvites,
+                RequireTwoFactor = org.Settings.RequireTwoFactor,
+                DefaultRetentionDays = org.Settings.DefaultRetentionDays,
+                PlanTier = org.Settings.PlanTier,
+                MaxApplications = org.Settings.MaxApplications,
+                MaxMembers = org.Settings.MaxMembers,
+                MaxCustomDashboards = org.Settings.MaxCustomDashboards,
+                MaxMonthlyLogs = org.Settings.MaxMonthlyLogs,
+                MaxMonthlyTraces = org.Settings.MaxMonthlyTraces
+            },
+            Subscription = subscription == null ? null : new TenantSubscriptionExportDto
+            {
+                Id = subscription.Id,
+                PlanTier = subscription.Plan?.Name ?? "Unknown",
+                Status = subscription.Status.ToString(),
+                CurrentPeriodStartUtc = subscription.CurrentPeriodStartUtc,
+                CurrentPeriodEndUtc = subscription.CurrentPeriodEndUtc,
+                CancelAtPeriodEnd = subscription.CancelAtPeriodEnd
+            },
+            Members = members.ToList(),
+            Applications = apps.Select(a => new TenantApplicationExportDto
+            {
+                Id = a.Id,
+                Name = a.Name,
+                DisplayName = a.DisplayName,
+                Description = a.Description,
+                IsActive = a.IsActive,
+                CreatedAtUtc = a.CreatedAtUtc,
+                Environments = a.Environments?.Select(e => e.Name).ToList() ?? new List<string>(),
+                Services = a.Services?.Select(s => s.Name).ToList() ?? new List<string>()
+            }).ToList(),
+            AlertRules = alertRules.Select(r => new TenantAlertRuleExportDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                MetricName = r.MetricName,
+                Condition = r.ConditionType.ToString(),
+                Threshold = r.Threshold,
+                IsEnabled = r.IsEnabled,
+                CreatedAtUtc = r.CreatedAtUtc
+            }).ToList(),
+            Dashboards = dashboards.Select(d => new TenantDashboardExportDto
+            {
+                Id = d.Id,
+                Title = d.Title,
+                Description = d.Description,
+                IsDefault = d.IsDefault,
+                IsShared = d.IsShared,
+                CreatedAtUtc = d.CreatedAtUtc
+            }).ToList(),
+            RecentAuditEvents = recentAudits.Select(a => new TenantAuditEventExportDto
+            {
+                Action = a.Action,
+                UserId = a.UserId,
+                Details = a.Details,
+                Timestamp = a.Timestamp
+            }).ToList()
+        };
+
+        await _auditService.RecordAsync(
+            action: "Organization.DataExported",
+            targetEntityType: "Organization",
+            targetEntityId: orgId.ToString(),
+            outcome: "Success",
+            details: $"Tenant data archive exported by user {userId}.",
+            cancellationToken: ct);
+
+        return (true, export, null);
+    }
+
+    public async Task<(bool Success, string? Error)> DeleteOrganizationAccountAsync(
+        Guid orgId,
+        DeleteAccountRequest request,
+        string userId,
+        CancellationToken ct = default)
+    {
+        var caller = await _context.OrganizationMembers
+            .FirstOrDefaultAsync(m => m.OrganizationId == orgId && m.UserId == userId, ct);
+
+        if (caller == null || caller.Role != OrganizationRole.Owner)
+            return (false, "Only the organization Owner can delete the organization account.");
+
+        var org = await _context.Organizations
+            .Include(o => o.Applications)
+            .FirstOrDefaultAsync(o => o.Id == orgId, ct);
+
+        if (org == null)
+            return (false, "Organization not found.");
+
+        var expectedPhrase = $"CONFIRM DELETE {org.Name}";
+        if (!string.Equals(request.ConfirmationPhrase?.Trim(), expectedPhrase, StringComparison.Ordinal))
+        {
+            return (false, $"Invalid confirmation phrase. Please enter '{expectedPhrase}' exactly to confirm deletion.");
+        }
+
+        // Soft delete organization
+        org.IsActive = false;
+        org.UpdatedAtUtc = DateTime.UtcNow;
+
+        // Soft delete associated applications
+        if (org.Applications != null)
+        {
+            foreach (var app in org.Applications)
+            {
+                app.IsActive = false;
+                app.UpdatedAtUtc = DateTime.UtcNow;
+            }
+        }
+
+        // Cancel active subscription if present
+        var sub = await _context.OrganizationSubscriptions
+            .FirstOrDefaultAsync(s => s.OrganizationId == orgId, ct);
+
+        if (sub != null && sub.Status != SubscriptionStatus.Canceled && sub.Status != SubscriptionStatus.Expired)
+        {
+            sub.Status = SubscriptionStatus.Canceled;
+            sub.CanceledAtUtc = DateTime.UtcNow;
+            sub.CancelAtPeriodEnd = false;
+            sub.UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        // Revoke any pending invitations
+        var pendingInvites = await _context.OrganizationInvitations
+            .Where(i => i.OrganizationId == orgId && i.AcceptedAtUtc == null && i.RevokedAtUtc == null)
+            .ToListAsync(ct);
+
+        foreach (var invite in pendingInvites)
+        {
+            invite.RevokedAtUtc = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(ct);
+
+        await _auditService.RecordAsync(
+            action: "Organization.AccountDeleted",
+            targetEntityType: "Organization",
+            targetEntityId: orgId.ToString(),
+            outcome: "Success",
+            details: $"Organization '{org.Name}' ({orgId}) soft-deleted by Owner {userId}.",
+            cancellationToken: ct);
+
+        return (true, null);
+    }
+
     private static string HashToken(string rawToken)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
