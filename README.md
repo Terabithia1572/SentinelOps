@@ -20,8 +20,8 @@
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
     <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-18-336791" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-152%20backend%20%7C%2023%20frontend-brightgreen" />
-    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Conditionally%20Ready-blue" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-190%20backend%20%7C%2039%20frontend-brightgreen" />
+    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Verified%20%26%20Hardened-brightgreen" />
   </p>
 </div>
 

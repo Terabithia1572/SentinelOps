@@ -105,3 +105,13 @@ To prevent attackers from using the SentinelOps alert dispatch system to probe i
 - **Timestamp Anti-Replay**: The delivery payload includes an ISO-8601 UTC timestamp for receiver anti-replay verification.
 - **SSRF Test Suite**: Verified by unit test suite in `tests/SentinelOps.Application.Tests/Security/SsrfValidatorTests.cs`.
 
+---
+
+## 8. Multi-Tenant SaaS Isolation & Boundary Verification
+
+- **Strict Server-Side Organization Scoping**: `ICurrentTenantService` resolves the active tenant from authenticated claims and the `X-Organization-Id` header, requiring verified active membership in `OrganizationMembers`.
+- **Query Hardening**: All relational queries across Logs, Traces, Metrics, Exceptions, Service Health, Alert Rules, and Incidents strictly enforce `WHERE "ApplicationId" IN (SELECT "Id" FROM "Applications" WHERE "OrganizationId" = @TenantOrgId)`.
+- **SignalR Hub Group Authorization**: `/hubs/alerts` verifies tenant ownership before permitting clients to join `app-{id}` or `org-{id}` groups. Cross-tenant group join attempts throw `HubException ("Access denied")`.
+- **Cross-Tenant Regression Tests**: Validated by integration test suites in `MultiTenantTelemetryPipelineIntegrationTests.cs` and `AlertingAndSignalRMultiTenantIntegrationTests.cs`.
+
+
