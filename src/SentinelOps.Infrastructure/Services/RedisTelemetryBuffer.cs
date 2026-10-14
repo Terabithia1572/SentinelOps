@@ -154,6 +154,77 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
         }
     }
 
+    private async Task<List<StreamEntry>> ReadEntriesWithPelRecoveryAsync(
+        IDatabase db,
+        string streamKey,
+        string consumerName,
+        int count = 100,
+        long minIdleTimeMs = 30_000)
+    {
+        var entries = new List<StreamEntry>();
+        try
+        {
+            var pendingInfos = await db.StreamPendingMessagesAsync(
+                streamKey,
+                ConsumerGroup,
+                count,
+                consumerName: RedisValue.Null);
+
+            if (pendingInfos != null && pendingInfos.Length > 0)
+            {
+                var staleIds = pendingInfos
+                    .Where(p => p.IdleTimeInMilliseconds >= minIdleTimeMs)
+                    .Select(p => p.MessageId)
+                    .ToArray();
+
+                if (staleIds.Length > 0)
+                {
+                    var claimedEntries = await db.StreamClaimAsync(
+                        streamKey,
+                        ConsumerGroup,
+                        consumerName,
+                        minIdleTimeMs,
+                        staleIds);
+
+                    if (claimedEntries != null && claimedEntries.Length > 0)
+                    {
+                        entries.AddRange(claimedEntries);
+                        _logger.LogInformation("Claimed {Count} unacknowledged entries from PEL for {StreamKey}", claimedEntries.Length, streamKey);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogTrace(ex, "PEL auto-claim check skipped for stream {StreamKey}", streamKey);
+        }
+
+        if (entries.Count == 0)
+        {
+            try
+            {
+                var newEntries = await db.StreamReadGroupAsync(
+                    streamKey,
+                    ConsumerGroup,
+                    consumerName,
+                    StreamPosition.NewMessages,
+                    count: count);
+
+                if (newEntries != null && newEntries.Length > 0)
+                {
+                    entries.AddRange(newEntries);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error reading from Redis stream {StreamKey}", streamKey);
+                throw;
+            }
+        }
+
+        return entries;
+    }
+
     public async IAsyncEnumerable<LogIngestionMessage> ReadLogsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (_redis != null && _redis.IsConnected)
@@ -173,60 +244,54 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
 
                 while (!cancellationToken.IsCancellationRequested)
-            {
-                while (_fallbackLogChannel.Reader.TryRead(out var fallbackMsg))
                 {
-                    yield return fallbackMsg;
-                }
-
-                StreamEntry[]? entries = null;
-                try
-                {
-                    entries = await db.StreamReadGroupAsync(
-                        LogsStreamKey,
-                        ConsumerGroup,
-                        consumerName,
-                        StreamPosition.NewMessages,
-                        count: 100);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error reading from Redis logs stream; checking fallback channel.");
-                    break;
-                }
-
-                if (entries != null && entries.Length > 0)
-                {
-                    foreach (var entry in entries)
+                    while (_fallbackLogChannel.Reader.TryRead(out var fallbackMsg))
                     {
-                        var json = entry["data"].ToString();
-                        LogIngestionMessage? msg = null;
-                        try
-                        {
-                            msg = JsonSerializer.Deserialize<LogIngestionMessage>(json);
-                        }
-                        catch (Exception parseEx)
-                        {
-                            _logger.LogError(parseEx, "Malformed log payload sent to dead letter stream");
-                            await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "log"), new("data", json) });
-                            await db.StreamAcknowledgeAsync(LogsStreamKey, ConsumerGroup, entry.Id);
-                            continue;
-                        }
+                        yield return fallbackMsg;
+                    }
 
-                        if (msg != null)
+                    List<StreamEntry> entries;
+                    try
+                    {
+                        entries = await ReadEntriesWithPelRecoveryAsync(db, LogsStreamKey, consumerName, count: 100);
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    if (entries.Count > 0)
+                    {
+                        foreach (var entry in entries)
                         {
-                            yield return msg;
-                            await db.StreamAcknowledgeAsync(LogsStreamKey, ConsumerGroup, entry.Id);
+                            var json = entry["data"].ToString();
+                            LogIngestionMessage? msg = null;
+                            try
+                            {
+                                msg = JsonSerializer.Deserialize<LogIngestionMessage>(json);
+                            }
+                            catch (Exception parseEx)
+                            {
+                                _logger.LogError(parseEx, "Malformed log payload sent to dead letter stream");
+                                await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "log"), new("data", json) });
+                                await db.StreamAcknowledgeAsync(LogsStreamKey, ConsumerGroup, entry.Id);
+                                continue;
+                            }
+
+                            if (msg != null)
+                            {
+                                await db.StreamAcknowledgeAsync(LogsStreamKey, ConsumerGroup, entry.Id);
+                                yield return msg;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    await Task.Delay(200, cancellationToken);
+                    else
+                    {
+                        await Task.Delay(200, cancellationToken);
+                    }
                 }
             }
         }
-    }
 
         // Read from in-memory fallback channel
         while (await _fallbackLogChannel.Reader.WaitToReadAsync(cancellationToken))
@@ -257,60 +322,54 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
 
                 while (!cancellationToken.IsCancellationRequested)
-            {
-                while (_fallbackTraceChannel.Reader.TryRead(out var fallbackMsg))
                 {
-                    yield return fallbackMsg;
-                }
-
-                StreamEntry[]? entries = null;
-                try
-                {
-                    entries = await db.StreamReadGroupAsync(
-                        TracesStreamKey,
-                        ConsumerGroup,
-                        consumerName,
-                        StreamPosition.NewMessages,
-                        count: 100);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error reading from Redis traces stream; checking fallback channel.");
-                    break;
-                }
-
-                if (entries != null && entries.Length > 0)
-                {
-                    foreach (var entry in entries)
+                    while (_fallbackTraceChannel.Reader.TryRead(out var fallbackMsg))
                     {
-                        var json = entry["data"].ToString();
-                        TraceIngestionMessage? msg = null;
-                        try
-                        {
-                            msg = JsonSerializer.Deserialize<TraceIngestionMessage>(json);
-                        }
-                        catch (Exception parseEx)
-                        {
-                            _logger.LogError(parseEx, "Malformed trace payload sent to dead letter stream");
-                            await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "trace"), new("data", json) });
-                            await db.StreamAcknowledgeAsync(TracesStreamKey, ConsumerGroup, entry.Id);
-                            continue;
-                        }
+                        yield return fallbackMsg;
+                    }
 
-                        if (msg != null)
+                    List<StreamEntry> entries;
+                    try
+                    {
+                        entries = await ReadEntriesWithPelRecoveryAsync(db, TracesStreamKey, consumerName, count: 100);
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    if (entries.Count > 0)
+                    {
+                        foreach (var entry in entries)
                         {
-                            yield return msg;
-                            await db.StreamAcknowledgeAsync(TracesStreamKey, ConsumerGroup, entry.Id);
+                            var json = entry["data"].ToString();
+                            TraceIngestionMessage? msg = null;
+                            try
+                            {
+                                msg = JsonSerializer.Deserialize<TraceIngestionMessage>(json);
+                            }
+                            catch (Exception parseEx)
+                            {
+                                _logger.LogError(parseEx, "Malformed trace payload sent to dead letter stream");
+                                await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "trace"), new("data", json) });
+                                await db.StreamAcknowledgeAsync(TracesStreamKey, ConsumerGroup, entry.Id);
+                                continue;
+                            }
+
+                            if (msg != null)
+                            {
+                                await db.StreamAcknowledgeAsync(TracesStreamKey, ConsumerGroup, entry.Id);
+                                yield return msg;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    await Task.Delay(200, cancellationToken);
+                    else
+                    {
+                        await Task.Delay(200, cancellationToken);
+                    }
                 }
             }
         }
-    }
 
         while (await _fallbackTraceChannel.Reader.WaitToReadAsync(cancellationToken))
         {
@@ -340,60 +399,54 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
                 var consumerName = $"consumer-{Guid.NewGuid():N}"[..16];
 
                 while (!cancellationToken.IsCancellationRequested)
-            {
-                while (_fallbackMetricChannel.Reader.TryRead(out var fallbackMsg))
                 {
-                    yield return fallbackMsg;
-                }
-
-                StreamEntry[]? entries = null;
-                try
-                {
-                    entries = await db.StreamReadGroupAsync(
-                        MetricsStreamKey,
-                        ConsumerGroup,
-                        consumerName,
-                        StreamPosition.NewMessages,
-                        count: 100);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error reading from Redis metrics stream; checking fallback channel.");
-                    break;
-                }
-
-                if (entries != null && entries.Length > 0)
-                {
-                    foreach (var entry in entries)
+                    while (_fallbackMetricChannel.Reader.TryRead(out var fallbackMsg))
                     {
-                        var json = entry["data"].ToString();
-                        MetricIngestionMessage? msg = null;
-                        try
-                        {
-                            msg = JsonSerializer.Deserialize<MetricIngestionMessage>(json);
-                        }
-                        catch (Exception parseEx)
-                        {
-                            _logger.LogError(parseEx, "Malformed metric payload sent to dead letter stream");
-                            await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "metric"), new("data", json) });
-                            await db.StreamAcknowledgeAsync(MetricsStreamKey, ConsumerGroup, entry.Id);
-                            continue;
-                        }
+                        yield return fallbackMsg;
+                    }
 
-                        if (msg != null)
+                    List<StreamEntry> entries;
+                    try
+                    {
+                        entries = await ReadEntriesWithPelRecoveryAsync(db, MetricsStreamKey, consumerName, count: 100);
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    if (entries.Count > 0)
+                    {
+                        foreach (var entry in entries)
                         {
-                            yield return msg;
-                            await db.StreamAcknowledgeAsync(MetricsStreamKey, ConsumerGroup, entry.Id);
+                            var json = entry["data"].ToString();
+                            MetricIngestionMessage? msg = null;
+                            try
+                            {
+                                msg = JsonSerializer.Deserialize<MetricIngestionMessage>(json);
+                            }
+                            catch (Exception parseEx)
+                            {
+                                _logger.LogError(parseEx, "Malformed metric payload sent to dead letter stream");
+                                await db.StreamAddAsync(DeadLetterStreamKey, new NameValueEntry[] { new("type", "metric"), new("data", json) });
+                                await db.StreamAcknowledgeAsync(MetricsStreamKey, ConsumerGroup, entry.Id);
+                                continue;
+                            }
+
+                            if (msg != null)
+                            {
+                                await db.StreamAcknowledgeAsync(MetricsStreamKey, ConsumerGroup, entry.Id);
+                                yield return msg;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    await Task.Delay(200, cancellationToken);
+                    else
+                    {
+                        await Task.Delay(200, cancellationToken);
+                    }
                 }
             }
         }
-    }
 
         while (await _fallbackMetricChannel.Reader.WaitToReadAsync(cancellationToken))
         {

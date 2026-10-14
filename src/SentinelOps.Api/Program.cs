@@ -155,7 +155,17 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR();
+var useRedisBackplane = builder.Configuration.GetValue<bool>("SignalR:UseRedisBackplane", false);
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (useRedisBackplane && !string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    signalRBuilder.AddStackExchangeRedis(redisConnectionString, options =>
+    {
+        options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("sentinelops:signalr");
+        options.Configuration.AbortOnConnectFail = false;
+    });
+}
 builder.Services.AddScoped<SentinelOps.Application.Common.Interfaces.IRealtimeNotifier, SentinelOps.Api.Services.RealtimeNotifier>();
 
 builder.Services.AddAuthorization(options =>
