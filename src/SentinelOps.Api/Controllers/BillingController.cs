@@ -16,11 +16,52 @@ public class BillingController : ControllerBase
 {
     private readonly IBillingService _billingService;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly IEntitlementService _entitlementService;
 
-    public BillingController(IBillingService billingService, IPaymentProvider paymentProvider)
+    public BillingController(
+        IBillingService billingService,
+        IPaymentProvider paymentProvider,
+        IEntitlementService entitlementService)
     {
         _billingService = billingService;
         _paymentProvider = paymentProvider;
+        _entitlementService = entitlementService;
+    }
+
+    [HttpGet("entitlements")]
+    public async Task<ActionResult<ApiResponse<TenantEntitlementsDto>>> GetEntitlements(
+        [FromHeader(Name = "X-Organization-Id")] Guid? orgIdHeader,
+        [FromQuery] Guid? organizationId,
+        CancellationToken ct)
+    {
+        var orgId = orgIdHeader ?? organizationId;
+        if (!orgId.HasValue || orgId.Value == Guid.Empty)
+            return BadRequest(ApiResponse<TenantEntitlementsDto>.Fail("Organization ID is required."));
+
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<TenantEntitlementsDto>.Fail("Unauthorized"));
+
+        var entitlements = await _entitlementService.GetEntitlementsAsync(orgId.Value, userId, ct);
+        return Ok(ApiResponse<TenantEntitlementsDto>.Ok(entitlements));
+    }
+
+    [HttpGet("usage")]
+    public async Task<ActionResult<ApiResponse<TenantUsageSummaryDto>>> GetUsage(
+        [FromHeader(Name = "X-Organization-Id")] Guid? orgIdHeader,
+        [FromQuery] Guid? organizationId,
+        CancellationToken ct)
+    {
+        var orgId = orgIdHeader ?? organizationId;
+        if (!orgId.HasValue || orgId.Value == Guid.Empty)
+            return BadRequest(ApiResponse<TenantUsageSummaryDto>.Fail("Organization ID is required."));
+
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<TenantUsageSummaryDto>.Fail("Unauthorized"));
+
+        var usage = await _entitlementService.GetUsageSummaryAsync(orgId.Value, userId, ct);
+        return Ok(ApiResponse<TenantUsageSummaryDto>.Ok(usage));
     }
 
     [HttpGet("account")]

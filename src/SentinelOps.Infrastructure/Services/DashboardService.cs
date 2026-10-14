@@ -74,6 +74,13 @@ public class DashboardService : IDashboardService
             await ClearExistingDefaultAsync(orgId, cancellationToken);
         }
 
+        var settings = await _context.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == orgId, cancellationToken);
+        var currentDashboards = await _context.Dashboards.CountAsync(d => d.OrganizationId == orgId, cancellationToken);
+        if (settings != null && settings.MaxCustomDashboards > 0 && currentDashboards >= settings.MaxCustomDashboards)
+        {
+            throw new InvalidOperationException($"Custom dashboard limit reached ({currentDashboards}/{settings.MaxCustomDashboards}) for the {settings.PlanTier} plan. Upgrade plan to create more dashboards.");
+        }
+
         var tagsJson = request.Tags != null ? JsonSerializer.Serialize(request.Tags) : "[]";
         var layoutJson = string.IsNullOrWhiteSpace(request.LayoutJson) ? "[]" : request.LayoutJson;
 

@@ -294,10 +294,16 @@ public class OrganizationService : IOrganizationService
         if (caller == null || (caller.Role != OrganizationRole.Owner && caller.Role != OrganizationRole.Admin))
             return (false, null, "Only Organization Owners or Admins can invite members.");
 
-        if (string.IsNullOrWhiteSpace(request.Email))
-            return (false, null, "A valid email address is required.");
-
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
+
+        // Check seat limit entitlement
+        var currentMembers = await _context.OrganizationMembers.CountAsync(m => m.OrganizationId == orgId, ct);
+        var pendingCount = await _context.OrganizationInvitations.CountAsync(i => i.OrganizationId == orgId && i.AcceptedAtUtc == null && i.RevokedAtUtc == null, ct);
+        var settings = await _context.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == orgId, ct);
+        if (settings != null && settings.MaxMembers > 0 && (currentMembers + pendingCount) >= settings.MaxMembers)
+        {
+            return (false, null, $"Member seat limit reached ({currentMembers + pendingCount}/{settings.MaxMembers}) for the {settings.PlanTier} plan. Upgrade plan to invite additional team members.");
+        }
 
         // Check if user is already a member
         var existingUser = await _userManager.FindByEmailAsync(cleanEmail);

@@ -57,6 +57,13 @@ public class ExceptionHandlingMiddleware
                 problemDetails.Detail = notFoundEx.Message;
                 break;
 
+            case InvalidOperationException invalidOpEx:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                problemDetails.Status = (int)HttpStatusCode.BadRequest;
+                problemDetails.Title = "Bad Request";
+                problemDetails.Detail = invalidOpEx.Message;
+                break;
+
             case UnauthorizedAccessException:
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 problemDetails.Status = (int)HttpStatusCode.Unauthorized;

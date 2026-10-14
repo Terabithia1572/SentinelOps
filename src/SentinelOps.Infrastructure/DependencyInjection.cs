@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ITaxCalculationService, DefaultTaxCalculationService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IBillingService, BillingService>();
+        services.AddScoped<IEntitlementService, EntitlementService>();
         services.AddSingleton<IPaymentWebhookVerifier, Services.Payments.SandboxPaymentWebhookVerifier>();
         services.AddScoped<Services.Payments.SandboxPaymentProvider>();
         services.AddScoped<Services.Payments.DisabledPaymentProvider>();

@@ -10,15 +10,32 @@ public class CreateApplicationCommandHandler : IRequestHandler<CreateApplication
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentTenantService _tenantService;
+    private readonly IEntitlementService _entitlementService;
 
-    public CreateApplicationCommandHandler(IApplicationDbContext context, ICurrentTenantService tenantService)
+    public CreateApplicationCommandHandler(
+        IApplicationDbContext context,
+        ICurrentTenantService tenantService,
+        IEntitlementService entitlementService)
     {
         _context = context;
         _tenantService = tenantService;
+        _entitlementService = entitlementService;
     }
 
     public async Task<ApplicationDto> Handle(CreateApplicationCommand request, CancellationToken cancellationToken)
     {
+        if (_tenantService.OrganizationId.HasValue && _tenantService.OrganizationId.Value != Guid.Empty)
+        {
+            var (allowed, reason) = await _entitlementService.CheckFeatureAccessAsync(
+                _tenantService.OrganizationId.Value,
+                EntitlementFeature.RegisterApplication,
+                cancellationToken);
+
+            if (!allowed)
+            {
+                throw new InvalidOperationException(reason ?? "Application limit reached for your subscription plan.");
+            }
+        }
         var application = new ApplicationEntity
         {
             Name = request.Name,
