@@ -106,6 +106,15 @@ public static class DependencyInjection
         // SLO Monitoring
         services.AddScoped<ISloEvaluationService, Services.Slo.SloEvaluationService>();
 
+        // AI Observability & Intelligence
+        services.Configure<SentinelOps.Contracts.DTOs.AiOptions>(configuration.GetSection("AiSettings"));
+        services.AddScoped<IAiUsageMeter, Services.Ai.AiUsageMeter>();
+        services.AddScoped<Services.Ai.DisabledAiProvider>();
+        services.AddScoped<Services.Ai.DeterministicAiProvider>();
+        services.AddHttpClient<Services.Ai.ExternalLlmProvider>();
+        services.AddScoped<IAiProviderFactory, Services.Ai.AiProviderFactory>();
+        services.AddScoped<IAiProvider>(sp => sp.GetRequiredService<IAiProviderFactory>().GetProvider());
+
         services.AddHostedService<TelemetryConsumerService>();
 
         return services;

@@ -9,5 +9,7 @@ public enum AlertConditionType
     ThroughputAboveThreshold,
     ExceptionCountAboveThreshold,
     LogSeverityCountAboveThreshold,
-    NoTelemetryReceived
+    NoTelemetryReceived,
+    PredictiveCapacityThresholdBreach,
+    StatisticalAnomalyScoreAboveThreshold
 }

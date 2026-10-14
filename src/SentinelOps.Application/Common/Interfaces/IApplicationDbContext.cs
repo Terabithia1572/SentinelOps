@@ -42,6 +42,10 @@ public interface IApplicationDbContext
     DbSet<CustomDashboard> Dashboards { get; }
     DbSet<StatusPage> StatusPages { get; }
     DbSet<StatusPageIncident> StatusPageIncidents { get; }
+    DbSet<TelemetryAnomaly> TelemetryAnomalies { get; }
+    DbSet<LogPattern> LogPatterns { get; }
+    DbSet<IncidentRca> IncidentRcas { get; }
+    DbSet<PredictiveForecast> PredictiveForecasts { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

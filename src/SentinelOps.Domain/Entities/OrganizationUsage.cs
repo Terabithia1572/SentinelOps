@@ -12,5 +12,7 @@ public class OrganizationUsage : Entity
     public long MetricsIngestedMonthToDate { get; set; }
     public long ApiRequestsMonthToDate { get; set; }
     public long EstimatedStorageBytes { get; set; }
+    public long AiTokensUsedMonthToDate { get; set; }
+    public int AiInvocationsMonthToDate { get; set; }
     public DateTime LastResetAtUtc { get; set; } = DateTime.UtcNow;
 }

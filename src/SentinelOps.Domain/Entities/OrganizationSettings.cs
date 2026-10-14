@@ -18,4 +18,9 @@ public class OrganizationSettings : Entity
     public int MaxCustomDashboards { get; set; } = 15;
     public long MaxMonthlyLogs { get; set; } = 1_000_000;
     public long MaxMonthlyTraces { get; set; } = 500_000;
+
+    // AI Observability & Intelligence Settings
+    public bool IsAiEnabled { get; set; } = true;
+    public string PreferredAiProvider { get; set; } = "Deterministic"; // "Disabled", "Deterministic", "ExternalLlm"
+    public int MaxMonthlyAiTokens { get; set; } = 100_000;
 }

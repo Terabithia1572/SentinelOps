@@ -51,6 +51,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<CustomDashboard> Dashboards => Set<CustomDashboard>();
     public DbSet<StatusPage> StatusPages => Set<StatusPage>();
     public DbSet<StatusPageIncident> StatusPageIncidents => Set<StatusPageIncident>();
+    public DbSet<TelemetryAnomaly> TelemetryAnomalies => Set<TelemetryAnomaly>();
+    public DbSet<LogPattern> LogPatterns => Set<LogPattern>();
+    public DbSet<IncidentRca> IncidentRcas => Set<IncidentRca>();
+    public DbSet<PredictiveForecast> PredictiveForecasts => Set<PredictiveForecast>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
