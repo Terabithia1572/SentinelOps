@@ -501,5 +501,59 @@
   - Frontend production bundle gate: Clean build in 450ms.
   - Documented in [`docs/phase9/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase9/FINAL-ACCEPTANCE.md).
 
+---
+
+## Phase 10 — Infrastructure Recovery, Kubernetes, Horizontal Scaling & High Availability
+**Status:** ✅ Completed  
+**Completed:** 2026-10-14  
+**Latest Phase 10 Commit:** `In Progress / Ready for Final Release Commit`
+
+### Completed Checkpoints
+- [x] **Checkpoint 10.0 — Phase 9 Exit Audit (`710e341`)**:
+  - Full environment & tooling audit (.NET 10.0.401, Node v24.17.0, npm 11.13.0, PostgreSQL 18 on 5432, kubectl v1.34.1).
+  - Mapped all 7 Phase 9 exit gaps (Docker daemon stopped, in-memory fallback durability risks, SignalR scale-out lacking Redis backplane, worker PEL recovery, database migration concurrency, missing Helm charts).
+  - Documented in [`docs/phase10/BASELINE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/BASELINE.md) and [`docs/phase10/PHASE9-EXIT-GAPS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/PHASE9-EXIT-GAPS.md).
+- [x] **Checkpoint 10.1 — Docker & WSL2 Recovery Gate (`9824159`)**:
+  - Diagnosed root cause non-destructively: Windows service `com.docker.service` is active, but WSL2 `docker-desktop` is stopped and pipe `\\.\pipe\dockerDesktopLinuxEngine` is closed because interactive GUI `Docker Desktop.exe` was not launched in the active user session.
+  - Non-destructive policy maintained: zero volumes, databases, or WSL distributions pruned.
+  - Documented in [`docs/phase10/DOCKER-RECOVERY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/DOCKER-RECOVERY.md).
+- [x] **Checkpoint 10.2 — Full Telemetry Pipeline Acceptance (`ce8e342`)**:
+  - Mapped canonical telemetry pipeline (Sample API -> OTel SDK -> Collector -> OTLP Ingestion -> Redis Streams -> Worker -> PostgreSQL -> API -> React Dashboard).
+  - Authored [`TelemetryPipelineE2EIntegrationTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/TelemetryPipelineE2EIntegrationTests.cs) (2 tests verifying parent/child span hierarchy, trace-log correlation via TraceId/SpanId, and revoked key rejection).
+  - Documented in [`docs/phase10/TELEMETRY-PIPELINE-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/TELEMETRY-PIPELINE-ACCEPTANCE.md).
+- [x] **Checkpoint 10.3 — Kubernetes Cloud-Native Architecture & Helm Chart (`881dbe1`)**:
+  - Authored complete, production-ready Helm chart in `deploy/helm/sentinelops/` (`Chart.yaml`, `values.yaml`, `values-development.yaml`, `values-production.example.yaml`, templates for API, Worker, Web, Collector, Redis, Ingress, HPA, PDB, NetworkPolicy, ServiceAccount, and migration Job).
+  - Authored raw Kubernetes declarative manifests in `deploy/kubernetes/sentinelops-app.yaml`.
+  - Documented in [`docs/phase10/KUBERNETES-ARCHITECTURE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/KUBERNETES-ARCHITECTURE.md) and [`docs/phase10/HELM-DEPLOYMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/HELM-DEPLOYMENT.md).
+- [x] **Checkpoint 10.4 — Horizontal Scaling & High Availability (`d650b35`)**:
+  - Configured SignalR Redis backplane with `Microsoft.AspNetCore.SignalR.StackExchangeRedis` (v9.0.2 with secure `MessagePack` 3.1.12), isolated channel prefix `sentinelops:signalr`, and `AbortOnConnectFail = false`.
+  - Enhanced `RedisTelemetryBuffer.cs` with active Pending Entry List (PEL) recovery (`StreamPendingMessagesAsync` + `StreamClaimAsync`) for abandoned messages older than 30 seconds after worker crashes.
+  - Implemented dead-letter stream (`sentinelops:stream:dead-letter`) isolation for corrupted payloads.
+  - Authored [`HorizontalScalingAndHighAvailabilityTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/HorizontalScalingAndHighAvailabilityTests.cs) (3 integration tests passing).
+  - Documented in [`docs/phase10/HIGH-AVAILABILITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/HIGH-AVAILABILITY.md).
+- [x] **Checkpoint 10.5 — Data Durability, Fail-Closed Policy & Resilience (`0b53c96`)**:
+  - Implemented configurable fail-closed production durability policy in `RedisTelemetryBuffer.cs` (`RequireDurableStorage = true`).
+  - Added `DurableBufferUnavailableException` mapped in `ExceptionHandlingMiddleware.cs` to HTTP 503 (`Service Unavailable`) with `Retry-After: 5` header and RFC 7807 `ProblemDetails`.
+  - Registered `TelemetryBufferHealthCheck` to `/health/ready` to remove unready pods from Kubernetes endpoints during Redis buffer outages.
+  - Authored [`DataDurabilityAndResilienceTests.cs`](file:///c:/Users/Yunus/Desktop/SentinelOps/tests/SentinelOps.Api.IntegrationTests/DataDurabilityAndResilienceTests.cs) (6 integration tests passing).
+  - Documented in [`docs/phase10/DATA-DURABILITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/DATA-DURABILITY.md).
+- [x] **Checkpoint 10.6 — Kubernetes Platform Security & Container Hardening (`15209e4`)**:
+  - Audited against NSA/CISA Kubernetes Hardening Guidance and CIS Benchmark: `runAsNonRoot: true`, UID/GID 1000/101, `allowPrivilegeEscalation: false`, `capabilities.drop: ["ALL"]`, `seccompProfile: { type: RuntimeDefault }`, `automountServiceAccountToken: false`.
+  - Hardened reverse proxy integration with `UseForwardedHeaders` and `KnownIPNetworks.Clear()`.
+  - Zero hardcoded secrets; documented secret rotation playbooks.
+  - Documented in [`docs/phase10/PLATFORM-SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/PLATFORM-SECURITY.md).
+- [x] **Checkpoint 10.7 — GitOps, CI/CD & Release Engineering (`5b8465c`)**:
+  - Enhanced GitHub Actions CI workflow (`.github/workflows/ci.yml`) with automated `helm-validation` job (`helm lint` and template dry-run validation for development and production profiles).
+  - Authored deployment and rollback playbooks (atomic Helm upgrades, `helm rollback`, `kubectl rollout undo`).
+  - Documented in [`docs/phase10/RELEASE-ENGINEERING.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/RELEASE-ENGINEERING.md).
+- [x] **Checkpoint 10.8 — Performance, Failure Testing & Final Acceptance**:
+  - Solution build gate: `dotnet build SentinelOps.slnx --warnaserror` (0 Warnings, 0 Errors across all 14 projects).
+  - Full automated backend test suite: **201 / 201 passed** (29 Domain + 58 Application + 114 Api.IntegrationTests).
+  - Full automated frontend test suite: **39 / 39 passed** across 12 test suites.
+  - Grand total automated tests: **240 passed (100% pass rate)**.
+  - Frontend typecheck gate: **0 Errors** (`tsc -b --noEmit`).
+  - Frontend production build: Clean build in 572ms.
+  - Documented in [`docs/phase10/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase10/FINAL-ACCEPTANCE.md).
+
 
 

@@ -114,4 +114,22 @@ To prevent attackers from using the SentinelOps alert dispatch system to probe i
 - **SignalR Hub Group Authorization**: `/hubs/alerts` verifies tenant ownership before permitting clients to join `app-{id}` or `org-{id}` groups. Cross-tenant group join attempts throw `HubException ("Access denied")`.
 - **Cross-Tenant Regression Tests**: Validated by integration test suites in `MultiTenantTelemetryPipelineIntegrationTests.cs` and `AlertingAndSignalRMultiTenantIntegrationTests.cs`.
 
+---
+
+## 9. Kubernetes & Cloud-Native Hardening (Phase 10)
+
+- **NSA/CISA Kubernetes Hardening Baseline**:
+  - `runAsNonRoot: true` with dedicated unprivileged UIDs (`1000` for .NET API and Worker, `101` for Nginx Web frontend).
+  - All Linux capabilities stripped (`capabilities.drop: ["ALL"]`).
+  - Privilege escalation strictly disabled (`allowPrivilegeEscalation: false`).
+  - Seccomp profile enforced: `seccompProfile: { type: RuntimeDefault }`.
+  - ServiceAccount tokens detached: `automountServiceAccountToken: false` prevents token exfiltration.
+- **Zero-Trust Network Policies**:
+  - `deploy/helm/sentinelops/templates/networkpolicy.yaml` restricts inter-pod communication. Workers accept 0 inbound traffic, API only allows Ingress on 8080, and Redis only allows connections from API and Worker pods.
+- **Reverse Proxy Protection (`UseForwardedHeaders`)**:
+  - Ingress controller proxy IPs are handled via `ForwardedHeadersOptions` with `KnownIPNetworks.Clear()`, ensuring real client IP extraction for rate limiters, security audit trails, and HSTS/HTTPS detection.
+- **Production Fail-Closed Durability Policy**:
+  - In production (`RequireDurableStorage = true`), when Redis is unavailable, telemetry ingestion endpoints fail closed with HTTP 503 (`Service Unavailable`) and `Retry-After: 5` header, preventing silent data loss into volatile in-memory buffers.
+  - Pods report `Unhealthy` on `/health/ready` during buffer outages to be removed from Ingress routing.
+
 

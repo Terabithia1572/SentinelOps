@@ -19,8 +19,8 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-18-336791" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-190%20backend%20%7C%2039%20frontend-brightgreen" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-201%20backend%20%7C%2039%20frontend-brightgreen" />
+    <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Helm%20Chart%20v1.0-326CE5" />
     <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Verified%20%26%20Hardened-brightgreen" />
   </p>
 </div>
@@ -267,12 +267,33 @@ npm run dev
 ### Running Tests
 
 ```bash
-# Backend tests (152 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Security Hardening, Alerting, Incidents, SLOs, User Management, Audit Sanitization, Retention, PDF Reporting)
+# Backend tests (201 tests: Domain, Application, API Integration, OTLP Ingestion, Observability Explorer, Multi-Tenant Security, Alerting, Incidents, SignalR Backplane, Redis PEL Recovery, Data Durability)
 dotnet test SentinelOps.slnx
 
-# Frontend tests (23 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, SLOs, Admin, Audit Logs, Reports, Settings)
+# Frontend tests (39 tests: Auth, Overview, Applications, API Keys, Logs, Traces, Metrics, Health, Exceptions, Alerts, Rules, Incidents, AI Intelligence, SLOs, Admin, Audit Logs, Reports, Status Pages, Dashboards)
 cd src/SentinelOps.Web
 npm run test:run
+```
+
+### Kubernetes & Helm Deployment
+
+SentinelOps includes an enterprise-grade Helm chart with Horizontal Pod Autoscaler, PodDisruptionBudget, and Redis Streams PEL auto-recovery:
+
+```bash
+# Lint Helm chart syntax
+helm lint deploy/helm/sentinelops
+
+# Dry-run template rendering
+helm template sentinelops deploy/helm/sentinelops -f deploy/helm/sentinelops/values-production.example.yaml
+
+# Deploy to Kubernetes cluster
+helm upgrade --install sentinelops ./deploy/helm/sentinelops \
+  --namespace sentinelops \
+  --create-namespace \
+  -f ./deploy/helm/sentinelops/values-production.example.yaml \
+  --set secrets.postgresPassword="$POSTGRES_PASSWORD" \
+  --set secrets.jwtSecret="$JWT_SECRET_KEY" \
+  --set secrets.redisPassword="$REDIS_PASSWORD"
 ```
 
 ### Generating Telemetry & Running Sample App
