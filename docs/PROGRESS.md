@@ -611,6 +611,66 @@
   - Frontend typecheck & build gate: 0 Errors, clean production bundle in 594ms.
   - Documented in [`docs/phase11/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase11/FINAL-ACCEPTANCE.md).
 
+---
+
+## Phase 12 — Enterprise SaaS Commercialization, Subscription Management, Billing Architecture & Launch Readiness
+**Status:** ✅ Completed  
+**Completed:** 2026-10-15  
+**Verdict:** `CONDITIONALLY READY` (Hardened SaaS foundation verified; live external gateway keys marked NOT CONFIGURED / BLOCKED)
+
+### Completed Checkpoints
+- [x] **Checkpoint 12.0 — Baseline Audit & Production Readiness Gate (`8af16aa`)**:
+  - Verified Git HEAD `f7dc07b`, clean tree, EF Core 10 migrations, and tenant isolation layers.
+  - Authored [`docs/phase12/BASELINE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/BASELINE.md) and [`docs/phase12/PRODUCTION-GAPS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/PRODUCTION-GAPS.md).
+- [x] **Checkpoint 12.1 — SaaS Domain Architecture & Plan Catalog (`6f48663`)**:
+  - Entities: `SubscriptionPlan`, `BillingAccount`, `OrganizationSubscription`, `SubscriptionHistory`, `SaaSInvoice`, `InvoiceLineItem`, `PaymentTransaction`, `PaymentWebhookEvent`.
+  - Canonical plans: Starter ($0/mo), Pro ($49/mo), Enterprise ($249/mo).
+  - EF Core migration `20261014204636_AddSaasCommercialization`.
+  - Authored [`docs/phase12/SAAS-DOMAIN.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/SAAS-DOMAIN.md). 49 domain unit tests passing.
+- [x] **Checkpoint 12.2 — Self-Service Onboarding (`9b8f8bf`)**:
+  - `OnboardingService`, `OnboardingController` (`GET status`, `POST provision`, `GET verify/{id}`, `POST complete`).
+  - High-entropy copy-once API keys (`sent_live_*`) and live telemetry probe verifier.
+  - React 19 Onboarding Wizard (`src/SentinelOps.Web/src/pages/onboarding.tsx`).
+  - Authored [`docs/phase12/ONBOARDING.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/ONBOARDING.md). 48 frontend tests passing, 1 integration test passing.
+- [x] **Checkpoint 12.3 — Subscription Lifecycle & Billing Engine (`cd8eb68`)**:
+  - `SubscriptionService`: Strict state machine transitions (`Trialing` &rarr; `Active` &rarr; `PastDue` &rarr; `GracePeriod` &rarr; `Suspended` &rarr; `Canceled` &rarr; `Expired`), concurrency tokens, period-end vs immediate cancellation, quota propagation to `OrganizationSettings`.
+  - `BillingService`: Sequential invoice generation (`INV-YYYYMM-XXXXX`), tax calculation (`ITaxCalculationService`), administrative settlement (`POST /api/billing/invoices/{id}/settle-admin`).
+  - Authored [`docs/phase12/SUBSCRIPTIONS-AND-BILLING.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/SUBSCRIPTIONS-AND-BILLING.md). 3 integration tests passing.
+- [x] **Checkpoint 12.4 — Payment Provider Integration & Webhook Security (`f32a13f`)**:
+  - `IPaymentProvider`: `SandboxPaymentProvider` (simulated checkout `cs_test_*`, portals, refunds `re_test_*`) and `DisabledPaymentProvider` (`NOT CONFIGURED / BLOCKED`).
+  - `IPaymentWebhookVerifier` & `SandboxPaymentWebhookVerifier`: Cryptographic HMAC-SHA256 signature verification, 300s replay tolerance, constant-time comparison via `CryptographicOperations.FixedTimeEquals`.
+  - `PaymentWebhookHandler` & `PaymentWebhooksController`: Idempotent deduplication via `PaymentWebhookEvents` unique index on `(Provider, EventId)`.
+  - Event dispatchers: `checkout.session.completed`, `invoice.payment_succeeded`, `invoice.payment_failed` (triggers 7-day grace period & `NotificationOutbox`), `customer.subscription.deleted`.
+  - Authored [`docs/phase12/PAYMENT-INTEGRATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/PAYMENT-INTEGRATION.md). 6 verifier unit tests passing, 8 integration tests passing.
+- [x] **Checkpoint 12.5 — Usage Metering, Quota Management & Entitlement Enforcement (`14e0173`)**:
+  - `IEntitlementService` & `EntitlementService`: Central capability matrix evaluation and usage consumption tracker.
+  - Server-side hard blocks: `MaxApplications`, `MaxMembers`, `MaxCustomDashboards`, `MaxMonthlyLogs`, `MaxMonthlyTraces`, `MaxMonthlyAiTokens`.
+  - Delinquency access gating: `Suspended`, `Canceled`, `Expired` block provisioning; `PastDue` preserves telemetry ingestion during 7-day grace window.
+  - Automated monthly usage rollover on calendar month boundaries.
+  - Endpoints: `GET /api/billing/entitlements` and `GET /api/billing/usage`.
+  - Authored [`docs/phase12/USAGE-AND-ENTITLEMENTS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/USAGE-AND-ENTITLEMENTS.md). 7 entitlement integration tests passing.
+- [x] **Checkpoint 12.6 — Tenant Self-Service, Member Management & Account Security Workflows (`2f17a2b`)**:
+  - `OrganizationService`: Ownership transfer (`POST /api/organizations/{id}/ownership-transfer`), last-owner guardrail, GDPR tenant data portability archive export (`POST /api/organizations/{id}/export`), soft account deletion (`DELETE /api/organizations/{id}/account`) requiring exact confirmation phrase `CONFIRM DELETE {org.name}`.
+  - Cascading soft deactivation: marks organization inactive, deactivates applications, cancels active subscriptions, revokes pending invitations, and logs audit events.
+  - Authored [`docs/phase12/TENANT-SELF-SERVICE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/TENANT-SELF-SERVICE.md). 8 integration tests passing (148 total API integration tests passing).
+- [x] **Checkpoint 12.7 — SaaS Admin Dashboard & Customer Experience (`8823059`)**:
+  - React 19 UI in `src/SentinelOps.Web/src/pages/billing.tsx` with 5 management views: Subscription Overview, Plans & Pricing, Usage & Quotas, Invoices & History, Governance & Security.
+  - Prominent deterministic sandbox alert banner.
+  - Navigation integrated into sidebar (`Billing & Plans`).
+  - Authored [`docs/phase12/SAAS-UX-QA.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/SAAS-UX-QA.md) and component tests `billing.test.tsx` (6 tests passing, 54 frontend tests total).
+- [x] **Checkpoint 12.8 — Security, Reliability & Quality Assurance (`b446d13`)**:
+  - Threat modeling audit: Zero PAN/CVV storage, PCI-DSS compliance, HMAC-SHA256 webhook signatures, constant-time checks, IDOR isolation, XSS protection, anti-CSRF bearer tokens.
+  - Full automated backend test suite: **298 / 298 passed** (49 Domain + 101 Application + 148 Api.IntegrationTests).
+  - Full automated frontend test suite: **54 / 54 passed** across 15 test suites.
+  - Grand total automated tests: **352 passed (100% pass rate)**.
+  - Solution build gate: `dotnet build SentinelOps.slnx --warnaserror` (0 Warnings, 0 Errors).
+  - Frontend typecheck & build gate: `tsc -b --noEmit` (0 Errors), clean production bundle in 595ms.
+  - Authored [`docs/phase12/SECURITY-AND-QA.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/SECURITY-AND-QA.md).
+- [x] **Checkpoint 12.9 — Final Release Preparation & Acceptance**:
+  - Updated `README.md`, `docs/PROGRESS.md`, `docs/SECURITY.md`.
+  - Authored [`docs/phase12/FINAL-ACCEPTANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/FINAL-ACCEPTANCE.md) and [`docs/phase12/LAUNCH-CHECKLIST.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase12/LAUNCH-CHECKLIST.md).
+  - Final verdict: **`CONDITIONALLY READY`**.
+
 
 
 

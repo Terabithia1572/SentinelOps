@@ -19,10 +19,11 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-245%20backend%20%7C%2044%20frontend-brightgreen" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-298%20backend%20%7C%2054%20frontend-brightgreen" />
     <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Helm%20Chart%20v1.0-326CE5" />
     <img alt="AI Engine" src="https://img.shields.io/badge/AI%20Observability-Explainable%20%26%20Sandboxed-blueviolet" />
-    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Verified%20%26%20Hardened-brightgreen" />
+    <img alt="SaaS" src="https://img.shields.io/badge/SaaS-Commercial%20%26%20Multi--Tenant-blue" />
+    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Conditionally%20Ready-brightgreen" />
   </p>
 </div>
 
@@ -30,7 +31,7 @@
 
 ## Overview
 
-SentinelOps is a self-hosted, open-source observability platform inspired by Grafana, Datadog, and modern APM tools. It provides centralized collection, storage, analysis, and visualization of telemetry data from your applications.
+SentinelOps is a self-hosted, enterprise-grade observability and SaaS platform inspired by Grafana, Datadog, and modern APM tools. It provides centralized collection, storage, analysis, and visualization of telemetry data alongside complete commercial multi-tenant subscription and billing management.
 
 ### Key Capabilities
 
@@ -38,6 +39,11 @@ SentinelOps is a self-hosted, open-source observability platform inspired by Gra
 - **🤖 Explainable AI Observability** — Statistical anomaly detection, deterministic log pattern clustering, and capacity forecasting
 - **🔍 Automated Root Cause Analysis (RCA)** — Telemetry correlation with confidence scoring, evidence provenance, and operator verification
 - **💬 Incident Copilot** — Context-aware diagnostic assistant with sensitive credential scrubbing and human-in-the-loop safeguards
+- **💳 Multi-Tenant SaaS & Subscriptions** — Guided self-service onboarding wizard, Starter/Pro/Enterprise plan catalog, and subscription lifecycle state machine
+- **🧾 Billing & Invoicing Engine** — Tax-compliant itemized invoices (`INV-YYYYMM-XXXXX`), administrative settlement, and customer portal integration
+- **🛡️ Webhook Security & Zero-Card Architecture** — Cryptographic HMAC-SHA256 signature verification with 300s replay tolerance, idempotent deduplication, and zero PAN/CVV storage
+- **⚖️ Server-Side Entitlement Enforcer** — Real-time hard quota enforcement across applications, member seats, custom dashboards, monthly logs, traces, and AI tokens
+- **🏢 Tenant Self-Service & GDPR Portability** — Atomic ownership transfers, last-owner safeguards, machine-readable GDPR data export, and guarded soft deletion
 - **📝 Log Management** — Structured log explorer with full-text search, live tailing, and pattern extraction
 - **🔗 Distributed Tracing** — End-to-end request tracing with span timeline visualization
 - **📈 Metrics & Analytics** — Request throughput, error rates, latency percentiles, and capacity exhaustion projections
@@ -378,6 +384,11 @@ Birden fazla uygulamanın ürettiği telemetri verilerini toplamak, işlemek, sa
 - **🤖 Açıklanabilir Yapay Zeka (AI) Gözlemlenebilirliği** — İstatiksel anomali tespiti (Z-Score & Median/MAD), deterministik log şablon kümeleme ve kapasite tüketim projeksiyonu
 - **🔍 Otomatik Kök Neden Analizi (RCA)** — Telemetri kanıt zinciri, güven skorlaması ve operatör doğrulama mekanizması
 - **💬 Olay Müdahale Asistanı (Copilot)** — Hassas sır ve token temizleme korumalı, prompt injection savunmalı, insan onaylı tanı asistanı
+- **💳 Çok Kiracılı SaaS & Abonelik Yönetimi** — Rehberli self-servis ilk katılım sihirbazı, Starter/Pro/Enterprise plan kataloğu ve durum makinesi tabanlı abonelik döngüsü
+- **🧾 Faturalandırma & Tahakkuk Motoru** — Vergi uyumlu kalemlendirilmiş faturalar (`INV-YYYYMM-XXXXX`), idari mutabakat ve Stripe müşteri portalı entegrasyonu
+- **🛡️ Webhook Güvenliği & Sıfır Kart Mimarisi** — 300s yeniden oynatma toleranslı kriptografik HMAC-SHA256 imza doğrulaması, tekilleştirme ve sıfır PAN/CVV depolaması
+- **⚖️ Sunucu Taraflı Kota Denetimi** — Uygulama, kullanıcı koltuğu, özel gösterge paneli, aylık log, trace ve AI token limitlerinde gerçek zamanlı katı kural engeli
+- **🏢 Müşteri Yönetimi & GDPR Veri Taşınabilirliği** — Atomik mülkiyet devri, son sahip koruması, makine tarafından okunabilir GDPR JSON veri dışa aktarımı ve yumuşak silme güvenceleri
 - **📝 Günlük (Log) Yönetimi** — Tam metin arama ve filtreleme destekli yapılandırılmış log gezgini
 - **🔗 Dağıtık İzleme (Distributed Tracing)** — Span zaman çizelgesi görselleştirmesi ile uçtan uca istek takibi
 - **📈 Metrikler ve Analitik** — İstek verimi, hata oranları, yanıt gecikmesi yüzdelik dilimleri ve tükenme tahminleri

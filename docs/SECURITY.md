@@ -155,5 +155,34 @@ Before any telemetry is formatted into diagnostic context or processed by AI pro
 - `AiUsageMeter` tracks monthly token consumption per organization against `OrganizationSettings.MaxMonthlyAiTokens`.
 - Quota exceeded conditions prevent further token usage, eliminating runaway cloud LLM billing risks.
 
+---
+
+## 11. Enterprise SaaS Security & Payment Architecture (Phase 12)
+
+### Zero Cardholder Data Environment (CDE) Storage
+- SentinelOps implements a strict zero-card policy: PAN, CVV, and credit card numbers are never accepted, processed, transmitted, or persisted on SentinelOps servers.
+- All checkout and payment operations leverage external hosted checkout sessions (Stripe Checkout) or deterministic sandbox redirects.
+- Client applications and web UI forms do not contain payment card inputs, preventing PCI-DSS compliance scope expansion.
+
+### Cryptographic Webhook Signatures & Replay Prevention
+- Incoming payment webhooks (`POST /api/webhooks/payments/{provider}`) require HMAC-SHA256 signature verification in the header (`t={timestamp},v1={hash}`).
+- Verification enforces a maximum 300-second (5-minute) clock drift tolerance to prevent replay attacks.
+- Constant-time comparison is executed via `CryptographicOperations.FixedTimeEquals` to prevent side-channel timing analysis.
+
+### Idempotency & Deduplication
+- Every received webhook event is recorded in the `PaymentWebhookEvents` table with a database-enforced unique index on `(Provider, EventId)`.
+- Duplicate delivery attempts from payment gateways are safely recognized and returned as HTTP 200 OK without double-processing or corrupting subscription state.
+
+### Server-Side Entitlement & Quota Hard Blocks
+- All SaaS plan resource limits (Applications, Members, Dashboards, Ingestion, AI Tokens) are enforced at the command/service layer in addition to UI feedback.
+- Tenant delinquency (PastDue, Suspended, Canceled, Expired) immediately gates resource provisioning while granting a 7-day grace window for telemetry continuity during transient card declines.
+
+### Tenant Self-Service, GDPR Portability & Deletion Safeguards
+- **Ownership Transfer**: Strictly restricted to the organization Owner; atomically promotes new owner to Owner and demotes old owner to Admin with full audit tracking.
+- **Last-Owner Guardrails**: Prevents an organization from becoming orphaned by rejecting removal or demotion of the sole remaining owner.
+- **GDPR Export**: Allows Owners/Admins to generate an immediate, comprehensive JSON export of all organizational assets.
+- **Guarded Soft Deletion**: Requires typing the exact confirmation phrase `CONFIRM DELETE {org.name}`, cascading to deactivating applications and canceling active subscriptions.
+
+
 
 
