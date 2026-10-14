@@ -30,6 +30,7 @@ import { SettingsPage } from "@/pages/settings";
 import { PublicStatusPage } from "@/pages/public-status";
 import { StatusPagesPage } from "@/pages/status-pages";
 import { AiObservabilityPage } from "@/pages/ai-observability";
+import { OnboardingPage } from "@/pages/onboarding";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,14 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/status/:slug" element={<PublicStatusPage />} />
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <OnboardingPage />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Protected Platform Routes */}
                 <Route

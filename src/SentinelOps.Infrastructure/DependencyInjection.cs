@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ICurrentTenantService, CurrentTenantService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<IOnboardingService, OnboardingService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IApmService, ApmService>();
         services.AddScoped<IIncidentIntelligenceProvider, Services.Intelligence.DeterministicIncidentIntelligenceProvider>();

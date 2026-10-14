@@ -1781,6 +1781,83 @@ export async function getAiUsage(): Promise<AiUsageDto> {
   return res.data.data;
 }
 
+// -------------------------------------------------------------
+// Phase 12: Self-Service Onboarding & SaaS API Client
+// -------------------------------------------------------------
+
+export interface OnboardingStatusDto {
+  isCompleted: boolean;
+  currentStep: string;
+  organizationId?: string;
+  organizationName?: string;
+  organizationSlug?: string;
+  planTier?: string;
+  applicationId?: string;
+  applicationName?: string;
+  hasApiKey: boolean;
+  apiKeyPrefix?: string;
+  hasReceivedTelemetry: boolean;
+  firstTelemetryReceivedAtUtc?: string;
+}
+
+export interface OnboardingProvisionRequest {
+  organizationName: string;
+  organizationSlug?: string;
+  planTier: string;
+  applicationName: string;
+  applicationDisplayName?: string;
+  environmentName?: string;
+}
+
+export interface OnboardingProvisionedResponse {
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  applicationId: string;
+  applicationName: string;
+  apiKeyId: string;
+  rawApiKey: string;
+  keyPrefix: string;
+  planTier: string;
+  subscriptionStatus: string;
+  trialEndsAtUtc?: string;
+  sdkSnippetCSharp: string;
+  sdkSnippetNodeJs: string;
+  sdkSnippetPython: string;
+  otelCollectorYaml: string;
+}
+
+export interface FirstTelemetryVerificationResponse {
+  applicationId: string;
+  hasReceivedTelemetry: boolean;
+  logsCount: number;
+  tracesCount: number;
+  metricsCount: number;
+  firstReceivedAtUtc?: string;
+  lastReceivedAtUtc?: string;
+}
+
+export async function getOnboardingStatus(): Promise<OnboardingStatusDto> {
+  const res = await apiClient.get<ApiResponse<OnboardingStatusDto>>("/onboarding/status");
+  return res.data.data;
+}
+
+export async function provisionOnboardingWorkspace(req: OnboardingProvisionRequest): Promise<OnboardingProvisionedResponse> {
+  const res = await apiClient.post<ApiResponse<OnboardingProvisionedResponse>>("/onboarding/provision", req);
+  return res.data.data;
+}
+
+export async function verifyFirstTelemetry(applicationId: string): Promise<FirstTelemetryVerificationResponse> {
+  const res = await apiClient.get<ApiResponse<FirstTelemetryVerificationResponse>>(`/onboarding/verify/${applicationId}`);
+  return res.data.data;
+}
+
+export async function completeOnboarding(): Promise<boolean> {
+  const res = await apiClient.post<ApiResponse<boolean>>("/onboarding/complete");
+  return res.data.data;
+}
+
+
 
 
 
