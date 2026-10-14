@@ -68,16 +68,41 @@ public class DeterministicAiProvider : IAiProvider
                 }
             }
 
-            reply = $"Based on deterministic incident correlation for Incident {request.IncidentId.Value}: " +
-                    $"The telemetry shows a correlated spike in error rate. " +
-                    $"Query '{operatorQuestion}' evaluated against known incident signatures. " +
-                    $"No external LLM inference was used for this deterministic response.";
+            var isPromptInjectionAttempt = Regex.IsMatch(
+                operatorQuestion,
+                @"(ignore\s+(all\s+)?(previous|prior)\s+instructions|system\s+prompt|delete\s+all|drop\s+database)",
+                RegexOptions.IgnoreCase);
+
+            if (isPromptInjectionAttempt)
+            {
+                reply = $"Based on deterministic security inspection for Incident {request.IncidentId.Value}: " +
+                        $"The submitted inquiry matched prompt injection patterns and was neutralized safely. " +
+                        $"No system instructions or commands will be executed. All actions require human operator confirmation.";
+            }
+            else
+            {
+                reply = $"Based on deterministic incident correlation for Incident {request.IncidentId.Value}: " +
+                        $"The telemetry shows a correlated spike in error rate and service latency. " +
+                        $"Evaluated telemetry signatures and identified potential resource constraints. " +
+                        $"No external LLM inference was used for this deterministic response.";
+            }
         }
         else
         {
             actions.Add("Review Active Alerts and Anomaly Detection views.");
-            reply = $"SentinelOps Copilot (Deterministic Engine): Received query '{sanitizedMessage}'. " +
-                    $"System monitoring is operational. All recommendations require human review prior to execution.";
+            var isPromptInjectionAttempt = Regex.IsMatch(
+                sanitizedMessage,
+                @"(ignore\s+(all\s+)?(previous|prior)\s+instructions|system\s+prompt|delete\s+all|drop\s+database)",
+                RegexOptions.IgnoreCase);
+
+            if (isPromptInjectionAttempt)
+            {
+                reply = "SentinelOps Copilot (Deterministic Engine): The submitted inquiry matched prompt safety filters and was neutralized. All recommendations require human review prior to execution.";
+            }
+            else
+            {
+                reply = "SentinelOps Copilot (Deterministic Engine): Ingestion and monitoring telemetry are operational. All recommendations require human review prior to execution.";
+            }
         }
 
         return Task.FromResult(new AiCopilotChatResponse
