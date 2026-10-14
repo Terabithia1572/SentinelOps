@@ -215,6 +215,7 @@ if (!string.IsNullOrEmpty(redisConn))
 {
     healthCheckBuilder.AddRedis(redisConn, name: "redis", tags: ["ready"]);
 }
+healthCheckBuilder.AddCheck<SentinelOps.Infrastructure.Services.TelemetryBufferHealthCheck>("telemetry_buffer", tags: ["ready"]);
 
 var app = builder.Build();
 

@@ -19,4 +19,5 @@ data:
   JwtSettings__Audience: {{ .Values.jwt.audience | quote }}
   JwtSettings__ExpirationMinutes: {{ .Values.jwt.expirationMinutes | quote }}
   SignalR__UseRedisBackplane: "true"
+  TelemetryBuffer__RequireDurableStorage: "true"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://{{ include "sentinelops.fullname" . }}-collector:4318"

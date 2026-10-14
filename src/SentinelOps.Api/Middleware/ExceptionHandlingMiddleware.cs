@@ -64,6 +64,14 @@ public class ExceptionHandlingMiddleware
                 problemDetails.Detail = "You are not authorized to access this resource.";
                 break;
 
+            case SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException durableEx:
+                context.Response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                context.Response.Headers.RetryAfter = "5";
+                problemDetails.Status = (int)HttpStatusCode.ServiceUnavailable;
+                problemDetails.Title = "Telemetry Ingestion Unavailable";
+                problemDetails.Detail = durableEx.Message;
+                break;
+
             default:
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 problemDetails.Status = (int)HttpStatusCode.InternalServerError;

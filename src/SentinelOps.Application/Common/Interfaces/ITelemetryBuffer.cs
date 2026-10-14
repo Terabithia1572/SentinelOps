@@ -16,4 +16,7 @@ public interface ITelemetryBuffer
     IAsyncEnumerable<LogIngestionMessage> ReadLogsAsync(CancellationToken cancellationToken = default);
     IAsyncEnumerable<TraceIngestionMessage> ReadTracesAsync(CancellationToken cancellationToken = default);
     IAsyncEnumerable<MetricIngestionMessage> ReadMetricsAsync(CancellationToken cancellationToken = default);
+
+    bool IsDurableStorageActive { get; }
+    bool RequireDurableStorage { get; }
 }

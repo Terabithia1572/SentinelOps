@@ -32,6 +32,7 @@ data:
   JwtSettings__Audience: "https://sentinelops.local"
   JwtSettings__ExpirationMinutes: "60"
   SignalR__UseRedisBackplane: "true"
+  TelemetryBuffer__RequireDurableStorage: "true"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://sentinelops-collector:4318"
 ---
 apiVersion: apps/v1

@@ -28,12 +28,27 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
     private readonly Channel<MetricIngestionMessage> _fallbackMetricChannel = Channel.CreateBounded<MetricIngestionMessage>(
         new BoundedChannelOptions(MaxStreamLength) { FullMode = BoundedChannelFullMode.Wait });
 
+    private readonly bool _requireDurableStorage;
+
+    public bool IsDurableStorageActive => _redis != null && _redis.IsConnected;
+    public bool RequireDurableStorage => _requireDurableStorage;
+
     public RedisTelemetryBuffer(
         ILogger<RedisTelemetryBuffer> logger,
-        IConnectionMultiplexer? redis = null)
+        IConnectionMultiplexer? redis = null,
+        Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
+        : this(logger, redis, string.Equals(configuration?["TelemetryBuffer:RequireDurableStorage"], "true", StringComparison.OrdinalIgnoreCase))
+    {
+    }
+
+    public RedisTelemetryBuffer(
+        ILogger<RedisTelemetryBuffer> logger,
+        IConnectionMultiplexer? redis,
+        bool requireDurableStorage)
     {
         _logger = logger;
         _redis = redis;
+        _requireDurableStorage = requireDurableStorage;
 
         EnsureConsumerGroups();
     }
@@ -81,8 +96,17 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Redis stream write failed for log; falling back to in-memory channel.");
+                _logger.LogWarning(ex, "Redis stream write failed for log.");
+                if (_requireDurableStorage)
+                {
+                    throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering failed; Redis stream write error in production fail-closed mode.", ex);
+                }
             }
+        }
+        else if (_requireDurableStorage)
+        {
+            _logger.LogError("Durable storage is required in production fail-closed mode, but Redis is disconnected. Rejecting telemetry log.");
+            throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering is unavailable; Redis is not connected.");
         }
 
         await _fallbackLogChannel.Writer.WriteAsync(message, cancellationToken);
@@ -110,8 +134,17 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Redis stream write failed for trace; falling back to in-memory channel.");
+                _logger.LogWarning(ex, "Redis stream write failed for trace.");
+                if (_requireDurableStorage)
+                {
+                    throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering failed; Redis stream write error in production fail-closed mode.", ex);
+                }
             }
+        }
+        else if (_requireDurableStorage)
+        {
+            _logger.LogError("Durable storage is required in production fail-closed mode, but Redis is disconnected. Rejecting telemetry trace.");
+            throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering is unavailable; Redis is not connected.");
         }
 
         await _fallbackTraceChannel.Writer.WriteAsync(message, cancellationToken);
@@ -139,8 +172,17 @@ public class RedisTelemetryBuffer : ITelemetryBuffer
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Redis stream write failed for metric; falling back to in-memory channel.");
+                _logger.LogWarning(ex, "Redis stream write failed for metric.");
+                if (_requireDurableStorage)
+                {
+                    throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering failed; Redis stream write error in production fail-closed mode.", ex);
+                }
             }
+        }
+        else if (_requireDurableStorage)
+        {
+            _logger.LogError("Durable storage is required in production fail-closed mode, but Redis is disconnected. Rejecting telemetry metric.");
+            throw new SentinelOps.Application.Common.Exceptions.DurableBufferUnavailableException("Durable telemetry buffering is unavailable; Redis is not connected.");
         }
 
         await _fallbackMetricChannel.Writer.WriteAsync(message, cancellationToken);
