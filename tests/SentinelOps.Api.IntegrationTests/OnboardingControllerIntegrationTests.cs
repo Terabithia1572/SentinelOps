@@ -54,7 +54,7 @@ public class OnboardingControllerIntegrationTests : IClassFixture<CustomWebAppli
         loginRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var authData = await loginRes.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
         authData.Should().NotBeNull();
-        var token = authData!.Data.Token;
+        var token = authData!.Data!.Token;
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -62,7 +62,8 @@ public class OnboardingControllerIntegrationTests : IClassFixture<CustomWebAppli
         var statusRes = await client.GetAsync("/api/onboarding/status");
         statusRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var status = await statusRes.Content.ReadFromJsonAsync<ApiResponse<OnboardingStatusDto>>();
-        status!.Data.IsCompleted.Should().BeFalse();
+        status.Should().NotBeNull();
+        status!.Data!.IsCompleted.Should().BeFalse();
         status.Data.CurrentStep.Should().Be("Organization");
 
         // 3. Provision Organization, Application, Subscription, and Ingestion Key
@@ -80,7 +81,7 @@ public class OnboardingControllerIntegrationTests : IClassFixture<CustomWebAppli
         provisionRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var provisioned = await provisionRes.Content.ReadFromJsonAsync<ApiResponse<OnboardingProvisionedResponse>>();
         provisioned.Should().NotBeNull();
-        provisioned!.Data.OrganizationId.Should().NotBeEmpty();
+        provisioned!.Data!.OrganizationId.Should().NotBeEmpty();
         provisioned.Data.ApplicationId.Should().NotBeEmpty();
         provisioned.Data.RawApiKey.Should().StartWith("sent_live_");
         provisioned.Data.PlanTier.Should().Be("Pro");
@@ -91,7 +92,8 @@ public class OnboardingControllerIntegrationTests : IClassFixture<CustomWebAppli
         var verifyRes = await client.GetAsync($"/api/onboarding/verify/{provisioned.Data.ApplicationId}");
         verifyRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var verification = await verifyRes.Content.ReadFromJsonAsync<ApiResponse<FirstTelemetryVerificationResponse>>();
-        verification!.Data.HasReceivedTelemetry.Should().BeFalse();
+        verification.Should().NotBeNull();
+        verification!.Data!.HasReceivedTelemetry.Should().BeFalse();
         verification.Data.LogsCount.Should().Be(0);
 
         // 5. Complete Onboarding
