@@ -117,6 +117,7 @@ public static class DependencyInjection
         services.AddScoped<IAnomalyDetectionService, Services.Ai.AnomalyDetectionService>();
         services.AddScoped<ILogPatternAnalysisService, Services.Ai.LogPatternAnalysisService>();
         services.AddScoped<IRootCauseAnalysisService, Services.Ai.RootCauseAnalysisService>();
+        services.AddScoped<IIncidentAnalysisService, Services.Ai.IncidentAnalysisService>();
 
         services.AddHostedService<TelemetryConsumerService>();
 

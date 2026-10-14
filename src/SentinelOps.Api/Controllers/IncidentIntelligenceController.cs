@@ -13,13 +13,16 @@ public class IncidentIntelligenceController : ControllerBase
 {
     private readonly IIncidentIntelligenceProvider _intelligenceProvider;
     private readonly IRootCauseAnalysisService _rcaService;
+    private readonly IIncidentAnalysisService _analysisService;
 
     public IncidentIntelligenceController(
         IIncidentIntelligenceProvider intelligenceProvider,
-        IRootCauseAnalysisService rcaService)
+        IRootCauseAnalysisService rcaService,
+        IIncidentAnalysisService analysisService)
     {
         _intelligenceProvider = intelligenceProvider;
         _rcaService = rcaService;
+        _analysisService = analysisService;
     }
 
     [HttpPost("analyze")]
@@ -64,6 +67,16 @@ public class IncidentIntelligenceController : ControllerBase
             return NotFound(ApiResponse<bool>.FailureResponse("RCA record not found."));
         }
         return Ok(ApiResponse<bool>.SuccessResponse(true, "RCA hypothesis verification recorded."));
+    }
+
+    [HttpPost("copilot/chat")]
+    public async Task<ActionResult<ApiResponse<AiCopilotChatResponse>>> ChatWithCopilot(
+        Guid incidentId,
+        [FromBody] AiCopilotChatRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _analysisService.AskCopilotAsync(incidentId, request.Message, cancellationToken);
+        return Ok(ApiResponse<AiCopilotChatResponse>.SuccessResponse(result));
     }
 
     [HttpPost("postmortem")]

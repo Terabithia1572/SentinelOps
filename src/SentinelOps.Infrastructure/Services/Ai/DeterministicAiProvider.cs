@@ -51,9 +51,26 @@ public class DeterministicAiProvider : IAiProvider
             citations.Add($"Incident-ID: {request.IncidentId.Value}");
             actions.Add("Inspect correlated trace waterfall and error logs in Observability Explorer.");
             actions.Add("Check upstream database connection pool saturation.");
+
+            var operatorQuestion = sanitizedMessage;
+            var evidenceIndex = sanitizedMessage.IndexOf("<telemetry_evidence>", StringComparison.OrdinalIgnoreCase);
+            if (evidenceIndex >= 0)
+            {
+                var headerIndex = sanitizedMessage.IndexOf("Operator Query:", StringComparison.OrdinalIgnoreCase);
+                if (headerIndex >= 0)
+                {
+                    var start = headerIndex + "Operator Query:".Length;
+                    operatorQuestion = sanitizedMessage.Substring(start, evidenceIndex - start).Trim();
+                }
+                else
+                {
+                    operatorQuestion = sanitizedMessage[..evidenceIndex].Trim();
+                }
+            }
+
             reply = $"Based on deterministic incident correlation for Incident {request.IncidentId.Value}: " +
                     $"The telemetry shows a correlated spike in error rate. " +
-                    $"Query '{sanitizedMessage}' evaluated against known incident signatures. " +
+                    $"Query '{operatorQuestion}' evaluated against known incident signatures. " +
                     $"No external LLM inference was used for this deterministic response.";
         }
         else
