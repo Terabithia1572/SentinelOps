@@ -114,6 +114,7 @@ public static class DependencyInjection
         services.AddHttpClient<Services.Ai.ExternalLlmProvider>();
         services.AddScoped<IAiProviderFactory, Services.Ai.AiProviderFactory>();
         services.AddScoped<IAiProvider>(sp => sp.GetRequiredService<IAiProviderFactory>().GetProvider());
+        services.AddScoped<IAnomalyDetectionService, Services.Ai.AnomalyDetectionService>();
 
         services.AddHostedService<TelemetryConsumerService>();
 
