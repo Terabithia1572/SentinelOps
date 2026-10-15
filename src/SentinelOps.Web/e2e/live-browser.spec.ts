@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('SentinelOps Live Platform Browser Audit', () => {
 
+  const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@sentinelops.local';
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'Password123!';
+
   test('Unauthenticated user is redirected to /login', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/.*login/);
@@ -12,8 +15,8 @@ test.describe('SentinelOps Live Platform Browser Audit', () => {
 
   test('Successful login with valid credentials navigates to dashboard', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('#emailOrUser', 'admin@sentinelops.local');
-    await page.fill('#password', 'Password123!');
+    await page.fill('#emailOrUser', adminEmail);
+    await page.fill('#password', adminPassword);
     await page.click('button[type="submit"]');
 
     // Wait for navigation away from login
@@ -28,8 +31,8 @@ test.describe('SentinelOps Live Platform Browser Audit', () => {
   test('Core telemetry and SaaS routes load without uncaught client errors', async ({ page }) => {
     // 1. Authenticate
     await page.goto('/login');
-    await page.fill('#emailOrUser', 'admin@sentinelops.local');
-    await page.fill('#password', 'Password123!');
+    await page.fill('#emailOrUser', adminEmail);
+    await page.fill('#password', adminPassword);
     await page.click('button[type="submit"]');
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 10000 });
 

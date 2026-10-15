@@ -154,6 +154,12 @@ jobs:
         working-directory: src/SentinelOps.Web
         run: npm audit --audit-level=high
 
+      - name: Run Gitleaks Secret Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Upload vulnerability report
         uses: actions/upload-artifact@v4
         if: always()
