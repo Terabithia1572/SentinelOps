@@ -267,6 +267,7 @@ app.UseRequestDecompression();
 app.UseRateLimiter();
 
 app.UseAuthentication();
+app.UseMiddleware<SentinelOps.Api.Middleware.TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 // Health check endpoints
