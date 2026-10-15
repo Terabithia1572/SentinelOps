@@ -12,19 +12,53 @@ public partial class StatusPageService : IStatusPageService
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentTenantService _currentTenantService;
+    private readonly ICurrentUserService _currentUserService;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public StatusPageService(IApplicationDbContext context, ICurrentTenantService currentTenantService)
+    public StatusPageService(
+        IApplicationDbContext context,
+        ICurrentTenantService currentTenantService,
+        ICurrentUserService currentUserService)
     {
         _context = context;
         _currentTenantService = currentTenantService;
+        _currentUserService = currentUserService;
     }
 
     private async Task<Guid> GetRequiredOrganizationIdAsync(CancellationToken cancellationToken)
     {
+        var currentUserId = _currentUserService.UserId;
+        var isAdmin = _currentUserService.IsInRole(SentinelOps.Domain.Constants.Roles.Admin);
+
         if (_currentTenantService.OrganizationId.HasValue && _currentTenantService.OrganizationId.Value != Guid.Empty)
         {
-            return _currentTenantService.OrganizationId.Value;
+            var requestedOrg = _currentTenantService.OrganizationId.Value;
+            if (!string.IsNullOrEmpty(currentUserId) && !isAdmin)
+            {
+                var isMember = await _context.OrganizationMembers
+                    .AnyAsync(m => m.OrganizationId == requestedOrg && m.UserId == currentUserId, cancellationToken);
+                if (isMember)
+                {
+                    return requestedOrg;
+                }
+            }
+            else
+            {
+                return requestedOrg;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            var userOrg = await _context.OrganizationMembers
+                .Where(m => m.UserId == currentUserId)
+                .Select(m => m.OrganizationId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (userOrg != Guid.Empty)
+            {
+                return userOrg;
+            }
         }
 
         var defaultOrg = await _context.Organizations

@@ -6,4 +6,5 @@ public interface ICurrentUserService
     string? UserName { get; }
     bool IsAuthenticated { get; }
     string? IpAddress { get; }
+    bool IsInRole(string role);
 }

@@ -25,4 +25,7 @@ public class CurrentUserService : ICurrentUserService
     public string? IpAddress =>
         _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString()
         ?? _httpContextAccessor.HttpContext?.Request?.Headers["X-Forwarded-For"].FirstOrDefault();
+
+    public bool IsInRole(string role) =>
+        _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
 }

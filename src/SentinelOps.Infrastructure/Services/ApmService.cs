@@ -394,12 +394,27 @@ public class ApmService : IApmService
 
     private async Task<Guid> GetRequiredOrganizationIdAsync(CancellationToken cancellationToken)
     {
+        var currentUserId = _currentUserService.UserId;
+        var isAdmin = _currentUserService.IsInRole(SentinelOps.Domain.Constants.Roles.Admin);
+
         if (_currentTenantService.OrganizationId.HasValue && _currentTenantService.OrganizationId.Value != Guid.Empty)
         {
-            return _currentTenantService.OrganizationId.Value;
+            var requestedOrg = _currentTenantService.OrganizationId.Value;
+            if (!string.IsNullOrEmpty(currentUserId) && !isAdmin)
+            {
+                var isMember = await _context.OrganizationMembers
+                    .AnyAsync(m => m.OrganizationId == requestedOrg && m.UserId == currentUserId, cancellationToken);
+                if (isMember)
+                {
+                    return requestedOrg;
+                }
+            }
+            else
+            {
+                return requestedOrg;
+            }
         }
 
-        var currentUserId = _currentUserService.UserId;
         if (!string.IsNullOrEmpty(currentUserId))
         {
             var userOrg = await _context.OrganizationMembers

@@ -157,7 +157,7 @@ public class EntitlementService : IEntitlementService
         return (true, null);
     }
 
-    public async Task<TenantEntitlementsDto> GetEntitlementsAsync(
+    public async Task<TenantEntitlementsDto?> GetEntitlementsAsync(
         Guid orgId,
         string userId,
         CancellationToken ct = default)
@@ -167,12 +167,7 @@ public class EntitlementService : IEntitlementService
 
         if (!isMember)
         {
-            return new TenantEntitlementsDto
-            {
-                OrganizationId = orgId,
-                IsSubscriptionActive = false,
-                InactiveReasons = ["User does not belong to this organization."]
-            };
+            return null;
         }
 
         var org = await _context.Organizations
@@ -182,9 +177,11 @@ public class EntitlementService : IEntitlementService
             .Include(o => o.Settings)
             .FirstOrDefaultAsync(o => o.Id == orgId, ct);
 
-        var sub = org?.Subscription;
+        if (org == null) return null;
+
+        var sub = org.Subscription;
         var plan = sub?.Plan;
-        var tier = plan?.Tier ?? org?.Settings?.PlanTier ?? "Starter";
+        var tier = plan?.Tier ?? org.Settings?.PlanTier ?? "Starter";
         var status = sub?.Status.ToString() ?? "Active";
         var isActive = sub == null || sub.Status == SubscriptionStatus.Active || sub.Status == SubscriptionStatus.Trialing;
 
@@ -222,11 +219,19 @@ public class EntitlementService : IEntitlementService
         };
     }
 
-    public async Task<TenantUsageSummaryDto> GetUsageSummaryAsync(
+    public async Task<TenantUsageSummaryDto?> GetUsageSummaryAsync(
         Guid orgId,
         string userId,
         CancellationToken ct = default)
     {
+        var isMember = await _context.OrganizationMembers
+            .AnyAsync(m => m.OrganizationId == orgId && m.UserId == userId, ct);
+
+        if (!isMember)
+        {
+            return null;
+        }
+
         var org = await _context.Organizations
             .AsNoTracking()
             .Include(o => o.Subscription)

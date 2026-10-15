@@ -319,37 +319,41 @@ using (var scope = app.Services.CreateScope())
             await dbContext.SaveChangesAsync();
         }
 
-        var unassignedApps = await dbContext.Applications.Where(a => a.OrganizationId == null).ToListAsync();
-        if (unassignedApps.Count > 0)
+        var autoReconcile = builder.Configuration.GetValue<bool>("MigrationSettings:AutoReconcileLegacyTenants", false);
+        if (autoReconcile)
         {
-            foreach (var appItem in unassignedApps)
+            var unassignedApps = await dbContext.Applications.Where(a => a.OrganizationId == null).ToListAsync();
+            if (unassignedApps.Count > 0)
             {
-                appItem.OrganizationId = defaultOrg.Id;
-            }
-            await dbContext.SaveChangesAsync();
-        }
-
-        var userManager = scope.ServiceProvider.GetService<UserManager<SentinelOps.Infrastructure.Identity.ApplicationUser>>();
-        if (userManager != null)
-        {
-            var existingUsers = userManager.Users.Where(u => u.IsActive).ToList();
-            foreach (var user in existingUsers)
-            {
-                var isMember = await dbContext.OrganizationMembers
-                    .AnyAsync(m => m.OrganizationId == defaultOrg.Id && m.UserId == user.Id);
-                if (!isMember)
+                foreach (var appItem in unassignedApps)
                 {
-                    var isUserAdmin = await userManager.IsInRoleAsync(user, Roles.Admin);
-                    dbContext.OrganizationMembers.Add(new SentinelOps.Domain.Entities.OrganizationMember
-                    {
-                        OrganizationId = defaultOrg.Id,
-                        UserId = user.Id,
-                        Role = isUserAdmin ? SentinelOps.Domain.Enums.OrganizationRole.Owner : SentinelOps.Domain.Enums.OrganizationRole.Member,
-                        JoinedAtUtc = DateTime.UtcNow
-                    });
+                    appItem.OrganizationId = defaultOrg.Id;
                 }
+                await dbContext.SaveChangesAsync();
             }
-            await dbContext.SaveChangesAsync();
+
+            var userManager = scope.ServiceProvider.GetService<UserManager<SentinelOps.Infrastructure.Identity.ApplicationUser>>();
+            if (userManager != null)
+            {
+                var existingUsers = userManager.Users.Where(u => u.IsActive).ToList();
+                foreach (var user in existingUsers)
+                {
+                    var isMember = await dbContext.OrganizationMembers
+                        .AnyAsync(m => m.OrganizationId == defaultOrg.Id && m.UserId == user.Id);
+                    if (!isMember)
+                    {
+                        var isUserAdmin = await userManager.IsInRoleAsync(user, Roles.Admin);
+                        dbContext.OrganizationMembers.Add(new SentinelOps.Domain.Entities.OrganizationMember
+                        {
+                            OrganizationId = defaultOrg.Id,
+                            UserId = user.Id,
+                            Role = isUserAdmin ? SentinelOps.Domain.Enums.OrganizationRole.Owner : SentinelOps.Domain.Enums.OrganizationRole.Member,
+                            JoinedAtUtc = DateTime.UtcNow
+                        });
+                    }
+                }
+                await dbContext.SaveChangesAsync();
+            }
         }
     }
 }

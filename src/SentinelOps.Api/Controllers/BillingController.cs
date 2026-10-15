@@ -43,6 +43,9 @@ public class BillingController : ControllerBase
             return Unauthorized(ApiResponse<TenantEntitlementsDto>.Fail("Unauthorized"));
 
         var entitlements = await _entitlementService.GetEntitlementsAsync(orgId.Value, userId, ct);
+        if (entitlements == null)
+            return NotFound(ApiResponse<TenantEntitlementsDto>.Fail("Organization not found or access denied."));
+
         return Ok(ApiResponse<TenantEntitlementsDto>.Ok(entitlements));
     }
 
@@ -61,6 +64,9 @@ public class BillingController : ControllerBase
             return Unauthorized(ApiResponse<TenantUsageSummaryDto>.Fail("Unauthorized"));
 
         var usage = await _entitlementService.GetUsageSummaryAsync(orgId.Value, userId, ct);
+        if (usage == null)
+            return NotFound(ApiResponse<TenantUsageSummaryDto>.Fail("Organization not found or access denied."));
+
         return Ok(ApiResponse<TenantUsageSummaryDto>.Ok(usage));
     }
 

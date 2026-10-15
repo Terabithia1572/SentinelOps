@@ -9,12 +9,12 @@ public interface IEntitlementService
         EntitlementFeature feature,
         CancellationToken ct = default);
 
-    Task<TenantEntitlementsDto> GetEntitlementsAsync(
+    Task<TenantEntitlementsDto?> GetEntitlementsAsync(
         Guid orgId,
         string userId,
         CancellationToken ct = default);
 
-    Task<TenantUsageSummaryDto> GetUsageSummaryAsync(
+    Task<TenantUsageSummaryDto?> GetUsageSummaryAsync(
         Guid orgId,
         string userId,
         CancellationToken ct = default);
