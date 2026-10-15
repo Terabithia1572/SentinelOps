@@ -193,6 +193,27 @@ Before any telemetry is formatted into diagnostic context or processed by AI pro
 - **Entitlement Privacy Enforcement**: Billing, plan quotas, and usage consumption summaries (`/api/billing/entitlements`, `/api/billing/usage`) are strictly isolated; callers cannot probe or inspect another organization's subscription status.
 - **Legacy Migration Isolation Gating**: Automatic reassignment of orphan entities to `default-org` is gated behind an explicit configuration switch `MigrationSettings:AutoReconcileLegacyTenants` (default `false`), ensuring database integrity in production environments.
 
+---
+
+## 13. Phase 15 Hardening, Secret Hygiene & Staging Release Gates
+
+### Secret Parameterization & Continuous Scanning
+- **Automated Gitleaks CI Gate**: Secret scanning runs as a required check on every pull request and push to `main` (`.github/workflows/ci.yml`), blocking any commits containing private keys, JWT secrets, database connection strings, or cloud tokens.
+- **E2E Credentials Decoupling**: Browser testing suites (`auth.setup.ts`) strictly read administrator credentials via environment variables (`E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`), preventing hardcoded test credentials in version control.
+- **Lingering Secret Revocation**: Verified revocation of historical development and benchmark keys in PostgreSQL (`RevokedAtUtc` set; subsequent ingestion attempts rejected with HTTP 401).
+
+### Privileged Role Hierarchies & Negative Authorization
+- **Strict Role Boundaries**: Three explicit roles (`Admin`, `Operator`, `Viewer`) are enforced. Administrative operations (user role updates, API key revocation, tenant plan changes) strictly require the `Admin` role.
+- **Negative Testing Enforcement**: Integration test suite `EnterpriseAdminAndSecurityIntegrationTests.cs` validates that `Operator` and `Viewer` requests to mutate system roles return HTTP 403 Forbidden.
+
+### Decoupled DDL Migrations & Multi-Replica Race Condition Defense
+- **Explicit Migration CLI**: Runtime web API process boot does not apply EF Core DDL migrations. Migrations must be run via explicit CLI commands (`--apply-migrations`, `--migrate-only`, `--migrate-database-only`) or Kubernetes Helm pre-upgrade hooks (`helm.sh/hook: pre-install,pre-upgrade`).
+- **Fail-Fast Staging/Production Verification**: In `Staging` and `Production` environments, the API terminates immediately on boot if any pending EF Core migrations or model snapshot divergences exist, preventing split-brain states or silent schema drift across horizontal replicas.
+
+### Authentication Rate Limiting Scoping
+- **Endpoint-Specific Limiting**: Brute-force rate limiting (`auth-rate-limit`, 60 req/min) is strictly scoped to `POST /api/auth/login` and `POST /api/auth/register`. Authenticated session verification (`GET /api/auth/me`) does not share this limiter, preventing false-positive session drops during rapid client-side routing.
+
+
 
 
 

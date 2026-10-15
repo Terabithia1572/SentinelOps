@@ -776,7 +776,69 @@
 - [x] **Checkpoints 14.10 & 14.11 — Release Assessment & Final Delivery**:
   - Authored [`docs/phase14/RELEASE-ASSESSMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase14/RELEASE-ASSESSMENT.md).
   - Updated `README.md`, `docs/PROGRESS.md`, and project documentation.
-  - Release Candidate certified. Final verdict: **`PRODUCTION READY`**.
+  - Initial Docker Compose validation certified. Phase 15 remediation initiated.
+
+---
+
+## Phase 15 — Security Remediation, Staging Readiness & Production Release Gates
+**Status:** ✅ Completed / READY FOR CONTROLLED STAGING  
+**Completed:** 2026-10-15
+
+### Completed Checkpoints
+- [x] **Checkpoint 15.0 — Baseline & Security Inventory (`c020e8d`)**:
+  - Live container topology audited across all 6 SentinelOps containers.
+  - Mapped test credentials, environment variables, and active API keys in PostgreSQL.
+  - Authored [`docs/phase15/BASELINE-AND-SECURITY-INVENTORY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/BASELINE-AND-SECURITY-INVENTORY.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.1 — Credential and Secret Remediation (`c020e8d`)**:
+  - Parameterized Playwright test credentials via `process.env.E2E_ADMIN_EMAIL` and `PASSWORD`.
+  - Revoked lingering performance test keys in database.
+  - Integrated Gitleaks secret scanner into `.github/workflows/ci.yml`.
+  - Authored [`docs/phase15/SECRETS-REMEDIATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/SECRETS-REMEDIATION.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.2 — Privileged Access & Role Management (`7b4f7a9`)**:
+  - Added negative authorization integration tests (`UpdateRoles_WhenViewerOrOperator_ShouldReturnForbidden`).
+  - Documented complete role hierarchy, least-privilege boundary, and audit logging.
+  - Authored [`docs/phase15/PRIVILEGED-ACCESS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/PRIVILEGED-ACCESS.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.3 — Database Migration Safety (`322605e`)**:
+  - Decoupled automatic EF Core DDL migration execution from standard API boot.
+  - Introduced CLI migration execution flags (`--apply-migrations`, `--migrate-only`, `--migrate-database-only`).
+  - Implemented fail-fast staging/production validation guard preventing startup on unapplied migrations.
+  - Authored [`docs/phase15/DATABASE-MIGRATIONS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/DATABASE-MIGRATIONS.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.4 — Authentication and Session Security (`2632de1`)**:
+  - Verified JWT lifetime (15m), zero clock skew (`TimeSpan.Zero`), and RTR family invalidation on breach detection.
+  - Verified account lockout policy (5 failed attempts -> 15 min lock).
+  - Authored [`docs/phase15/AUTHENTICATION-SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/AUTHENTICATION-SECURITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.5 — Tenant Isolation and API Security (`8af71eb`)**:
+  - Audited multi-tenant boundaries across 15 resource categories.
+  - Verified IDOR resistance and rejection of forged `X-Organization-Id` headers.
+  - Authored [`docs/phase15/TENANT-SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/TENANT-SECURITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.6 — Staging Deployment Hardening (`54e0be5`)**:
+  - Authored `deploy/helm/sentinelops/values-staging.example.yaml` with multi-replica setup, HPA, PDB, NetworkPolicies, and pre-upgrade migration hook.
+  - Documented deployment runbooks and secret requirements.
+  - Authored [`docs/phase15/STAGING-DEPLOYMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/STAGING-DEPLOYMENT.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.7 — CI/CD and Supply-Chain Security (`b1d030a`)**:
+  - Hardened GitHub Actions workflow with minimal permissions (`permissions: contents: read`).
+  - Added Helm staging template dry-run validation and dependency vulnerability auditing.
+  - Authored [`docs/phase15/CI-CD-SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/CI-CD-SECURITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.8 — Expanded Playwright Testing (`0c57513`)**:
+  - Expanded Playwright suite to 89 tests across 4 viewports (Desktop 1920x1080, Laptop 1440x900, Tablet 768x1024, Mobile 375x812).
+  - Scoped auth rate limiting to `POST /login` and `POST /register`, resolving session drops on rapid `/me` calls.
+  - 89 passed out of 89 in 32.0s (100% pass rate).
+  - Authored [`docs/phase15/PLAYWRIGHT-EXPANSION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/PLAYWRIGHT-EXPANSION.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.9 — Performance and Resilience Regression (`2f283a7`)**:
+  - Executed 7-scenario benchmark (700 requests, 0 errors, sub-4ms average ingestion latency).
+  - Executed fault injection test: in-flight worker restart resulted in 0 dropped requests, 100% data persistence (150/150 records), and zero PEL lag.
+  - Authored [`docs/phase15/RESILIENCE-AND-PERFORMANCE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/RESILIENCE-AND-PERFORMANCE.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.10 — Full Regression Matrix & Quality Gates (`c0aa39f`)**:
+  - Total automated test pyramid: **446 tests passed out of 446 (100% pass rate)**.
+    - Backend: 303 passed (49 Domain, 101 Application, 153 API Integration).
+    - Frontend: 54 Vitest passed across 15 suites.
+    - Browser: 89 Playwright E2E passed across 4 viewports.
+  - All 10 Release Gates (RG-1 through RG-10) confirmed PASS.
+  - Authored [`docs/phase15/QUALITY-GATES.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/QUALITY-GATES.md). Status: **`PASS`**.
+- [x] **Checkpoint 15.11 — Release Assessment & Final Delivery**:
+  - Authored [`docs/phase15/RELEASE-ASSESSMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/RELEASE-ASSESSMENT.md).
+  - Platform certified as: **`READY FOR CONTROLLED STAGING`**.
+
 
 
 
