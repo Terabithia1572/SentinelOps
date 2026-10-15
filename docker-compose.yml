@@ -1,4 +1,4 @@
-services:
+﻿services:
   sentinelops-api:
     build:
       context: .
@@ -92,7 +92,7 @@ services:
       POSTGRES_USER: sentinelops
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SentinelOps_Dev_2026!}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:55432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -117,7 +117,7 @@ services:
     container_name: sentinelops-redis
     command: ["redis-server", "--appendonly", "yes", "--save", "60 1", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:56379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -174,3 +174,4 @@ networks:
   sentinelops:
     name: sentinelops_sentinelops
     driver: bridge
+

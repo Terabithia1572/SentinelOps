@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -275,9 +276,22 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapControllers();
 app.MapHub<SentinelOps.Api.Hubs.AlertsHub>("/hubs/alerts");
 
-// Seed Identity Roles on startup
+// Apply pending migrations and seed Identity Roles on startup
 using (var scope = app.Services.CreateScope())
 {
+    var dbContext = scope.ServiceProvider.GetService<SentinelOps.Infrastructure.Persistence.ApplicationDbContext>();
+    if (dbContext != null)
+    {
+        if (dbContext.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory" && dbContext.Database.IsRelational())
+        {
+            await dbContext.Database.MigrateAsync();
+        }
+        else
+        {
+            await dbContext.Database.EnsureCreatedAsync();
+        }
+    }
+
     var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
     if (roleManager != null)
     {
@@ -291,7 +305,6 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Initialize Default Organization and reconcile legacy applications
-    var dbContext = scope.ServiceProvider.GetService<SentinelOps.Application.Common.Interfaces.IApplicationDbContext>();
     if (dbContext != null)
     {
         var defaultOrg = await dbContext.Organizations.FirstOrDefaultAsync(o => o.Slug == "default-org");

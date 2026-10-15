@@ -6,6 +6,7 @@ using SentinelOps.Worker.Services;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
 
 // Serilog configuration
 Log.Logger = new LoggerConfiguration()

@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["src/Directory.Build.props", "src/"]
@@ -16,16 +16,14 @@ RUN dotnet restore "src/SentinelOps.Api/SentinelOps.Api.csproj"
 
 COPY src/ src/
 WORKDIR "/src/src/SentinelOps.Api"
-RUN dotnet build -c Release -o /app/build --no-restore
+RUN dotnet build "SentinelOps.Api.csproj" -c Release -o /app/build --no-restore
 
 FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish "SentinelOps.Api.csproj" -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
-
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser:appuser /app
-USER appuser
+COPY --from=publish --chown=app:app /app/publish .
+USER app
 
 ENTRYPOINT ["dotnet", "SentinelOps.Api.dll"]

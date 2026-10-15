@@ -6,27 +6,10 @@ This document catalogs all known environment-specific constraints, host service 
 
 ## 1. Host Infrastructure & Daemon Constraints
 
-### Issue 1: Docker Desktop Linux Engine Daemon Offline
+### Issue 1: Docker Desktop Linux Engine Daemon (Resolved)
 - **Classification**: Host Environment / Infrastructure Gate (`P13-INF-01`)
-- **Impact**: Containerized multi-container execution (`docker compose up -d`) and live OTel Collector container execution fail on the local development host with error:
-  `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.`
-- **Underlying Cause**: WSL2 Linux distribution `docker-desktop` is currently in the `Stopped` state on the Windows host. Native PostgreSQL 18 is running directly as a Windows service (port 5432, PID 6124), allowing backend processes to run natively.
-- **Remediation Steps**:
-  1. Open a PowerShell terminal as Administrator or standard user.
-  2. Launch Docker Desktop from the Windows Start menu or execute:
-     ```powershell
-     Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-     ```
-  3. Alternatively, verify the WSL2 engine state:
-     ```powershell
-     wsl --list --verbose
-     wsl -d docker-desktop
-     ```
-  4. Verify connectivity:
-     ```powershell
-     docker info
-     docker compose up -d
-     ```
+- **Status**: **RESOLVED & VERIFIED**
+- **Resolution**: Docker Desktop Linux Engine daemon is running and verified. Build context was reduced from ~380 MB to 49.6 kB via repository-root `.dockerignore`. All six SentinelOps containers (`sentinelops-api`, `sentinelops-worker`, `sentinelops-web`, `sentinelops-postgres`, `sentinelops-redis`, `sentinelops-otel-collector`) are healthy and operational. Host port bindings (`127.0.0.1:55432:5432` and `127.0.0.1:56379:6379`) safely isolate SentinelOps from unrelated existing host containers.
 
 ---
 
