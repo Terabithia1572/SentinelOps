@@ -119,6 +119,19 @@ public class EnterpriseAdminAndSecurityIntegrationTests : IClassFixture<CustomWe
     }
 
     [Fact]
+    public async Task UpdateRoles_WhenViewerOrOperator_ShouldReturnForbidden()
+    {
+        var (viewerToken, viewerId) = await CreateUserWithRoleAsync(Roles.Viewer);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", viewerToken);
+
+        // Viewer attempts to self-escalate to Admin
+        var updateRequest = new UpdateUserRoleRequest { Roles = [Roles.Admin] };
+        var response = await _client.PutAsJsonAsync($"/api/users/{viewerId}/roles", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task AuditCenter_WhenAdmin_ShouldReturnAuditEventsAndSummary()
     {
         var (adminToken, _) = await CreateUserWithRoleAsync(Roles.Admin);
