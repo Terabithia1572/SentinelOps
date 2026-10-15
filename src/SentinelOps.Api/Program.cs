@@ -304,7 +304,32 @@ using (var scope = app.Services.CreateScope())
     {
         if (dbContext.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory" && dbContext.Database.IsRelational())
         {
-            await dbContext.Database.MigrateAsync();
+            var isMigrateOnly = args.Contains("--apply-migrations") || args.Contains("--migrate-only");
+            var autoMigrate = app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("MigrationSettings:AutoMigrateOnStartup", false);
+
+            if (isMigrateOnly)
+            {
+                Log.Information("Applying pending EF Core migrations (--migrate-only mode)...");
+                await dbContext.Database.MigrateAsync();
+                Log.Information("All pending EF Core migrations applied successfully. Exiting.");
+                return;
+            }
+
+            if (autoMigrate)
+            {
+                Log.Information("Applying EF Core migrations in Development mode...");
+                await dbContext.Database.MigrateAsync();
+            }
+            else
+            {
+                var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+                if (pendingMigrations.Count > 0)
+                {
+                    Log.Fatal("CRITICAL DATABASE COMPATIBILITY ERROR: Detected {Count} unapplied EF Core migrations ({Migrations}) in {Environment} environment. Uncontrolled startup migrations are disabled. Migrations must be executed explicitly via CI/CD migration job or 'dotnet SentinelOps.Api.dll --apply-migrations' prior to starting API pods.",
+                        pendingMigrations.Count, string.Join(", ", pendingMigrations), app.Environment.EnvironmentName);
+                    throw new InvalidOperationException($"Database schema is not up to date in {app.Environment.EnvironmentName}. Please apply pending migrations ({string.Join(", ", pendingMigrations)}) before starting the application.");
+                }
+            }
         }
         else
         {
