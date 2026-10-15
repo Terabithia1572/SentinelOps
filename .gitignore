@@ -61,6 +61,8 @@ appsettings.Local.json
 [Bb]uild[Ll]og.*
 TestResult.xml
 reports/
+test-results/
+playwright-report/
 
 ## Docker
 docker-compose.override.yml
