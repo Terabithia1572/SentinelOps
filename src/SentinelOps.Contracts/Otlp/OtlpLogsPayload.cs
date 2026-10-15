@@ -35,7 +35,7 @@ public class OtlpLogRecord
     public string? ObservedTimeUnixNano { get; set; }
 
     [JsonPropertyName("severityNumber")]
-    public int? SeverityNumber { get; set; }
+    public object? SeverityNumber { get; set; }
 
     [JsonPropertyName("severityText")]
     public string? SeverityText { get; set; }
@@ -47,7 +47,7 @@ public class OtlpLogRecord
     public List<OtlpKeyValue> Attributes { get; set; } = [];
 
     [JsonPropertyName("flags")]
-    public int? Flags { get; set; }
+    public object? Flags { get; set; }
 
     [JsonPropertyName("traceId")]
     public string? TraceId { get; set; }

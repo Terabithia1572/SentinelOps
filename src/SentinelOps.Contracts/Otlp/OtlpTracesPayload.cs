@@ -41,13 +41,13 @@ public class OtlpSpan
     public string? ParentSpanId { get; set; }
 
     [JsonPropertyName("flags")]
-    public int? Flags { get; set; }
+    public object? Flags { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("kind")]
-    public int? Kind { get; set; }
+    public object? Kind { get; set; }
 
     [JsonPropertyName("startTimeUnixNano")]
     public string? StartTimeUnixNano { get; set; }
@@ -71,5 +71,5 @@ public class OtlpStatus
     public string? Description { get; set; }
 
     [JsonPropertyName("code")]
-    public int? Code { get; set; }
+    public object? Code { get; set; }
 }

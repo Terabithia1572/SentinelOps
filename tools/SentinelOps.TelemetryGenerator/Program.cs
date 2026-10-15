@@ -104,9 +104,16 @@ static string GetArg(string[] args, string name, string fallback)
 
 static async Task<bool> SendOtlpAsync<T>(HttpClient http, string url, T payload)
 {
-    var json = JsonSerializer.Serialize(payload);
+    var json = JsonSerializer.Serialize(payload, JsonOptionsHolder.Options);
     using var content = new StringContent(json, Encoding.UTF8, "application/json");
     using var response = await http.PostAsync(url, content);
+    if (!response.IsSuccessStatusCode)
+    {
+        var err = await response.Content.ReadAsStringAsync();
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.WriteLine($"\n[HTTP {(int)response.StatusCode} {response.StatusCode} on {url}]: {err}");
+        Console.ResetColor();
+    }
     return response.IsSuccessStatusCode;
 }
 
@@ -330,4 +337,12 @@ static string RandomHex(int byteCount)
     var bytes = new byte[byteCount];
     RandomNumberGenerator.Fill(bytes);
     return Convert.ToHexStringLower(bytes);
+}
+
+static class JsonOptionsHolder
+{
+    public static readonly System.Text.Json.JsonSerializerOptions Options = new()
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
 }

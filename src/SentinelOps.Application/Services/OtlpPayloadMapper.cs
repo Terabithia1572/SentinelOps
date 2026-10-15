@@ -89,7 +89,15 @@ public static class OtlpPayloadMapper
                     var attributesDict = ExtractAttributes(span.Attributes);
                     var attributesJson = JsonSerializer.Serialize(attributesDict, JsonOptions);
 
-                    var status = span.Status?.Code == 2 ? "Error" : "Ok";
+                    var status = "Ok";
+                    if (span.Status?.Code != null)
+                    {
+                        var codeStr = span.Status.Code.ToString() ?? "";
+                        if (codeStr is "2" or "STATUS_CODE_ERROR" || codeStr.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                        {
+                            status = "Error";
+                        }
+                    }
 
                     var spanMsg = new SpanIngestionMessage
                     {
@@ -280,7 +288,7 @@ public static class OtlpPayloadMapper
         return null;
     }
 
-    private static string ResolveSeverity(string? severityText, int? severityNumber)
+    private static string ResolveSeverity(string? severityText, object? severityNumber)
     {
         if (!string.IsNullOrWhiteSpace(severityText))
         {
@@ -293,17 +301,29 @@ public static class OtlpPayloadMapper
             if (lower.Contains("trace")) return "Trace";
         }
 
-        if (severityNumber.HasValue)
+        if (severityNumber != null)
         {
-            return severityNumber.Value switch
+            var str = severityNumber.ToString() ?? "";
+            var lower = str.ToLowerInvariant();
+            if (lower.Contains("crit") || lower.Contains("fatal")) return "Critical";
+            if (lower.Contains("err")) return "Error";
+            if (lower.Contains("warn")) return "Warning";
+            if (lower.Contains("info")) return "Information";
+            if (lower.Contains("debug")) return "Debug";
+            if (lower.Contains("trace")) return "Trace";
+
+            if (int.TryParse(str, out var num) && num > 0)
             {
-                >= 21 => "Critical",
-                >= 17 => "Error",
-                >= 13 => "Warning",
-                >= 9 => "Information",
-                >= 5 => "Debug",
-                _ => "Trace"
-            };
+                return num switch
+                {
+                    >= 21 => "Critical",
+                    >= 17 => "Error",
+                    >= 13 => "Warning",
+                    >= 9 => "Information",
+                    >= 5 => "Debug",
+                    _ => "Trace"
+                };
+            }
         }
 
         return "Information";

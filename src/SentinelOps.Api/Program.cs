@@ -34,9 +34,27 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Add Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+    });
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    var defaultFactory = options.InvalidModelStateResponseFactory;
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        var errors = string.Join("; ", context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .Select(e => $"{e.Key}: {string.Join(", ", e.Value!.Errors.Select(x => string.IsNullOrWhiteSpace(x.ErrorMessage) ? x.Exception?.Message : x.ErrorMessage))}"));
+        logger.LogWarning("Model validation failed on {Path}: {Errors}", context.HttpContext.Request.Path, errors);
+        return defaultFactory(context);
+    };
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<SentinelOps.Api.Authentication.ApiKeyAuthFilter>();
+builder.Services.AddRequestDecompression();
 
 // Swagger/OpenAPI configuration
 builder.Services.AddSwaggerGen(c =>
@@ -245,6 +263,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("DefaultCorsPolicy");
+app.UseRequestDecompression();
 app.UseRateLimiter();
 
 app.UseAuthentication();

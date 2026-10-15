@@ -20,6 +20,8 @@ processors:
 exporters:
   otlphttp:
     endpoint: http://sentinelops-api:8080
+    encoding: json
+    compression: none
     headers:
       X-API-Key: ${env:SENTINELOPS_API_KEY}
     tls:

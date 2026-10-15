@@ -59,7 +59,7 @@ public class OtlpSum
     public List<OtlpNumberDataPoint> DataPoints { get; set; } = [];
 
     [JsonPropertyName("aggregationTemporality")]
-    public int? AggregationTemporality { get; set; }
+    public object? AggregationTemporality { get; set; }
 
     [JsonPropertyName("isMonotonic")]
     public bool? IsMonotonic { get; set; }
