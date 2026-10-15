@@ -63,6 +63,8 @@ TestResult.xml
 reports/
 test-results/
 playwright-report/
+.auth/
+**/e2e/.auth/
 
 ## Docker
 docker-compose.override.yml

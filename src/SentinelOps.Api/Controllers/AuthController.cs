@@ -14,11 +14,11 @@ namespace SentinelOps.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[EnableRateLimiting("auth-rate-limit")]
 public class AuthController : BaseApiController
 {
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-rate-limit")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
@@ -36,6 +36,7 @@ public class AuthController : BaseApiController
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-rate-limit")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
