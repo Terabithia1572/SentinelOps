@@ -19,11 +19,11 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-298%20backend%20%7C%2054%20frontend-brightgreen" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-302%20backend%20%7C%2054%20frontend-brightgreen" />
     <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Helm%20Chart%20v1.0-326CE5" />
     <img alt="AI Engine" src="https://img.shields.io/badge/AI%20Observability-Explainable%20%26%20Sandboxed-blueviolet" />
     <img alt="SaaS" src="https://img.shields.io/badge/SaaS-Commercial%20%26%20Multi--Tenant-blue" />
-    <img alt="Production Status" src="https://img.shields.io/badge/Production%20Status-Conditionally%20Ready-brightgreen" />
+    <img alt="Release Candidate" src="https://img.shields.io/badge/Release%20Candidate-v1.0.0--rc1-brightgreen" />
   </p>
 </div>
 
@@ -328,16 +328,20 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 
 ## Documentation
 
-- [Architecture Overview](docs/architecture/overview.md)
-- [Architecture Decisions](docs/DECISIONS.md)
-- [Security Policy & Hardening](docs/SECURITY.md)
-- [Development Progress](docs/PROGRESS.md)
-- [Platform Operations Runbook](docs/runbooks/platform-operations.md)
-- [Backup & Disaster Recovery Runbook](docs/runbooks/backup-restore.md)
+- [Phase 13 Final Enterprise Audit & Acceptance Report](docs/phase13/FINAL-ACCEPTANCE.md)
+- [Phase 13 Release Notes (v1.0.0-rc1)](docs/phase13/RELEASE-NOTES.md)
+- [Phase 13 Enterprise Deployment Guide](docs/phase13/DEPLOYMENT-GUIDE.md)
+- [Phase 13 Rollback & Disaster Recovery Runbook](docs/phase13/ROLLBACK-GUIDE.md)
+- [Phase 13 Known Issues & Host Prerequisites](docs/phase13/KNOWN-ISSUES.md)
+- [Phase 12 Commercial SaaS & Billing Acceptance Report](docs/phase12/FINAL-ACCEPTANCE.md)
 - [Phase 11 AI Observability & Acceptance Report](docs/phase11/FINAL-ACCEPTANCE.md)
 - [Phase 10 Kubernetes & High Availability Acceptance](docs/phase10/FINAL-ACCEPTANCE.md)
 - [Phase 9 Production Hardening Acceptance](docs/phase9/FINAL-ACCEPTANCE.md)
 - [Phase 8 Advanced Observability & Incident Intelligence Acceptance](docs/phase8/FINAL-ACCEPTANCE.md)
+- [Architecture Overview](docs/architecture/overview.md)
+- [Architecture Decisions](docs/DECISIONS.md)
+- [Security Policy & Hardening](docs/SECURITY.md)
+- [Development Progress](docs/PROGRESS.md)
 - [Phase 7 Final Acceptance & Production Audit](docs/phase7/FINAL-ACCEPTANCE.md)
 
 ## Roadmap

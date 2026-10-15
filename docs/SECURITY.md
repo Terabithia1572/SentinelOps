@@ -183,6 +183,17 @@ Before any telemetry is formatted into diagnostic context or processed by AI pro
 - **GDPR Export**: Allows Owners/Admins to generate an immediate, comprehensive JSON export of all organizational assets.
 - **Guarded Soft Deletion**: Requires typing the exact confirmation phrase `CONFIRM DELETE {org.name}`, cascading to deactivating applications and canceling active subscriptions.
 
+---
+
+## 12. Multi-Tenant Authorization & IDOR Defense (Phase 13 Hardening)
+
+### Cryptographic Identity & Organization Membership Validation
+- **Defense Against Header Spoofing (IDOR)**: In multi-tenant environments, callers cannot access or mutate resources by forging or altering the `X-Organization-Id` HTTP header. All query handlers (`GetApplicationsQueryHandler`, `GetApplicationByIdQueryHandler`) and infrastructure services (`ApmService`, `DashboardService`, `StatusPageService`) verify that the authenticated caller (`_currentUserService.UserId`) maintains an active membership in `_context.OrganizationMembers` for the requested organization. Non-member callers receive empty results or `404 Not Found`.
+- **Unconstrained Query Fallback Elimination**: When `X-Organization-Id` is omitted, queries dynamically restrict results to the collection of organizations where the user has active membership, preventing tenant data leakage in multi-tenant environments.
+- **Entitlement Privacy Enforcement**: Billing, plan quotas, and usage consumption summaries (`/api/billing/entitlements`, `/api/billing/usage`) are strictly isolated; callers cannot probe or inspect another organization's subscription status.
+- **Legacy Migration Isolation Gating**: Automatic reassignment of orphan entities to `default-org` is gated behind an explicit configuration switch `MigrationSettings:AutoReconcileLegacyTenants` (default `false`), ensuring database integrity in production environments.
+
+
 
 
 
