@@ -186,5 +186,8 @@ jobs:
       - name: Render Development Template
         run: helm template sentinelops deploy/helm/sentinelops -f deploy/helm/sentinelops/values-development.yaml
 
+      - name: Render Staging Template
+        run: helm template sentinelops deploy/helm/sentinelops -f deploy/helm/sentinelops/values-staging.example.yaml
+
       - name: Render Production Template
         run: helm template sentinelops deploy/helm/sentinelops -f deploy/helm/sentinelops/values-production.example.yaml
