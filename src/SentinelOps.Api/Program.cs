@@ -304,7 +304,7 @@ using (var scope = app.Services.CreateScope())
     {
         if (dbContext.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory" && dbContext.Database.IsRelational())
         {
-            var isMigrateOnly = args.Contains("--apply-migrations") || args.Contains("--migrate-only");
+            var isMigrateOnly = args.Contains("--apply-migrations") || args.Contains("--migrate-only") || args.Contains("--migrate-database-only");
             var autoMigrate = app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("MigrationSettings:AutoMigrateOnStartup", false);
 
             if (isMigrateOnly)
