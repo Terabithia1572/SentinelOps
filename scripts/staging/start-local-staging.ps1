@@ -61,9 +61,9 @@ if (-not $SkipImageLoad) {
     Write-Host "`n[4/5] Building and loading deterministic staging container images..."
     Push-Location $repoRoot
     try {
-        docker build -f Dockerfile.api -t "sentinelops-api:1.0.0-staging" .
-        docker build -f Dockerfile.worker -t "sentinelops-worker:1.0.0-staging" .
-        docker build -f Dockerfile.web -t "sentinelops-web:1.0.0-staging" .
+        docker build -f deploy/docker/Dockerfile.api -t "sentinelops-api:1.0.0-staging" .
+        docker build -f deploy/docker/Dockerfile.worker -t "sentinelops-worker:1.0.0-staging" .
+        docker build -f deploy/docker/Dockerfile.web -t "sentinelops-web:1.0.0-staging" .
 
         Write-Host "      Loading images into kind cluster '$clusterName'..."
         kind load docker-image "sentinelops-api:1.0.0-staging" --name $clusterName
