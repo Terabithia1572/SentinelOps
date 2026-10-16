@@ -213,6 +213,33 @@ Before any telemetry is formatted into diagnostic context or processed by AI pro
 ### Authentication Rate Limiting Scoping
 - **Endpoint-Specific Limiting**: Brute-force rate limiting (`auth-rate-limit`, 60 req/min) is strictly scoped to `POST /api/auth/login` and `POST /api/auth/register`. Authenticated session verification (`GET /api/auth/me`) does not share this limiter, preventing false-positive session drops during rapid client-side routing.
 
+---
+
+## 14. Kubernetes Platform Security & Zero-Trust Hardening (Phase 16)
+
+### Pod Security Standards (PSS) & Non-Root Execution
+- **Strict Non-Root Workloads**: Every container in the staging Helm chart executes under an unprivileged, non-root user ID:
+  - `sentinelops-api` and `sentinelops-worker`: `runAsUser: 1000`, `runAsGroup: 1000` (`appuser`).
+  - `sentinelops-web`: `runAsUser: 101`, `runAsGroup: 101` (`nginx`).
+  - `postgres`: `runAsUser: 999`, `runAsGroup: 999` (`postgres`).
+  - `redis`: `runAsUser: 999`, `runAsGroup: 999` (`redis`).
+  - `collector`: `runAsUser: 10001`, `runAsGroup: 10001` (`otel`).
+- **Capability Dropping**: All application workloads explicitly configure `securityContext.capabilities.drop: ["ALL"]` to strip all Linux capabilities.
+- **Privilege Escalation Prevention**: `securityContext.allowPrivilegeEscalation: false` is enforced across all workloads, blocking `setuid` binaries or root elevation attempts.
+
+### Zero-Trust Kubernetes NetworkPolicy Microsegmentation
+- **Default Deny Strategy**: The staging cluster implements 6 dedicated `NetworkPolicy` resources (`api-policy`, `worker-policy`, `postgres-policy`, `redis-policy`, `web-policy`, `collector-policy`).
+- **Egress & Ingress Boundary Rules**:
+  - Web pods may communicate exclusively with the API on port 8080.
+  - Direct TCP connections from the Web tier to PostgreSQL (port 5432) or Redis (port 6379) are strictly blocked by network filters and verified via automated integration tests (`K8S-10`).
+  - Worker pods may communicate with Redis and PostgreSQL, but are completely inaccessible to incoming external HTTP traffic.
+  - PostgreSQL and Redis accept traffic exclusively from pods bearing labels `app.kubernetes.io/component: api` and `app.kubernetes.io/component: worker`.
+
+### Secret Safety & Environmental Variable Sequencing
+- **Sequential Expansion Safety**: Kubernetes environment variable lists evaluate top-to-bottom. Variable interpolation (`$(DB_PASSWORD)`) strictly requires that secret-referencing variables appear prior to dependent connection string definitions, eliminating plaintext leaks or unexpanded tokens.
+- **Dedicated Persistent Volumes**: Persistent data for PostgreSQL and Redis is provisioned through explicit Kubernetes StatefulSet PersistentVolumeClaims (PVCs) with non-root ownership (`fsGroup: 999`), preventing host filesystem bleed.
+
+
 
 
 

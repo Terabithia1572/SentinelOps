@@ -839,6 +839,94 @@
   - Authored [`docs/phase15/RELEASE-ASSESSMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase15/RELEASE-ASSESSMENT.md).
   - Platform certified as: **`READY FOR CONTROLLED STAGING`**.
 
+---
+
+## Phase 16 — Local Kubernetes Staging, High Availability, Security Hardening & Production Simulation
+**Status:** ✅ Completed / LOCAL KUBERNETES STAGING VERIFIED  
+**Completed:** 2026-10-16
+
+### Completed Checkpoints
+- [x] **Checkpoint 16.0 — Baseline and Host Capacity Assessment (`98159b9`)**:
+  - Initialized Docker Desktop Engine 28.5.1 and audited host capacity (15.75 GB RAM, >1.7 GB free, 872 MiB staging ceiling).
+  - Isolated port mappings established: HTTP `8085`, HTTPS `8443`, OTLP NodePort `14318`, Kube API `49170`.
+  - Zero disruption to existing host containers (`BasketDB`, `OrderDB`, `CommentDB`, `CargoDB`, `IdentityDB`, `portainer`).
+  - Authored [`docs/phase16/BASELINE-AND-CAPACITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/BASELINE-AND-CAPACITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.1 — Isolated Kubernetes Staging Cluster (`a8b3606`)**:
+  - Created cluster definition `deploy/kind/sentinelops-staging.yaml` with control-plane node (v1.32.2) and extraPortMappings.
+  - Authored management scripts `scripts/staging/start-local-staging.ps1` and `scripts/staging/stop-local-staging.ps1`.
+  - Provisioned cluster `sentinelops-staging` and namespace `sentinelops-staging`.
+  - Authored [`docs/phase16/CLUSTER-SETUP.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/CLUSTER-SETUP.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.2 — Helm Chart Validation and Hardening (`17418f3`)**:
+  - Linted chart with `helm lint` (0 errors, 0 warnings).
+  - Created staging values profile `deploy/helm/sentinelops/values-staging-local.yaml`.
+  - Live server dry-run (`kubectl apply --dry-run=server`) accepted all 16 Kubernetes resources.
+  - Authored [`docs/phase16/HELM-VALIDATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/HELM-VALIDATION.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.3 — Container Image and Registry Strategy (`d196553`)**:
+  - Built multi-stage non-root container images: `sentinelops-api:1.0.0-staging` (104MB), `sentinelops-worker:1.0.0-staging` (100MB), `sentinelops-web:1.0.0-staging` (29.2MB).
+  - Preloaded container images into kind node containerd image store.
+  - Authored [`docs/phase16/IMAGE-STRATEGY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/IMAGE-STRATEGY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.4 — Database Migrations and Persistent Storage (`15cdcd0`)**:
+  - Corrected environment variable expansion order in Helm templates (`DB_PASSWORD` before connection strings).
+  - Deployed PostgreSQL StatefulSet with 1Gi PersistentVolumeClaim and non-root execution (UID 999).
+  - Executed migration Job `sentinelops-staging-migration` (`--migrate-database-only`) applying all 10 EF Core migrations (55 tables).
+  - Verified PVC data persistence across pod deletion and performed full DR `pg_dump`/`pg_restore` drill.
+  - Authored [`docs/phase16/DATABASE-AND-STORAGE.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/DATABASE-AND-STORAGE.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.5 — Redis Streams Buffering, Consumer Groups & Worker Reliability (`f0c4680`)**:
+  - Deployed Redis StatefulSet (1Gi PVC, UID 999) and verified health probes and alias services.
+  - Configured streams (`logs`, `traces`, `metrics`) and consumer group `sentinelops-worker-group`.
+  - Verified background worker ingestion, dead-letter queue routing (`stream:dead-letter`), and dynamic scaling (1 -> 2 -> 1).
+  - Simulated simultaneous double worker termination: 0 dropped messages, 0 duplicates.
+  - Authored [`docs/phase16/REDIS-AND-WORKER-RELIABILITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/REDIS-AND-WORKER-RELIABILITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.6 — Replica Scaling and Disaster Recovery Drill (`2840d2c`)**:
+  - Added emptyDir ephemeral mounts (`/var/cache/nginx`, `/var/run`, `/tmp`) for unprivileged non-root Nginx execution (UID 101).
+  - Scaled API to 2 replicas with active round-robin load balancing (10/10 health checks).
+  - Verified SignalR Redis backplane pub/sub channels.
+  - Executed double pod eviction drill: observed RTO = 11.47s, RPO = 0s.
+  - Authored [`docs/phase16/SCALING-AND-RECOVERY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/SCALING-AND-RECOVERY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.7 — Rolling Deployments, Health Probes & Automated Rollback (`58868e9`)**:
+  - Verified zero-downtime rolling update with concurrent traffic probing (15/15 successful probes, 0% drop).
+  - Injected broken container image `sentinelops-api:invalid-broken-tag-999`: `maxUnavailable: 0` prevented termination of healthy pods, keeping availability at 100%.
+  - Executed automated rollback via `kubectl rollout undo` (recovered in 4.0s).
+  - Authored [`docs/phase16/ROLLING-DEPLOYMENTS.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/ROLLING-DEPLOYMENTS.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.8 — Kubernetes Network and Security Policy Verification (`470646a`)**:
+  - Implemented zero-trust microsegmentation via 6 granular NetworkPolicies.
+  - Verified authorized communications (Web -> API, API -> DB/Redis).
+  - Validated negative network enforcement: Web attempting direct TCP connection to PostgreSQL (5432) or Redis (6379) was blocked.
+  - Audited Pod Security Standards: all workloads execute as non-root with `allowPrivilegeEscalation: false` and `capabilities: drop: [ALL]`.
+  - Authored [`docs/phase16/KUBERNETES-SECURITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/KUBERNETES-SECURITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.9 — End-to-End Telemetry Verification in Local Staging (`a2978d9`)**:
+  - Mapped host port `14318` to OTel Collector NodePort `31318`.
+  - Ingested live OTLP Log payload -> Collector -> API -> Redis Streams -> Worker -> PostgreSQL `LogEntries`.
+  - Ingested live OTLP Metric payload (`payment_transactions_total` = 42.0) -> persisted to `MetricRecords`.
+  - Ingested live OTLP Trace payload (`ProcessPaymentTransaction`) -> persisted to `TraceRecords` and `SpanRecords`.
+  - Registered test user (`staging_admin`), generated JWT, and verified authenticated query on `GET /api/dashboard/summary`.
+  - Authored [`docs/phase16/TELEMETRY-STAGING-E2E.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/TELEMETRY-STAGING-E2E.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.10 — Platform Observability, Health Probes & Metrics Discovery (`f638ae0`)**:
+  - Verified startup, liveness, and readiness probes across all 6 staging workloads.
+  - Verified security headers and Content Security Policy on Kestrel HTTP responses.
+  - Extracted container resource statistics via `crictl stats`: cluster total 1.15 GiB RAM, workstation free RAM >1.7 GB.
+  - Authored [`docs/phase16/PLATFORM-OBSERVABILITY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/PLATFORM-OBSERVABILITY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.11 — Controlled Failure Injection & Resilience Proving (`31dc083`)**:
+  - PostgreSQL hard outage drill (scale 0): `/health/live` stayed 200 OK, `/health/ready` returned 503; scaled back to 1 -> automatic reconnection in 10.44s with 0 restarts.
+  - Redis hard outage drill (scale 0): `/health/live` stayed 200 OK, `/health/ready` returned 503; scaled back to 1 -> automatic reconnection in 10.08s with 0 restarts.
+  - Authored [`docs/phase16/FAILURE-RECOVERY.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/FAILURE-RECOVERY.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.12 — Automated Kubernetes Integration Test Suite (`a0cbbba`)**:
+  - Created idempotent test script `tests/k8s/test-staging-cluster.ps1` covering 10 distinct integration tests.
+  - 10/10 tests passed (100% pass rate, exit code 0).
+  - Authored [`docs/phase16/KUBERNETES-TEST-AUTOMATION.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/KUBERNETES-TEST-AUTOMATION.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.13 — Full Regression Test Matrix (`ce4e080`)**:
+  - Full automated regression matrix executed: **456 / 456 test executions passed (100% pass rate)**.
+    - Backend: 303 passed (49 Domain, 101 Application, 153 API Integration).
+    - Frontend: 54 Vitest passed across 15 suites.
+    - Browser: 89 Playwright E2E passed across 4 viewports.
+    - Kubernetes Staging: 10 integration tests passed.
+  - Helm chart linted with 0 errors.
+  - Authored [`docs/phase16/REGRESSION-MATRIX.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/REGRESSION-MATRIX.md). Status: **`PASS`**.
+- [x] **Checkpoint 16.14 — GitHub Delivery & Final Release Assessment**:
+  - Authored [`docs/phase16/RELEASE-ASSESSMENT.md`](file:///c:/Users/Yunus/Desktop/SentinelOps/docs/phase16/RELEASE-ASSESSMENT.md).
+  - Final Release Verdict: **`LOCAL KUBERNETES STAGING VERIFIED`**.
+
+
 
 
 

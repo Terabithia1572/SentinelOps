@@ -19,11 +19,11 @@
     <img alt="License" src="https://img.shields.io/github/license/Terabithia1572/SentinelOps" />
     <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4" />
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB" />
-    <img alt="Tests" src="https://img.shields.io/badge/Tests-446%20passed%20(303%20backend%20%7C%2054%20vitest%20%7C%2089%20e2e)-brightgreen" />
+    <img alt="Tests" src="https://img.shields.io/badge/Tests-456%20passed%20(303%20backend%20%7C%2054%20vitest%20%7C%2089%20e2e%20%7C%2010%20k8s)-brightgreen" />
     <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Helm%20Chart%20v1.0-326CE5" />
     <img alt="AI Engine" src="https://img.shields.io/badge/AI%20Observability-Explainable%20%26%20Sandboxed-blueviolet" />
     <img alt="SaaS" src="https://img.shields.io/badge/SaaS-Commercial%20%26%20Multi--Tenant-blue" />
-    <img alt="Release Status" src="https://img.shields.io/badge/Release%20Status-Ready%20for%20Controlled%20Staging-blue" />
+    <img alt="Release Status" src="https://img.shields.io/badge/Release%20Status-Local%20Kubernetes%20Staging%20Verified-brightgreen" />
   </p>
 </div>
 
@@ -306,6 +306,24 @@ helm upgrade --install sentinelops ./deploy/helm/sentinelops \
   --set secrets.redisPassword="$REDIS_PASSWORD"
 ```
 
+### Local Kubernetes Staging (`kind`)
+
+SentinelOps provides a complete, isolated local Kubernetes staging environment using `kind` and local Helm values:
+
+```powershell
+# 1. Provision isolated staging cluster and deploy all workloads
+.\scripts\staging\start-local-staging.ps1
+
+# 2. Run the automated 10-test Kubernetes integration test suite
+powershell -ExecutionPolicy Bypass -File .\tests\k8s\test-staging-cluster.ps1
+
+# 3. Teardown staging cluster cleanly when finished
+.\scripts\staging\stop-local-staging.ps1
+```
+
+- Staging Web UI: `http://localhost:8085`
+- Staging OTLP Ingestion: `http://localhost:14318`
+
 ### Generating Telemetry & Running Sample App
 
 ```bash
@@ -328,6 +346,11 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 
 ## Documentation
 
+- [Phase 16 Local Kubernetes Staging Release Assessment](docs/phase16/RELEASE-ASSESSMENT.md)
+- [Phase 16 Kubernetes Test Automation](docs/phase16/KUBERNETES-TEST-AUTOMATION.md)
+- [Phase 16 Full Regression Test Matrix](docs/phase16/REGRESSION-MATRIX.md)
+- [Phase 15 Release Assessment & Staging Gates](docs/phase15/RELEASE-ASSESSMENT.md)
+- [Phase 14 End-to-End Validation & Resilience](docs/phase14/RELEASE-ASSESSMENT.md)
 - [Phase 13 Final Enterprise Audit & Acceptance Report](docs/phase13/FINAL-ACCEPTANCE.md)
 - [Phase 13 Release Notes (v1.0.0-rc1)](docs/phase13/RELEASE-NOTES.md)
 - [Phase 13 Enterprise Deployment Guide](docs/phase13/DEPLOYMENT-GUIDE.md)
@@ -357,6 +380,11 @@ dotnet run --project tools/SentinelOps.TelemetryGenerator -- --endpoint http://l
 - [x] **Phase 9** — Production Hardening, Infrastructure Verification, Multi-Tenant Security & Enterprise Reliability (E2E OTel-to-dashboard pipeline, multi-tenant authorization security audits, composite index benchmarks, disaster recovery drills)
 - [x] **Phase 10** — Infrastructure Recovery, Kubernetes, Horizontal Scaling & High Availability (Enterprise Helm chart v1.0.0, SignalR Redis backplane scale-out, Redis Streams PEL auto-recovery, fail-closed durability policy, NSA/CISA security hardening)
 - [x] **Phase 11** — AI-Powered Observability, Intelligent Incident Analysis & Predictive Operations (Explainable statistical anomaly detection, deterministic log pattern clustering, automated root cause analysis with evidence provenance, OLS capacity forecasting, sensitive credential scrubbing, prompt injection defense, and React 19 AI Observability dashboard)
+- [x] **Phase 12** — Commercial Multi-Tenant SaaS, Subscriptions & Automated Invoicing (Guided onboarding, 3 canonical tiers, tax-compliant invoicing, HMAC-SHA256 webhook defense with 300s replay window, zero PAN/CVV storage, server-side entitlement enforcement, atomic ownership transfer, GDPR JSON portability, guarded soft deletion)
+- [x] **Phase 13** — Enterprise Audit, Security Hardening, Real Infrastructure Validation & Release Candidate (Multi-tenant IDOR defense, API key revocation fixes, composite index benchmarks, 100% reproducible RC)
+- [x] **Phase 14** — Enterprise End-to-End Validation, Resilience Engineering & Security Verification (Docker Engine build remediation, Playwright E2E browser suite, auth lifecycle, performance burst testing, 372 automated tests)
+- [x] **Phase 15** — Security Remediation, Staging Readiness & Production Release Gates (Gitleaks automated CI scan, credential decoupling, role hierarchy hardening, decoupled DDL migration CLI, 89 Playwright executions across 4 viewports, 446 automated tests)
+- [x] **Phase 16** — Local Kubernetes Staging, High Availability, Security Hardening & Production Simulation (kind cluster provisioning, live Helm template validation, PostgreSQL/Redis StatefulSets, non-root Pod Security Standards, zero-trust NetworkPolicy microsegmentation, Redis Streams buffering and worker scaling, rolling zero-downtime updates with automated rollback, live OTLP telemetry flow, platform self-healing failure injection drills, 10-test automated Kubernetes integration suite, 456 automated regression tests, certified LOCAL KUBERNETES STAGING VERIFIED)
 
 ## Security
 
