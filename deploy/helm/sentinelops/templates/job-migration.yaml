@@ -34,11 +34,11 @@ spec:
             - configMapRef:
                 name: {{ include "sentinelops.fullname" . }}-config
           env:
-            - name: ConnectionStrings__DefaultConnection
-              value: "Host=$(POSTGRES_HOST);Port=$(POSTGRES_PORT);Database=$(POSTGRES_DB);Username=$(POSTGRES_USER);Password=$(DB_PASSWORD);"
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgresql.existingSecret }}
                   key: {{ .Values.postgresql.secretKey }}
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=$(POSTGRES_HOST);Port=$(POSTGRES_PORT);Database=$(POSTGRES_DB);Username=$(POSTGRES_USER);Password=$(DB_PASSWORD);"
 {{- end }}

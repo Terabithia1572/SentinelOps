@@ -1,0 +1,146 @@
+# SentinelOps Helm Values — Local kind Staging Profile
+# Targets the isolated "sentinelops-staging" kind cluster.
+# References locally loaded images and standalone staging PostgreSQL and Redis.
+
+environment: "Staging"
+
+api:
+  replicaCount: 1
+  image:
+    repository: sentinelops-api
+    tag: "1.0.0-staging"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false
+
+worker:
+  replicaCount: 1
+  image:
+    repository: sentinelops-worker
+    tag: "1.0.0-staging"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 80m
+      memory: 128Mi
+  pdb:
+    enabled: false
+
+web:
+  replicaCount: 1
+  image:
+    repository: sentinelops-web
+    tag: "1.0.0-staging"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 64Mi
+    requests:
+      cpu: 20m
+      memory: 32Mi
+  pdb:
+    enabled: false
+
+otelCollector:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.120.0"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 250m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+migrationJob:
+  enabled: true
+  backoffLimit: 2
+  image:
+    repository: sentinelops-api
+    tag: "1.0.0-staging"
+    pullPolicy: IfNotPresent
+
+postgresql:
+  host: "postgres"
+  port: 5432
+  database: "sentinelops_staging"
+  user: "sentinelops_app"
+  existingSecret: "sentinelops-staging-secrets"
+  secretKey: "database-password"
+  standalone:
+    enabled: true
+    storageSize: 1Gi
+
+redis:
+  host: "redis"
+  port: 6379
+  existingSecret: "sentinelops-staging-secrets"
+  secretKey: "redis-password"
+  standalone:
+    enabled: true
+    storageSize: 1Gi
+
+jwt:
+  existingSecret: "sentinelops-staging-secrets"
+  secretKey: "jwt-signing-key"
+  issuer: "SentinelOpsStaging"
+  audience: "SentinelOpsStagingUsers"
+  expirationMinutes: 60
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "sentinelops-staging-api"
+  hosts:
+    - host: "staging.sentinelops.local"
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /hubs
+          pathType: Prefix
+          service: api
+        - path: /v1
+          pathType: Prefix
+          service: api
+        - path: /
+          pathType: Prefix
+          service: web
+    - host: "localhost"
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /hubs
+          pathType: Prefix
+          service: api
+        - path: /v1
+          pathType: Prefix
+          service: api
+        - path: /
+          pathType: Prefix
+          service: web
+  tls: []
+
+networkPolicy:
+  enabled: true

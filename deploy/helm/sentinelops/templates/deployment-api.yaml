@@ -41,20 +41,20 @@ spec:
             - configMapRef:
                 name: {{ include "sentinelops.fullname" . }}-config
           env:
-            - name: ConnectionStrings__DefaultConnection
-              value: "Host=$(POSTGRES_HOST);Port=$(POSTGRES_PORT);Database=$(POSTGRES_DB);Username=$(POSTGRES_USER);Password=$(DB_PASSWORD);Maximum Pool Size=50;Minimum Pool Size=5;Connection Idle Lifetime=60;"
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgresql.existingSecret }}
                   key: {{ .Values.postgresql.secretKey }}
-            - name: ConnectionStrings__Redis
-              value: "$(REDIS_HOST):$(REDIS_PORT),password=$(REDIS_PASSWORD),abortConnect=false,connectTimeout=5000"
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.redis.existingSecret }}
                   key: {{ .Values.redis.secretKey }}
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=$(POSTGRES_HOST);Port=$(POSTGRES_PORT);Database=$(POSTGRES_DB);Username=$(POSTGRES_USER);Password=$(DB_PASSWORD);Maximum Pool Size=50;Minimum Pool Size=5;Connection Idle Lifetime=60;"
+            - name: ConnectionStrings__Redis
+              value: "$(REDIS_HOST):$(REDIS_PORT),password=$(REDIS_PASSWORD),abortConnect=false,connectTimeout=5000"
             - name: JwtSettings__Key
               valueFrom:
                 secretKeyRef:

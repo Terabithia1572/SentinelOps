@@ -1,0 +1,19 @@
+{{- if and .Values.postgresql.standalone.enabled (or (eq .Values.postgresql.host "postgres") (eq .Values.postgresql.host (printf "%s-postgres" (include "sentinelops.fullname" .)))) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-postgres
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "sentinelops.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+{{- end }}
