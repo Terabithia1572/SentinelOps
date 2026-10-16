@@ -47,6 +47,22 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "redis-cli -a $REDIS_PASSWORD ping"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "redis-cli -a $REDIS_PASSWORD ping"
+            initialDelaySeconds: 5
+            periodSeconds: 5
           resources:
             limits:
               cpu: 500m
