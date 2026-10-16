@@ -5,6 +5,7 @@ metadata:
   name: {{ include "sentinelops.fullname" . }}-api-policy
   labels:
     {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
 spec:
   podSelector:
     matchLabels:
@@ -23,12 +24,42 @@ spec:
             matchLabels:
               {{- include "sentinelops.selectorLabels" . | nindent 14 }}
               app.kubernetes.io/component: collector
-        - namespaceSelector: {} # Ingress controller namespace
+        - namespaceSelector: {} # Ingress controller
       ports:
         - protocol: TCP
           port: 8080
   egress:
-    - to: [] # Allow outbound egress to PostgreSQL, Redis, and internal services
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: collector
+      ports:
+        - protocol: TCP
+          port: 4318
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -36,13 +67,180 @@ metadata:
   name: {{ include "sentinelops.fullname" . }}-worker-policy
   labels:
     {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
 spec:
   podSelector:
     matchLabels:
       {{- include "sentinelops.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: worker
   policyTypes:
+    - Ingress
     - Egress
+  ingress: [] # Workers reject all inbound direct connections
   egress:
-    - to: [] # Outbound only to PostgreSQL, Redis, and Webhook/Email endpoints
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+        - protocol: TCP
+          port: 443 # External Webhook / Slack / Teams notification egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-postgres-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: worker
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: migration
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-redis-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-web-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 80
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "sentinelops.fullname" . }}-collector-policy
+  labels:
+    {{- include "sentinelops.labels" . | nindent 4 }}
+    app.kubernetes.io/component: collector
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "sentinelops.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: collector
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
 {{- end }}
