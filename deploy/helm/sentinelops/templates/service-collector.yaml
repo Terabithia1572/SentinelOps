@@ -7,7 +7,7 @@ metadata:
     {{- include "sentinelops.labels" . | nindent 4 }}
     app.kubernetes.io/component: collector
 spec:
-  type: ClusterIP
+  type: {{ .Values.otelCollector.service.type | default "ClusterIP" }}
   ports:
     - port: {{ .Values.otelCollector.service.ports.grpc }}
       targetPort: otlp-grpc
@@ -17,6 +17,9 @@ spec:
       targetPort: otlp-http
       protocol: TCP
       name: otlp-http
+      {{- if and (eq (.Values.otelCollector.service.type | default "ClusterIP") "NodePort") .Values.otelCollector.service.nodePort }}
+      nodePort: {{ .Values.otelCollector.service.nodePort }}
+      {{- end }}
   selector:
     {{- include "sentinelops.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: collector

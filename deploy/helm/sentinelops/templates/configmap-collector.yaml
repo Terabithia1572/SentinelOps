@@ -26,6 +26,10 @@ data:
         traces_endpoint: "http://{{ include "sentinelops.fullname" . }}-api:8080/v1/traces"
         metrics_endpoint: "http://{{ include "sentinelops.fullname" . }}-api:8080/v1/metrics"
         logs_endpoint: "http://{{ include "sentinelops.fullname" . }}-api:8080/v1/logs"
+        {{- if .Values.otelCollector.headers }}
+        headers:
+          {{- toYaml .Values.otelCollector.headers | nindent 10 }}
+        {{- end }}
         encoding: json
 
     service:

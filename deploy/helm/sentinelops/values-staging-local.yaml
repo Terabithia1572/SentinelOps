@@ -68,6 +68,14 @@ otelCollector:
     requests:
       cpu: 50m
       memory: 64Mi
+  service:
+    type: NodePort
+    nodePort: 31318
+    ports:
+      grpc: 4317
+      http: 4318
+  headers:
+    X-API-Key: "sent_live_stagingtelemetrytestkey1234567890abcdef"
 
 migrationJob:
   enabled: true

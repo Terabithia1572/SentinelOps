@@ -216,13 +216,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              {{- include "sentinelops.selectorLabels" . | nindent 14 }}
-              app.kubernetes.io/component: api
-        - namespaceSelector: {}
-      ports:
+    - ports:
         - protocol: TCP
           port: 4317
         - protocol: TCP
