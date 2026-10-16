@@ -1,0 +1,24 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: sentinelops-staging
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # Staging Ingress HTTP mapped to host port 8085 (avoids 80, 3000, 5100, 8080)
+      - containerPort: 80
+        hostPort: 8085
+        protocol: TCP
+      # Staging Ingress HTTPS mapped to host port 8443
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP
+      # Staging OTLP Ingestion NodePort mapped to host port 14318 (avoids 4318)
+      - containerPort: 31318
+        hostPort: 14318
+        protocol: TCP
