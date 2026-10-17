@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Bell,
   AlertTriangle,
@@ -370,19 +373,27 @@ export function AlertsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="py-16 text-center text-sm text-[hsl(var(--muted-foreground))] flex items-center justify-center gap-2">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Loading telemetry alert records...
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 flex-1" />
+                </div>
+              ))}
             </div>
           ) : filteredAlerts.length === 0 ? (
-            <div className="py-16 text-center">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400 mb-2 opacity-80" />
-              <h3 className="font-semibold text-sm">No alerts found</h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                {selectedStatus === "Firing"
-                  ? "All systems operational. No active firing alerts for the selected criteria."
-                  : "No alert events match your filter."}
-              </p>
+            <div className="p-6">
+              <EmptyState
+                icon={CheckCircle2}
+                title="No alerts found"
+                description={
+                  selectedStatus === "Firing"
+                    ? "All systems operational. No active firing alerts for the selected criteria."
+                    : "No alert events match your filter."
+                }
+              />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -504,80 +515,82 @@ export function AlertsPage() {
       </Card>
 
       {/* Acknowledge Modal */}
-      {ackModalAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in zoom-in-95">
-            <h3 className="text-base font-semibold">Acknowledge Alert</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-              Mark alert <span className="font-medium text-foreground">{ackModalAlert.alertRuleName}</span> as acknowledged.
-            </p>
-            <div className="mt-4 space-y-2">
-              <label className="text-xs font-medium">Notes (optional)</label>
-              <Input
-                placeholder="e.g. Investigating cache cluster spike"
-                value={modalNotes}
-                onChange={(e) => setModalNotes(e.target.value)}
-              />
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAckModalAlert(null)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="bg-amber-600 hover:bg-amber-700 text-white"
-                onClick={() =>
-                  acknowledgeMutation.mutate({
-                    id: ackModalAlert.id,
-                    notes: modalNotes,
-                  })
-                }
-                disabled={acknowledgeMutation.isPending}
-              >
-                {acknowledgeMutation.isPending ? "Acknowledging..." : "Acknowledge"}
-              </Button>
-            </div>
+      <Dialog
+        open={Boolean(ackModalAlert)}
+        onClose={() => setAckModalAlert(null)}
+        title="Acknowledge Alert"
+        description={ackModalAlert ? `Mark alert "${ackModalAlert.alertRuleName}" as acknowledged.` : ""}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Notes (optional)</label>
+            <Input
+              placeholder="e.g. Investigating cache cluster spike"
+              value={modalNotes}
+              onChange={(e) => setModalNotes(e.target.value)}
+              className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button variant="ghost" size="sm" onClick={() => setAckModalAlert(null)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-amber-600 hover:bg-amber-700 text-white text-xs"
+              onClick={() =>
+                ackModalAlert &&
+                acknowledgeMutation.mutate({
+                  id: ackModalAlert.id,
+                  notes: modalNotes,
+                })
+              }
+              disabled={acknowledgeMutation.isPending}
+            >
+              {acknowledgeMutation.isPending ? "Acknowledging..." : "Acknowledge"}
+            </Button>
           </div>
         </div>
-      )}
+      </Dialog>
 
       {/* Resolve Modal */}
-      {resolveModalAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in zoom-in-95">
-            <h3 className="text-base font-semibold">Resolve Alert</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-              Mark alert <span className="font-medium text-foreground">{resolveModalAlert.alertRuleName}</span> as resolved.
-            </p>
-            <div className="mt-4 space-y-2">
-              <label className="text-xs font-medium">Resolution reason</label>
-              <Input
-                placeholder="e.g. Auto-scaling pod deployed, error rate returned to normal"
-                value={modalNotes}
-                onChange={(e) => setModalNotes(e.target.value)}
-              />
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setResolveModalAlert(null)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() =>
-                  resolveMutation.mutate({
-                    id: resolveModalAlert.id,
-                    reason: modalNotes || "Manually resolved",
-                  })
-                }
-                disabled={resolveMutation.isPending}
-              >
-                {resolveMutation.isPending ? "Resolving..." : "Resolve Alert"}
-              </Button>
-            </div>
+      <Dialog
+        open={Boolean(resolveModalAlert)}
+        onClose={() => setResolveModalAlert(null)}
+        title="Resolve Alert"
+        description={resolveModalAlert ? `Mark alert "${resolveModalAlert.alertRuleName}" as resolved.` : ""}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Resolution reason</label>
+            <Input
+              placeholder="e.g. Auto-scaling pod deployed, error rate returned to normal"
+              value={modalNotes}
+              onChange={(e) => setModalNotes(e.target.value)}
+              className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button variant="ghost" size="sm" onClick={() => setResolveModalAlert(null)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+              onClick={() =>
+                resolveModalAlert &&
+                resolveMutation.mutate({
+                  id: resolveModalAlert.id,
+                  reason: modalNotes || "Manually resolved",
+                })
+              }
+              disabled={resolveMutation.isPending}
+            >
+              {resolveMutation.isPending ? "Resolving..." : "Resolve Alert"}
+            </Button>
           </div>
         </div>
-      )}
+      </Dialog>
     </div>
   );
 }

@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ShieldAlert,
   Clock,
@@ -24,7 +27,6 @@ import {
   History,
   ExternalLink,
   RefreshCw,
-  X,
 } from "lucide-react";
 
 export function IncidentsPage() {
@@ -299,20 +301,27 @@ export function IncidentsPage() {
       {/* Incidents List */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="py-16 text-center text-sm text-[hsl(var(--muted-foreground))] flex items-center justify-center gap-2">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            Loading incidents...
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-4 bg-slate-900/40 border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              </Card>
+            ))}
           </div>
         ) : filteredIncidents.length === 0 ? (
-          <Card className="border-[hsl(var(--border))]">
-            <CardContent className="py-16 text-center">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400 mb-2 opacity-80" />
-              <h3 className="font-semibold text-sm">No incidents reported</h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                No active or historical incidents meet the current filter criteria.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={CheckCircle2}
+            title="No incidents reported"
+            description="No active or historical incidents meet the current filter criteria."
+            actionLabel={isOperator ? "Declare Incident" : undefined}
+            onAction={isOperator ? () => setIsCreateOpen(true) : undefined}
+          />
         ) : (
           filteredIncidents.map((incident) => (
             <Link
@@ -382,124 +391,123 @@ export function IncidentsPage() {
       </div>
 
       {/* Declare Incident Modal */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-xl rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-3">
-              <h3 className="text-base font-semibold">Declare New Incident</h3>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setIsCreateOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+      <Dialog
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Declare New Incident"
+        description="Initiate an active operational incident with severity assignment and service telemetry linkages."
+      >
+        <div className="space-y-3 text-xs">
+          <div className="space-y-1">
+            <label className="font-medium text-slate-300">Incident Title *</label>
+            <Input
+              placeholder="e.g. Checkout Service elevated 500 error rates across US-East"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+            />
+          </div>
 
-            <div className="mt-4 space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-medium">Incident Title *</label>
-                <Input
-                  placeholder="e.g. Checkout Service elevated 500 error rates across US-East"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-medium">Severity *</label>
-                  <select
-                    value={severity}
-                    onChange={(e) => setSeverity(e.target.value)}
-                    className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-1 text-[hsl(var(--foreground))]"
-                  >
-                    <option value="Critical">Critical (P1 - Complete outage / data loss)</option>
-                    <option value="Error">Error (P2 - Major feature broken)</option>
-                    <option value="Warning">Warning (P3 - Minor degradation)</option>
-                    <option value="Information">Information (P4 - Informational)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-medium">Affected Application *</label>
-                  <select
-                    value={appId}
-                    onChange={(e) => setAppId(e.target.value)}
-                    className="w-full h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-1 text-[hsl(var(--foreground))]"
-                  >
-                    <option value="">Select Application</option>
-                    {applications.map((app) => (
-                      <option key={app.id} value={app.id}>
-                        {app.displayName || app.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-medium">Service Name (optional)</label>
-                  <Input
-                    placeholder="e.g. auth-service"
-                    value={serviceName}
-                    onChange={(e) => setServiceName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-medium">Environment (optional)</label>
-                  <Input
-                    placeholder="e.g. Production"
-                    value={envName}
-                    onChange={(e) => setEnvName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-medium">Correlated Trace ID (optional)</label>
-                <Input
-                  placeholder="e.g. 4bf92f3577b34da6a3ce929d0e0e4736"
-                  value={relatedTraceId}
-                  onChange={(e) => setRelatedTraceId(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-medium">Description & Impact</label>
-                <textarea
-                  rows={3}
-                  className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2 text-xs text-[hsl(var(--foreground))]"
-                  placeholder="Detailed description of symptoms, customer impact, and initial triage observations..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2 border-t border-[hsl(var(--border))] pt-3">
-              <Button variant="ghost" size="sm" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!title.trim() || !appId || createMutation.isPending}
-                onClick={() =>
-                  createMutation.mutate({
-                    title,
-                    description,
-                    severity,
-                    applicationId: appId,
-                    serviceName: serviceName || null,
-                    environmentName: envName || null,
-                    relatedTraceId: relatedTraceId || null,
-                    assignedToUserId: user?.id || null,
-                  })
-                }
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Severity *</label>
+              <select
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value)}
+                className="w-full h-9 rounded-md border border-slate-800 bg-slate-950/80 px-3 py-1 text-slate-200 text-xs"
               >
-                {createMutation.isPending ? "Declaring..." : "Declare Incident"}
-              </Button>
+                <option value="Critical">Critical (P1 - Complete outage / data loss)</option>
+                <option value="Error">Error (P2 - Major feature broken)</option>
+                <option value="Warning">Warning (P3 - Minor degradation)</option>
+                <option value="Information">Information (P4 - Informational)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Affected Application *</label>
+              <select
+                value={appId}
+                onChange={(e) => setAppId(e.target.value)}
+                className="w-full h-9 rounded-md border border-slate-800 bg-slate-950/80 px-3 py-1 text-slate-200 text-xs"
+              >
+                <option value="">Select Application</option>
+                {applications.map((app) => (
+                  <option key={app.id} value={app.id}>
+                    {app.displayName || app.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Service Name (optional)</label>
+              <Input
+                placeholder="e.g. auth-service"
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Environment (optional)</label>
+              <Input
+                placeholder="e.g. Production"
+                value={envName}
+                onChange={(e) => setEnvName(e.target.value)}
+                className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-medium text-slate-300">Correlated Trace ID (optional)</label>
+            <Input
+              placeholder="e.g. 4bf92f3577b34da6a3ce929d0e0e4736"
+              value={relatedTraceId}
+              onChange={(e) => setRelatedTraceId(e.target.value)}
+              className="bg-slate-950/80 border-slate-800 text-xs text-slate-200"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-medium text-slate-300">Description & Impact</label>
+            <textarea
+              rows={3}
+              className="w-full rounded-md border border-slate-800 bg-slate-950/80 p-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Detailed description of symptoms, customer impact, and initial triage observations..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2 border-t border-slate-800 pt-3">
+            <Button variant="ghost" size="sm" onClick={() => setIsCreateOpen(false)} className="text-xs text-slate-300">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs"
+              disabled={!title.trim() || !appId || createMutation.isPending}
+              onClick={() =>
+                createMutation.mutate({
+                  title,
+                  description,
+                  severity,
+                  applicationId: appId,
+                  serviceName: serviceName || null,
+                  environmentName: envName || null,
+                  relatedTraceId: relatedTraceId || null,
+                  assignedToUserId: user?.id || null,
+                })
+              }
+            >
+              {createMutation.isPending ? "Declaring..." : "Declare Incident"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Dialog>
     </div>
   );
 }
