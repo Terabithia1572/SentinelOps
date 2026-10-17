@@ -7,6 +7,7 @@ export interface ErrorStateProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
   message?: string;
   error?: Error | unknown;
+  details?: string;
   onRetry?: () => void;
   isRetrying?: boolean;
 }
@@ -15,19 +16,21 @@ export function ErrorState({
   title = "An unexpected error occurred",
   message = "Failed to communicate with SentinelOps API or load telemetry records.",
   error,
+  details,
   onRetry,
   isRetrying = false,
   className,
   ...props
 }: ErrorStateProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const activeError = error ?? details;
   const technicalMessage =
-    error instanceof Error
-      ? error.stack || error.message
-      : typeof error === "string"
-      ? error
-      : error
-      ? JSON.stringify(error, null, 2)
+    activeError instanceof Error
+      ? activeError.stack || activeError.message
+      : typeof activeError === "string"
+      ? activeError
+      : activeError
+      ? JSON.stringify(activeError, null, 2)
       : null;
 
   return (

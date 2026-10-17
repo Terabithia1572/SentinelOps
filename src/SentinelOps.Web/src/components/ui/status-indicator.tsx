@@ -15,6 +15,7 @@ export interface StatusIndicatorProps extends React.HTMLAttributes<HTMLSpanEleme
   status: StatusType;
   label?: string;
   showPulse?: boolean;
+  pulse?: boolean;
   size?: "sm" | "default" | "lg";
 }
 
@@ -71,12 +72,14 @@ export function StatusIndicator({
   status,
   label,
   showPulse = true,
+  pulse,
   size = "default",
   className,
   ...props
 }: StatusIndicatorProps) {
   const config = statusColorMap[status] || statusColorMap.unknown;
   const dotSize = dotSizes[size];
+  const shouldPulse = pulse !== undefined ? pulse : showPulse;
 
   return (
     <span
@@ -88,7 +91,7 @@ export function StatusIndicator({
       {...props}
     >
       <span className="relative flex shrink-0 items-center justify-center">
-        {showPulse && (status === "healthy" || status === "operational" || status === "degraded" || status === "critical") && (
+        {shouldPulse && (status === "healthy" || status === "operational" || status === "degraded" || status === "critical") && (
           <span
             className={cn(
               "absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
