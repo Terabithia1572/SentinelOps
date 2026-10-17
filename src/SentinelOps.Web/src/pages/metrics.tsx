@@ -8,6 +8,9 @@ import apiClient, {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   RefreshCw,
   TrendingUp,
@@ -281,10 +284,11 @@ export function MetricsPage() {
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-400 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
+        <ErrorState
+          title="Metrics Aggregation Failed"
+          message={errorMessage}
+          onRetry={fetchMetrics}
+        />
       )}
 
       {/* Aggregate Stats Cards */}
@@ -382,13 +386,13 @@ export function MetricsPage() {
         </CardHeader>
         <CardContent className="p-4 pt-2">
           {isLoading && formattedChartPoints.length === 0 ? (
-            <div className="flex h-64 items-center justify-center text-sm text-[hsl(var(--muted-foreground))]">
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" /> Loading latency metrics...
-            </div>
+            <Skeleton className="h-72 w-full rounded-lg" />
           ) : formattedChartPoints.length === 0 ? (
-            <div className="flex h-64 items-center justify-center text-sm text-[hsl(var(--muted-foreground))]">
-              No latency metrics in selected time window.
-            </div>
+            <EmptyState
+              icon={TrendingUp}
+              title="No latency metric datapoints"
+              description="No timeseries telemetry was captured in the selected resolution bucket and time window."
+            />
           ) : (
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
