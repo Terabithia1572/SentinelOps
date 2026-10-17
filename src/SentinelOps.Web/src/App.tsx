@@ -38,6 +38,7 @@ const AiObservabilityPage = lazy(() => import("@/pages/ai-observability").then(m
 const OnboardingPage = lazy(() => import("@/pages/onboarding").then(m => ({ default: m.OnboardingPage })));
 const BillingPage = lazy(() => import("@/pages/billing").then(m => ({ default: m.BillingPage })));
 const NotFoundPage = lazy(() => import("@/pages/not-found").then(m => ({ default: m.NotFoundPage })));
+const DesignPrototypesPage = lazy(() => import("@/pages/prototypes").then(m => ({ default: m.DesignPrototypesPage })));
 
 function RouteFallback() {
   return (
@@ -70,6 +71,8 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/status/:slug" element={<PublicStatusPage />} />
+                  <Route path="/design-prototypes" element={<DesignPrototypesPage />} />
+                  <Route path="/design-prototypes/:concept/:screen" element={<DesignPrototypesPage />} />
                   <Route
                     path="/onboarding"
                     element={

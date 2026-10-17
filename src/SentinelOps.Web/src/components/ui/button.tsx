@@ -15,23 +15,23 @@ export interface ButtonProps
 
 const buttonVariants = {
   default:
-    "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90",
+    "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold hover:brightness-110 active:brightness-95 shadow-xs",
   destructive:
-    "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] hover:bg-[hsl(var(--destructive))]/90",
+    "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] font-medium hover:bg-rose-600 active:bg-rose-700",
   outline:
-    "border border-[hsl(var(--input))] bg-[hsl(var(--background))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+    "border border-[hsl(var(--border))] bg-[hsl(var(--popover))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:border-[hsl(var(--primary))/40]",
   secondary:
-    "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary))]/80",
+    "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--accent))]",
   ghost:
-    "hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+    "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]",
   link: "text-[hsl(var(--primary))] underline-offset-4 hover:underline",
 };
 
 const buttonSizes = {
-  default: "h-10 px-4 py-2",
-  sm: "h-9 rounded-md px-3",
-  lg: "h-11 rounded-md px-8",
-  icon: "h-10 w-10",
+  default: "h-9 px-3.5 py-1.5 text-xs",
+  sm: "h-8 rounded px-2.5 text-xs",
+  lg: "h-10 rounded px-6 text-sm",
+  icon: "h-9 w-9",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -39,7 +39,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-[hsl(var(--background))] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap rounded text-xs font-medium ring-offset-[hsl(var(--background))] transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none",
           buttonVariants[variant],
           buttonSizes[size],
           className

@@ -40,6 +40,8 @@ export interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  badgeVariant?: "destructive" | "warning" | "default";
 }
 
 export interface NavSection {
@@ -54,7 +56,7 @@ export const navigationSections: NavSection[] = [
       { name: "Overview", href: "/", icon: LayoutDashboard },
       { name: "Dashboards", href: "/dashboards", icon: LayoutGrid },
       { name: "APM & Service Map", href: "/apm", icon: Network },
-      { name: "AI Observability", href: "/ai-observability", icon: Sparkles },
+      { name: "AI Observability", href: "/ai-observability", icon: Sparkles, badge: "AI", badgeVariant: "default" },
       { name: "Applications", href: "/applications", icon: AppWindow },
       { name: "Services & Health", href: "/services", icon: Server },
     ],
@@ -72,9 +74,9 @@ export const navigationSections: NavSection[] = [
   {
     title: "Incident Response",
     items: [
-      { name: "Active Alerts", href: "/alerts", icon: Bell },
+      { name: "Active Alerts", href: "/alerts", icon: Bell, badge: "3", badgeVariant: "destructive" },
       { name: "Alert Rules", href: "/alert-rules", icon: BellRing },
-      { name: "Incidents", href: "/incidents", icon: AlertTriangle },
+      { name: "Incidents", href: "/incidents", icon: AlertTriangle, badge: "1", badgeVariant: "warning" },
       { name: "Status Pages", href: "/status-pages", icon: Globe },
       { name: "SLOs & Objectives", href: "/slos", icon: Target },
     ],
@@ -105,19 +107,19 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
   const primaryRole = user?.roles?.[0] || "Viewer";
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-      {/* Brand & Optional Close Button */}
-      <div className="flex h-16 items-center justify-between border-b border-[hsl(var(--border))] px-5">
+    <aside className="flex h-full w-64 flex-col border-r border-[#1E2333] bg-[#0A0C12] text-[#F0F3F9] select-none">
+      {/* Brand Header */}
+      <div className="flex h-12 items-center justify-between border-b border-[#1E2333] px-4 bg-[#0E1017]">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/10 border border-blue-500/20">
-            <Shield className="h-5 w-5 text-blue-500" />
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#00E5FF]/10 border border-[#00E5FF]/30">
+            <Shield className="h-3.5 w-3.5 text-[#00E5FF]" />
           </div>
-          <div>
-            <span className="text-base font-bold tracking-tight text-white block leading-none">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold tracking-tight text-[#F0F3F9] font-mono">
               SentinelOps
             </span>
-            <span className="text-[10px] text-slate-400 block leading-tight mt-0.5">
-              Observability Suite
+            <span className="text-[10px] font-mono text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/20 px-1 py-0.2 rounded">
+              v18.0
             </span>
           </div>
         </div>
@@ -127,23 +129,23 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 text-slate-400 hover:text-white md:hidden"
+            className="h-7 w-7 p-0 text-[#758498] hover:text-[#F0F3F9] md:hidden"
             aria-label="Close sidebar navigation"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      {/* Active Organization Switcher */}
+      {/* Organization Switcher */}
       {user && (
-        <div className="border-b border-[hsl(var(--border))] px-3 py-2.5 bg-slate-900/40">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 px-1">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Organization</span>
+        <div className="border-b border-[#1E2333] p-2 bg-[#08090D]">
+          <div className="flex items-center justify-between text-[10px] text-[#758498] mb-1 px-1 font-mono uppercase tracking-wider">
+            <span>Organization</span>
             <NavLink
               to="/organizations"
               onClick={onItemClick}
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-[#00E5FF] transition-colors"
               title="Manage Organizations"
             >
               <Settings className="h-3 w-3" />
@@ -157,7 +159,7 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
                 const found = organizations.find((o) => o.id === e.target.value);
                 if (found) setActiveOrg(found);
               }}
-              className="w-full bg-slate-950/80 border border-slate-800 text-slate-200 text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-[#10121A] border border-[#1E2333] text-[#F0F3F9] text-xs rounded px-2 py-1 focus:outline-none focus:border-[#00E5FF] font-mono"
             >
               {organizations.map((org) => (
                 <option key={org.id} value={org.id}>
@@ -169,14 +171,14 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
             <NavLink
               to="/organizations"
               onClick={onItemClick}
-              className="flex items-center justify-between px-2 py-1.5 rounded bg-slate-950/80 border border-slate-800 text-xs font-medium hover:border-slate-700 transition-colors"
+              className="flex items-center justify-between px-2 py-1 rounded bg-[#10121A] border border-[#1E2333] text-xs font-medium hover:border-[#2A324B] transition-colors"
             >
               <div className="flex items-center gap-2 truncate">
-                <Building2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                <span className="truncate text-slate-200">{activeOrg?.name || "Default Org"}</span>
+                <Building2 className="h-3.5 w-3.5 text-[#00E5FF] shrink-0" />
+                <span className="truncate text-[#F0F3F9] font-mono text-xs">{activeOrg?.name || "Acme Corp"}</span>
               </div>
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-slate-700 text-slate-400">
-                {activeOrg?.userRole || "Member"}
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-[#1E2333] text-[#758498]">
+                {activeOrg?.userRole || "Admin"}
               </Badge>
             </NavLink>
           )}
@@ -184,10 +186,10 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
       )}
 
       {/* Navigation Sections */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4" aria-label="Main Navigation">
+      <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3" aria-label="Main Navigation">
         {navigationSections.map((section) => (
-          <div key={section.title} className="space-y-1">
-            <h2 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400 select-none">
+          <div key={section.title} className="space-y-0.5">
+            <h2 className="px-2 text-[10px] font-mono font-medium uppercase tracking-wider text-[#55657E]">
               {section.title}
             </h2>
             <ul className="space-y-0.5">
@@ -198,16 +200,32 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
                     onClick={onItemClick}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                        "group flex items-center justify-between rounded px-2.5 py-1.5 text-xs font-medium transition-all",
                         isActive
-                          ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                          : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                          ? "bg-[#141722] text-[#F0F3F9] border-l-2 border-[#00E5FF] font-semibold"
+                          : "text-[#A6B4C9] hover:bg-[#10121A] hover:text-[#F0F3F9] border-l-2 border-transparent"
                       )
                     }
                     end={item.href === "/"}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.name}</span>
+                    <div className="flex items-center gap-2 truncate">
+                      <item.icon className="h-3.5 w-3.5 shrink-0 text-[#758498] group-hover:text-[#F0F3F9] transition-colors" />
+                      <span className="truncate">{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <span
+                        className={cn(
+                          "ml-auto text-[10px] font-mono px-1 py-0.2 rounded border",
+                          item.badgeVariant === "destructive"
+                            ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+                            : item.badgeVariant === "warning"
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                            : "border-[#00E5FF]/30 bg-[#00E5FF]/10 text-[#00E5FF]"
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               ))}
@@ -217,15 +235,15 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
       </nav>
 
       {/* User & Settings Footer */}
-      <div className="border-t border-[hsl(var(--border))] p-3 space-y-2 bg-slate-900/20">
+      <div className="border-t border-[#1E2333] p-2 space-y-1.5 bg-[#0E1017]">
         {user && (
-          <div className="flex items-center gap-2.5 rounded-lg bg-slate-800/40 border border-slate-800 p-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <UserIcon className="h-4 w-4" />
+          <div className="flex items-center gap-2 rounded bg-[#10121A] border border-[#1E2333] p-1.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/20 font-mono text-xs">
+              <UserIcon className="h-3.5 w-3.5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
-                <p className="truncate text-xs font-semibold text-slate-200 leading-none">
+                <p className="truncate text-xs font-medium text-[#F0F3F9] leading-none">
                   {user.fullName || user.userName}
                 </p>
                 <Badge
@@ -241,22 +259,22 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
                   {primaryRole}
                 </Badge>
               </div>
-              <p className="truncate text-[10px] text-slate-400 mt-1">{user.email}</p>
+              <p className="truncate text-[10px] font-mono text-[#758498] mt-0.5">{user.email}</p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 justify-start gap-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 h-8"
+            className="flex-1 justify-start gap-1.5 text-xs text-[#758498] hover:text-[#F0F3F9] hover:bg-[#141722] h-7 px-2"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? (
-              <Sun className="h-3.5 w-3.5 text-amber-400" />
+              <Sun className="h-3 w-3 text-amber-400" />
             ) : (
-              <Moon className="h-3.5 w-3.5 text-blue-400" />
+              <Moon className="h-3 w-3 text-[#00E5FF]" />
             )}
             <span>{theme === "dark" ? "Light" : "Dark"}</span>
           </Button>
@@ -265,11 +283,11 @@ export function Sidebar({ onItemClick, onClose }: SidebarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 h-8"
+              className="gap-1 text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 h-7 px-2"
               onClick={logout}
               title="Sign Out"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3 w-3" />
               <span>Exit</span>
             </Button>
           )}

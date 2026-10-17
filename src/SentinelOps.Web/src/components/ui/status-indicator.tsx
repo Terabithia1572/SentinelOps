@@ -17,48 +17,65 @@ export interface StatusIndicatorProps extends React.HTMLAttributes<HTMLSpanEleme
   showPulse?: boolean;
   pulse?: boolean;
   size?: "sm" | "default" | "lg";
+  showSymbol?: boolean;
 }
 
-const statusColorMap: Record<StatusType, { dot: string; pulse: string; badge: string }> = {
+const statusColorMap: Record<StatusType, { dot: string; pulse: string; badge: string; symbol: string; shapeClass: string }> = {
   healthy: {
-    dot: "bg-emerald-500",
+    dot: "bg-emerald-400",
     pulse: "bg-emerald-400",
-    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    symbol: "●",
+    shapeClass: "rounded-full",
   },
   operational: {
-    dot: "bg-emerald-500",
+    dot: "bg-emerald-400",
     pulse: "bg-emerald-400",
-    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    symbol: "●",
+    shapeClass: "rounded-full",
   },
   degraded: {
-    dot: "bg-amber-500",
+    dot: "bg-amber-400",
     pulse: "bg-amber-400",
-    badge: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    badge: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    symbol: "▲",
+    shapeClass: "rounded-xs rotate-45 scale-75",
   },
   warning: {
-    dot: "bg-amber-500",
+    dot: "bg-amber-400",
     pulse: "bg-amber-400",
-    badge: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    badge: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    symbol: "▲",
+    shapeClass: "rounded-xs rotate-45 scale-75",
   },
   outage: {
     dot: "bg-rose-500",
     pulse: "bg-rose-400",
-    badge: "border-rose-500/20 bg-rose-500/10 text-rose-400",
+    badge: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+    symbol: "◆",
+    shapeClass: "rotate-45 scale-90",
   },
   critical: {
     dot: "bg-rose-500",
     pulse: "bg-rose-400",
-    badge: "border-rose-500/20 bg-rose-500/10 text-rose-400",
+    badge: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+    symbol: "◆",
+    shapeClass: "rotate-45 scale-90",
   },
   unknown: {
     dot: "bg-slate-400",
-    pulse: "bg-slate-300",
-    badge: "border-slate-500/20 bg-slate-500/10 text-slate-400",
+    pulse: "bg-slate-400",
+    badge: "border-slate-500/30 bg-slate-500/10 text-slate-400",
+    symbol: "○",
+    shapeClass: "rounded-full border border-slate-400 !bg-transparent",
   },
   info: {
-    dot: "bg-sky-500",
-    pulse: "bg-sky-400",
-    badge: "border-sky-500/20 bg-sky-500/10 text-sky-400",
+    dot: "bg-[#00E5FF]",
+    pulse: "bg-[#00E5FF]",
+    badge: "border-[#00E5FF]/30 bg-[#00E5FF]/10 text-[#00E5FF]",
+    symbol: "■",
+    shapeClass: "rounded-xs",
   },
 };
 
@@ -74,6 +91,7 @@ export function StatusIndicator({
   showPulse = true,
   pulse,
   size = "default",
+  showSymbol = false,
   className,
   ...props
 }: StatusIndicatorProps) {
@@ -88,20 +106,24 @@ export function StatusIndicator({
         label && "text-xs",
         className
       )}
+      role="status"
+      aria-label={`${status}: ${label || status}`}
       {...props}
     >
       <span className="relative flex shrink-0 items-center justify-center">
         {shouldPulse && (status === "healthy" || status === "operational" || status === "degraded" || status === "critical") && (
           <span
             className={cn(
-              "absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+              "absolute inline-flex h-full w-full animate-ping opacity-60",
+              config.shapeClass,
               config.pulse
             )}
           />
         )}
-        <span className={cn("relative inline-flex rounded-full", dotSize, config.dot)} />
+        <span className={cn("relative inline-flex", dotSize, config.shapeClass, config.dot)} />
       </span>
-      {label && <span>{label}</span>}
+      {showSymbol && <span className="text-[10px] opacity-75 font-mono select-none" aria-hidden="true">{config.symbol}</span>}
+      {label && <span className="tabular-nums tracking-tight">{label}</span>}
     </span>
   );
 }

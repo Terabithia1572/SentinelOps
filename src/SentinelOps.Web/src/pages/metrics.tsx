@@ -397,22 +397,24 @@ export function MetricsPage() {
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={formattedChartPoints} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.6} />
-                  <XAxis dataKey="timeLabel" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit=" ms" tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1E2333" opacity={0.8} />
+                  <XAxis dataKey="timeLabel" stroke="#758498" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#758498" fontSize={11} unit=" ms" tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "12px",
+                      backgroundColor: "#10121A",
+                      borderColor: "#1E2333",
+                      borderRadius: "4px",
+                      fontSize: "11px",
+                      color: "#F0F3F9",
+                      fontFamily: "monospace",
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-                  <Line type="monotone" dataKey="p99DurationMs" name="p99 Latency" stroke="#f43f5e" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="p95DurationMs" name="p95 Latency" stroke="#a855f7" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="p50DurationMs" name="p50 (Median)" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
-                  <Line type="monotone" dataKey="avgDurationMs" name="Avg Latency" stroke="#10b981" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                  <Line type="monotone" dataKey="p99DurationMs" name="p99 Latency" stroke="#F43F5E" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="p95DurationMs" name="p95 Latency" stroke="#FBBF24" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="p50DurationMs" name="p50 (Median)" stroke="#00E5FF" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="avgDurationMs" name="Avg Latency" stroke="#34D399" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -426,7 +428,7 @@ export function MetricsPage() {
         <Card>
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-400" />
+              <Zap className="h-4 w-4 text-[#00E5FF]" />
               Request Rate (RPS)
             </CardTitle>
             <CardDescription className="text-xs">Requests handled per second</CardDescription>
@@ -440,24 +442,26 @@ export function MetricsPage() {
               <div className="h-60 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={formattedChartPoints} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.6} />
-                    <XAxis dataKey="timeLabel" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1E2333" opacity={0.8} />
+                    <XAxis dataKey="timeLabel" stroke="#758498" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#758498" fontSize={11} tickLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "6px",
-                        fontSize: "12px",
+                        backgroundColor: "#10121A",
+                        borderColor: "#1E2333",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        color: "#F0F3F9",
+                        fontFamily: "monospace",
                       }}
                     />
                     <Area
                       type="monotone"
                       dataKey="requestsPerSecond"
                       name="RPS"
-                      stroke="#f59e0b"
-                      fill="#f59e0b"
-                      fillOpacity={0.2}
+                      stroke="#00E5FF"
+                      fill="#00E5FF"
+                      fillOpacity={0.15}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -470,7 +474,7 @@ export function MetricsPage() {
         <Card>
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-rose-400" />
+              <AlertTriangle className="h-4 w-4 text-[#F43F5E]" />
               Error Rate (%) &amp; Failures
             </CardTitle>
             <CardDescription className="text-xs">
@@ -486,18 +490,20 @@ export function MetricsPage() {
               <div className="h-60 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={formattedChartPoints} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.6} />
-                    <XAxis dataKey="timeLabel" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} unit="%" tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1E2333" opacity={0.8} />
+                    <XAxis dataKey="timeLabel" stroke="#758498" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#758498" fontSize={11} unit="%" tickLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "6px",
-                        fontSize: "12px",
+                        backgroundColor: "#10121A",
+                        borderColor: "#1E2333",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        color: "#F0F3F9",
+                        fontFamily: "monospace",
                       }}
                     />
-                    <Bar dataKey="errorRatePercent" name="Error Rate %" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="errorRatePercent" name="Error Rate %" fill="#F43F5E" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

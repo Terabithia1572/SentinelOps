@@ -456,18 +456,21 @@ export function SlosPage() {
                       >
                         <defs>
                           <linearGradient id="colorCompliance" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                            <stop offset="5%" stopColor="#34D399" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#34D399" stopOpacity={0.0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                        <XAxis dataKey="time" textAnchor="end" tick={{ fontSize: 10 }} />
-                        <YAxis domain={[95, 100]} tick={{ fontSize: 10 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1E2333" opacity={0.8} />
+                        <XAxis dataKey="time" stroke="#758498" textAnchor="end" tick={{ fontSize: 10 }} />
+                        <YAxis domain={[95, 100]} stroke="#758498" tick={{ fontSize: 10 }} />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            borderColor: "hsl(var(--border))",
-                            fontSize: "12px",
+                            backgroundColor: "#10121A",
+                            borderColor: "#1E2333",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            color: "#F0F3F9",
+                            fontFamily: "monospace",
                           }}
                         />
                         <Area

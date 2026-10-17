@@ -3,23 +3,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-xs border px-2 py-0.5 text-[11px] font-mono tracking-tight transition-colors focus:outline-none focus:ring-1 focus:ring-ring",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary)/0.8)]",
+          "border-[#00E5FF]/30 bg-[#00E5FF]/10 text-[#00E5FF]",
         secondary:
-          "border-transparent bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary)/0.8)]",
+          "border-[hsl(var(--border))] bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]",
         destructive:
-          "border-transparent bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] hover:bg-[hsl(var(--destructive)/0.8)]",
-        outline: "text-[hsl(var(--foreground))]",
+          "border-rose-500/30 bg-rose-500/10 text-rose-400 font-medium",
+        outline: "border-[hsl(var(--border))] text-[hsl(var(--foreground))]",
         success:
-          "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-medium",
+          "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-medium",
         warning:
-          "border-amber-500/20 bg-amber-500/10 text-amber-400 font-medium",
+          "border-amber-500/30 bg-amber-500/10 text-amber-400 font-medium",
         danger:
-          "border-rose-500/20 bg-rose-500/10 text-rose-400 font-medium",
+          "border-rose-500/30 bg-rose-500/10 text-rose-400 font-medium",
+        info:
+          "border-sky-500/30 bg-sky-500/10 text-sky-400 font-medium",
       },
     },
     defaultVariants: {

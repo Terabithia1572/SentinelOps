@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Radio,
   Layers,
+  Activity,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   Card,
@@ -69,36 +71,42 @@ function StatCard({
   href?: string;
   variant?: "default" | "success" | "warning" | "destructive";
 }) {
-  const variantBadge = {
-    default: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-    success: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    warning: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-    destructive: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  const variantStyles = {
+    default: "text-[#00E5FF] bg-[#00E5FF]/10 border-[#00E5FF]/20",
+    success: "text-[#34D399] bg-[#34D399]/10 border-[#34D399]/20",
+    warning: "text-[#FBBF24] bg-[#FBBF24]/10 border-[#FBBF24]/20",
+    destructive: "text-[#F43F5E] bg-[#F43F5E]/10 border-[#F43F5E]/20",
   };
 
   const content = (
-    <Card className="hover:border-slate-700 transition-all duration-200 bg-slate-900/60 border-slate-800">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium text-slate-400">{title}</CardTitle>
-        <div className={`p-1.5 rounded-lg border ${variantBadge[variant]}`}>
-          <Icon className="h-4 w-4" />
+    <div className="group relative rounded border border-[#1E2333] bg-[#10121A] p-3.5 transition-all duration-150 hover:border-[#00E5FF]/40 hover:bg-[#141722]">
+      <div className="flex items-center justify-between pb-2">
+        <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#758498]">
+          {title}
+        </span>
+        <div className={`p-1 rounded ${variantStyles[variant]}`}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold tracking-tight text-white">{value}</div>
+      </div>
+      <div>
+        <div className="text-xl font-bold font-mono tracking-tight text-[#F0F3F9] tabular-nums">
+          {value}
+        </div>
         {description && (
-          <p className="text-xs text-slate-400 mt-1 flex items-center justify-between">
+          <p className="text-[11px] text-[#758498] mt-1 flex items-center justify-between font-mono">
             <span>{description}</span>
-            {href && <ChevronRight className="h-3 w-3 text-slate-500" />}
+            {href && (
+              <ArrowUpRight className="h-3 w-3 text-[#55657E] group-hover:text-[#00E5FF] transition-colors" />
+            )}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   if (href) {
     return (
-      <Link to={href} className="block transition-transform hover:-translate-y-0.5">
+      <Link to={href} className="block">
         {content}
       </Link>
     );
@@ -109,30 +117,28 @@ function StatCard({
 
 function OverviewSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Banner Skeleton */}
-      <Skeleton className="h-24 w-full rounded-xl" />
+      <Skeleton className="h-20 w-full rounded" />
 
       {/* KPI Grid Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Card key={i} className="bg-slate-900/40 border-slate-800">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-7 w-7 rounded-lg" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-16 mb-2" />
-              <Skeleton className="h-3 w-28" />
-            </CardContent>
-          </Card>
+          <div key={i} className="rounded border border-[#1E2333] bg-[#10121A] p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3.5 w-20" />
+              <Skeleton className="h-6 w-6 rounded" />
+            </div>
+            <Skeleton className="h-7 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
         ))}
       </div>
 
       {/* Panels Skeleton */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Skeleton className="h-80 lg:col-span-2 rounded-xl" />
-        <Skeleton className="h-80 rounded-xl" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-72 lg:col-span-2 rounded" />
+        <Skeleton className="h-72 rounded" />
       </div>
     </div>
   );
@@ -176,11 +182,11 @@ export function OverviewPage() {
 
   if (isSummaryLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Overview</h1>
-            <p className="text-xs text-slate-400">Loading platform telemetry posture...</p>
+            <h1 className="text-xl font-bold font-mono tracking-tight text-[#F0F3F9]">Overview</h1>
+            <p className="text-xs text-[#758498] font-mono">Connecting to telemetry ingestion pipeline...</p>
           </div>
         </div>
         <OverviewSkeleton />
@@ -190,8 +196,8 @@ export function OverviewPage() {
 
   if (summaryError) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Overview</h1>
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold font-mono tracking-tight text-[#F0F3F9]">Overview</h1>
         <ErrorState
           title="Unable to connect to telemetry pipeline"
           message="Could not load system summary metrics. Verify that the SentinelOps API service is online."
@@ -217,28 +223,33 @@ export function OverviewPage() {
   const isHealthy = !isDegraded && (summary.totalServices === 0 || summary.healthyServices >= summary.totalServices);
 
   return (
-    <div className="space-y-6">
-      {/* Top Controls Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* Precision Top Controls Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1E2333] pb-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Overview</h1>
-          <p className="text-xs text-slate-400">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold font-mono tracking-tight text-[#F0F3F9]">Overview</h1>
+            <Badge variant="outline" className="text-[10px] font-mono border-[#1E2333] text-[#00E5FF]">
+              CLUSTER_EAST_1
+            </Badge>
+          </div>
+          <p className="text-xs text-[#758498] font-mono mt-0.5">
             Real-time platform telemetry posture and distributed service vitals
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Time Range Pills */}
-          <div className="flex items-center rounded-lg border border-slate-800 bg-slate-900/60 p-1">
+          {/* Time Range Selector */}
+          <div className="flex items-center rounded border border-[#1E2333] bg-[#0E1017] p-0.5">
             {timeRanges.map((range) => (
               <button
                 key={range.value}
                 type="button"
                 onClick={() => setSelectedRange(range.value)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`px-2 py-0.5 text-xs font-mono font-medium rounded transition-colors ${
                   selectedRange === range.value
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[#00E5FF] text-[#08090D] font-bold"
+                    : "text-[#758498] hover:text-[#F0F3F9]"
                 }`}
               >
                 {range.label}
@@ -251,12 +262,12 @@ export function OverviewPage() {
             value={refreshInterval}
             onChange={(e) => setRefreshInterval(Number(e.target.value))}
             aria-label="Refresh Frequency"
-            className="rounded-lg border border-slate-800 bg-slate-900/60 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="rounded border border-[#1E2333] bg-[#0E1017] px-2 py-1 text-xs text-[#A6B4C9] font-mono focus:outline-none focus:border-[#00E5FF]"
           >
             <option value={0}>Auto-refresh Off</option>
-            <option value={10000}>Every 10s</option>
-            <option value={30000}>Every 30s</option>
-            <option value={60000}>Every 1m</option>
+            <option value={10000}>10s interval</option>
+            <option value={30000}>30s interval</option>
+            <option value={60000}>60s interval</option>
           </select>
 
           {/* Manual Refresh Button */}
@@ -265,21 +276,21 @@ export function OverviewPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isRefetching}
-            className="h-8 border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
+            className="h-7 border-[#1E2333] bg-[#0E1017] hover:bg-[#141722] text-[#F0F3F9]"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? "animate-spin text-blue-400" : ""}`} />
-            <span>Refresh</span>
+            <RefreshCw className={`h-3 w-3 mr-1.5 ${isRefetching ? "animate-spin text-[#00E5FF]" : ""}`} />
+            <span className="font-mono text-xs">Refresh</span>
           </Button>
         </div>
       </div>
 
-      {/* System Posture Banner */}
-      <div className={`rounded-xl border p-4 transition-all ${
+      {/* Precision System Posture Banner */}
+      <div className={`rounded border p-3.5 transition-all ${
         isHealthy
-          ? "border-emerald-500/20 bg-emerald-950/20 shadow-lg shadow-emerald-950/10"
-          : "border-amber-500/30 bg-amber-950/20 shadow-lg shadow-amber-950/10"
+          ? "border-[#34D399]/30 bg-[#0E1017]"
+          : "border-[#F43F5E]/30 bg-[#0E1017]"
       }`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <StatusIndicator
               status={isHealthy ? "healthy" : "degraded"}
@@ -288,14 +299,14 @@ export function OverviewPage() {
             />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-white">
+                <h2 className="text-sm font-semibold text-[#F0F3F9] font-mono">
                   {isHealthy ? "All Core Systems Operational" : "Elevated Anomaly Alerting Active"}
                 </h2>
-                <Badge variant={isHealthy ? "success" : "warning"} className="text-[10px] px-2 py-0">
+                <Badge variant={isHealthy ? "success" : "warning"} className="text-[10px] px-1.5 py-0">
                   {isHealthy ? "SLA 99.99%" : "Attention Required"}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[#758498] mt-0.5">
                 {isHealthy
                   ? "All telemetry ingestion pipelines, alert evaluation workers, and background processors healthy."
                   : `${summary.activeAlerts} alert(s) firing or error rates exceeding normal operating boundaries.`}
@@ -303,20 +314,20 @@ export function OverviewPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6 text-xs text-slate-400">
+          <div className="flex items-center gap-5 border-t md:border-t-0 md:border-l border-[#1E2333] pt-2.5 md:pt-0 md:pl-5 text-xs text-[#758498] font-mono">
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-slate-500">Service Health</span>
-              <span className="font-semibold text-slate-200">
+              <span className="block text-[10px] uppercase tracking-wider text-[#55657E]">Service Health</span>
+              <span className="font-semibold text-[#F0F3F9] tabular-nums">
                 {summary.healthyServices} / {summary.totalServices} Active
               </span>
             </div>
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-slate-500">Mean Latency</span>
-              <span className="font-semibold text-slate-200">{summary.avgResponseTimeMs.toFixed(0)} ms</span>
+              <span className="block text-[10px] uppercase tracking-wider text-[#55657E]">Mean Latency</span>
+              <span className="font-semibold text-[#00E5FF] tabular-nums">{summary.avgResponseTimeMs.toFixed(0)} ms</span>
             </div>
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-slate-500">Error Rate</span>
-              <span className={`font-semibold ${summary.errorRate > 1 ? "text-amber-400" : "text-emerald-400"}`}>
+              <span className="block text-[10px] uppercase tracking-wider text-[#55657E]">Error Rate</span>
+              <span className={`font-semibold tabular-nums ${summary.errorRate > 1 ? "text-[#FBBF24]" : "text-[#34D399]"}`}>
                 {summary.errorRate.toFixed(2)}%
               </span>
             </div>
@@ -324,8 +335,8 @@ export function OverviewPage() {
         </div>
       </div>
 
-      {/* Primary KPI Grid (8 Cards) */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Primary KPI Grid (8 Stat Cards) */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Applications"
           value={summary.totalApplications}
@@ -387,52 +398,52 @@ export function OverviewPage() {
         />
       </div>
 
-      {/* Multi-Panel Operational Observability Row */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Operational Observability Row */}
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Recent Incidents Stream (2 columns wide) */}
-        <Card className="lg:col-span-2 bg-slate-900/60 border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <Card className="lg:col-span-2 bg-[#10121A] border-[#1E2333]">
+          <CardHeader className="flex flex-row items-center justify-between pb-2.5 border-b border-[#1E2333]">
             <div>
-              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                <Radio className="h-4 w-4 text-blue-400 animate-pulse" />
+              <CardTitle className="text-xs font-semibold text-[#F0F3F9] font-mono flex items-center gap-2">
+                <Radio className="h-3.5 w-3.5 text-[#00E5FF] animate-pulse" />
                 Live Incident & Alert Feed
               </CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] text-[#758498] mt-0.5">
                 Active alerts and operational incidents across monitored infrastructure
               </p>
             </div>
             <Link
               to="/incidents"
-              className="inline-flex items-center text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+              className="inline-flex items-center text-xs font-mono text-[#00E5FF] hover:text-[#33EBFF] transition-colors"
             >
-              View All Incidents
-              <ChevronRight className="ml-1 h-3.5 w-3.5" />
+              <span>View All Incidents</span>
+              <ChevronRight className="ml-0.5 h-3 w-3" />
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-3">
             {isIncidentsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-12 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full rounded" />
+                <Skeleton className="h-10 w-full rounded" />
+                <Skeleton className="h-10 w-full rounded" />
               </div>
             ) : incidentData?.items && incidentData.items.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {incidentData.items.map((incident) => (
                   <Link
                     key={incident.id}
                     to={`/incidents/${incident.id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-800/40 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded border border-[#1E2333] bg-[#0E1017] hover:border-[#00E5FF]/40 hover:bg-[#141722] transition-colors"
                   >
-                    <div className="flex items-center gap-3 truncate">
+                    <div className="flex items-center gap-2.5 truncate">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${
-                        incident.severity === "Critical" ? "bg-rose-500" : "bg-amber-500"
+                        incident.severity === "Critical" ? "bg-[#F43F5E]" : "bg-[#FBBF24]"
                       }`} />
                       <div className="truncate">
-                        <span className="text-xs font-semibold text-slate-200 block truncate">
+                        <span className="text-xs font-medium text-[#F0F3F9] block truncate font-mono">
                           {incident.title}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">
+                        <span className="text-[10px] text-[#758498] block font-mono">
                           Service: {incident.serviceName || "Global"} • Status: {incident.status}
                         </span>
                       </div>
@@ -454,66 +465,66 @@ export function OverviewPage() {
         </Card>
 
         {/* Quick Operations & Topology Jump (1 column wide) */}
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-              <Layers className="h-4 w-4 text-blue-400" />
+        <Card className="bg-[#10121A] border-[#1E2333]">
+          <CardHeader className="pb-2.5 border-b border-[#1E2333]">
+            <CardTitle className="text-xs font-semibold text-[#F0F3F9] font-mono flex items-center gap-2">
+              <Layers className="h-3.5 w-3.5 text-[#00E5FF]" />
               Telemetry Topology
             </CardTitle>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] text-[#758498] mt-0.5">
               Direct access to deep inspection views
             </p>
           </CardHeader>
-          <CardContent className="space-y-2.5">
+          <CardContent className="space-y-2 pt-3">
             <Link
               to="/apm"
-              className="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 hover:border-blue-500/40 hover:bg-slate-800/40 transition-all text-xs text-slate-300 group"
+              className="flex items-center justify-between p-2 rounded border border-[#1E2333] bg-[#0E1017] hover:border-[#00E5FF]/40 hover:bg-[#141722] transition-all text-xs text-[#A6B4C9] group"
             >
               <div className="flex items-center gap-2.5">
-                <Network className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                <Network className="h-3.5 w-3.5 text-[#00E5FF] group-hover:scale-105 transition-transform" />
                 <div>
-                  <span className="font-medium text-slate-200 block">APM & Service Map</span>
-                  <span className="text-[10px] text-slate-400">Distributed latency DAGs</span>
+                  <span className="font-medium text-[#F0F3F9] block font-mono text-xs">APM & Service Map</span>
+                  <span className="text-[10px] text-[#758498] font-mono">Distributed latency DAGs</span>
                 </div>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-[#55657E] group-hover:text-[#00E5FF]" />
             </Link>
 
             <Link
               to="/ai-observability"
-              className="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 hover:border-purple-500/40 hover:bg-slate-800/40 transition-all text-xs text-slate-300 group"
+              className="flex items-center justify-between p-2 rounded border border-[#1E2333] bg-[#0E1017] hover:border-[#00E5FF]/40 hover:bg-[#141722] transition-all text-xs text-[#A6B4C9] group"
             >
               <div className="flex items-center gap-2.5">
-                <Sparkles className="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                <Sparkles className="h-3.5 w-3.5 text-[#00E5FF] group-hover:scale-105 transition-transform" />
                 <div>
-                  <span className="font-medium text-slate-200 block">AI Root-Cause Assistant</span>
-                  <span className="text-[10px] text-slate-400">Automated incident triage</span>
+                  <span className="font-medium text-[#F0F3F9] block font-mono text-xs">AI Root-Cause Assistant</span>
+                  <span className="text-[10px] text-[#758498] font-mono">Automated anomaly triage</span>
                 </div>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-[#55657E] group-hover:text-[#00E5FF]" />
             </Link>
 
             <Link
               to="/logs"
-              className="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 hover:border-emerald-500/40 hover:bg-slate-800/40 transition-all text-xs text-slate-300 group"
+              className="flex items-center justify-between p-2 rounded border border-[#1E2333] bg-[#0E1017] hover:border-[#34D399]/40 hover:bg-[#141722] transition-all text-xs text-[#A6B4C9] group"
             >
               <div className="flex items-center gap-2.5">
-                <FileText className="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <FileText className="h-3.5 w-3.5 text-[#34D399] group-hover:scale-105 transition-transform" />
                 <div>
-                  <span className="font-medium text-slate-200 block">Structured Log Stream</span>
-                  <span className="text-[10px] text-slate-400">Query OTel collector logs</span>
+                  <span className="font-medium text-[#F0F3F9] block font-mono text-xs">Structured Log Stream</span>
+                  <span className="text-[10px] text-[#758498] font-mono">Query OTel collector logs</span>
                 </div>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-[#55657E] group-hover:text-[#34D399]" />
             </Link>
 
-            <div className="pt-2 border-t border-slate-800">
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <div className="pt-2 border-t border-[#1E2333]">
+              <div className="flex items-center justify-between text-[11px] text-[#758498] font-mono">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <Activity className="h-3 w-3 text-[#34D399] animate-pulse" />
                   OTel Pipeline Ingestion
                 </span>
-                <span className="font-semibold text-slate-300">Active</span>
+                <span className="font-semibold text-[#34D399]">ACTIVE</span>
               </div>
             </div>
           </CardContent>
