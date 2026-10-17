@@ -265,9 +265,11 @@ export function BillingPage() {
     }
   };
 
-  const getUsageBar = (label: string, used: number, quota: number, pct: number, isWarning: boolean, isExceeded: boolean) => {
-    const isInfinity = quota <= 0;
-    const barWidth = isInfinity ? 0 : Math.min(pct, 100);
+  const getUsageBar = (label: string, used?: number | null, quota?: number | null, pct?: number | null, isWarning: boolean = false, isExceeded: boolean = false) => {
+    const safeUsed = used ?? 0;
+    const safeQuota = quota ?? 0;
+    const isInfinity = safeQuota <= 0;
+    const barWidth = isInfinity ? 0 : Math.min(pct ?? 0, 100);
     const colorClass = isExceeded
       ? "bg-rose-500"
       : isWarning
@@ -280,7 +282,7 @@ export function BillingPage() {
           <span className="font-medium text-[hsl(var(--foreground))]">{label}</span>
           <div className="flex items-center gap-2">
             <span className="text-[hsl(var(--muted-foreground))]">
-              {used.toLocaleString()} / {isInfinity ? "Unlimited" : quota.toLocaleString()}
+              {safeUsed.toLocaleString()} / {isInfinity ? "Unlimited" : safeQuota.toLocaleString()}
             </span>
             {isExceeded && (
               <Badge className="bg-rose-500/10 text-rose-500 text-[10px] px-1 py-0 h-4 border-rose-500/20">
@@ -625,23 +627,23 @@ export function BillingPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{p.maxMembers} team seats included</span>
+                        <span>{p.maxMembers ?? 0} team seats included</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{(p.maxMonthlyLogs / 1000).toLocaleString()}k logs / month</span>
+                        <span>{((p.maxMonthlyLogs ?? 0) / 1000).toLocaleString()}k logs / month</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{(p.maxMonthlyTraces / 1000).toLocaleString()}k traces / month</span>
+                        <span>{((p.maxMonthlyTraces ?? 0) / 1000).toLocaleString()}k traces / month</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{(p.maxMonthlyAiTokens / 1000).toLocaleString()}k AI Copilot tokens</span>
+                        <span>{((p.maxMonthlyAiTokens ?? 0) / 1000).toLocaleString()}k AI Copilot tokens</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{p.dataRetentionDays} days data retention</span>
+                        <span>{p.dataRetentionDays ?? 30} days data retention</span>
                       </div>
                       {p.allowCustomReports && (
                         <div className="flex items-center gap-2">

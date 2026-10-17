@@ -48,10 +48,16 @@ export function StatusPagesPage() {
   const [incMessage, setIncMessage] = useState("");
   const [affectedComponentIds, setAffectedComponentIds] = useState<string[]>([]);
 
-  const { data: statusPages = [], isLoading, refetch } = useQuery({
+  const { data: statusPagesData, isLoading, refetch } = useQuery({
     queryKey: ["status-pages"],
     queryFn: getStatusPages,
   });
+
+  const statusPages: StatusPageDto[] = Array.isArray(statusPagesData)
+    ? statusPagesData
+    : Array.isArray((statusPagesData as any)?.items)
+    ? (statusPagesData as any).items
+    : [];
 
   const createMutation = useMutation({
     mutationFn: (req: CreateStatusPageRequest) => createStatusPage(req),
@@ -184,12 +190,12 @@ export function StatusPagesPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[hsl(var(--muted-foreground))]">Monitored Components:</span>
-                    <span className="font-medium text-foreground">{page.components.length} Services</span>
+                    <span className="font-medium text-foreground">{page.components?.length || 0} Services</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[hsl(var(--muted-foreground))]">Active Incidents:</span>
-                    <span className={page.activeIncidentsCount > 0 ? "text-rose-400 font-semibold" : "text-emerald-400 font-medium"}>
-                      {page.activeIncidentsCount > 0 ? `${page.activeIncidentsCount} Active` : "None (Healthy)"}
+                    <span className={(page.activeIncidentsCount || 0) > 0 ? "text-rose-400 font-semibold" : "text-emerald-400 font-medium"}>
+                      {(page.activeIncidentsCount || 0) > 0 ? `${page.activeIncidentsCount} Active` : "None (Healthy)"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

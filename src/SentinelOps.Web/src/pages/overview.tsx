@@ -303,7 +303,7 @@ export function OverviewPage() {
                   {isHealthy ? "All Core Systems Operational" : "Elevated Anomaly Alerting Active"}
                 </h2>
                 <Badge variant={isHealthy ? "success" : "warning"} className="text-[10px] px-1.5 py-0">
-                  {isHealthy ? "SLA 99.99%" : "Attention Required"}
+                  {isHealthy ? "SLO TARGET MET" : "ATTENTION REQUIRED"}
                 </Badge>
               </div>
               <p className="text-xs text-[#758498] mt-0.5">

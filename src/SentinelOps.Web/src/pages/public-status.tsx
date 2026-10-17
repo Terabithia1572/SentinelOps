@@ -210,15 +210,15 @@ export function PublicStatusPage() {
         </div>
 
         {/* Active Incidents */}
-        {statusPage.activeIncidents.length > 0 && (
+        {(statusPage.activeIncidents || []).length > 0 && (
           <section className="space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Active Incidents ({statusPage.activeIncidents.length})
+              Active Incidents ({(statusPage.activeIncidents || []).length})
             </h3>
 
             <div className="space-y-4">
-              {statusPage.activeIncidents.map((incident) => (
+              {(statusPage.activeIncidents || []).map((incident) => (
                 <Card key={incident.id} className="border-rose-500/30 bg-rose-950/10">
                   <CardHeader className="p-4 border-b border-rose-500/20 flex flex-row items-center justify-between">
                     <div>
@@ -233,15 +233,15 @@ export function PublicStatusPage() {
                       <CardTitle className="text-base font-bold mt-1.5 text-white">{incident.title}</CardTitle>
                     </div>
                     <span className="text-xs text-slate-400">
-                      Started: {new Date(incident.createdAtUtc).toLocaleTimeString()}
+                      Started: {incident.createdAtUtc ? new Date(incident.createdAtUtc).toLocaleTimeString() : "—"}
                     </span>
                   </CardHeader>
                   <CardContent className="p-4 space-y-3">
-                    {incident.updates.map((update) => (
+                    {(incident.updates || []).map((update) => (
                       <div key={update.id} className="pl-3 border-l-2 border-rose-500/40 space-y-1">
                         <div className="flex items-center justify-between text-[11px] text-slate-400">
                           <span className="font-semibold text-rose-300">{update.status}</span>
-                          <span>{new Date(update.createdAtUtc).toLocaleString()}</span>
+                          <span>{update.createdAtUtc ? new Date(update.createdAtUtc).toLocaleString() : "—"}</span>
                         </div>
                         <p className="text-xs text-slate-200 whitespace-pre-wrap">{update.message}</p>
                       </div>
@@ -254,7 +254,7 @@ export function PublicStatusPage() {
         )}
 
         {/* Scheduled Maintenance */}
-        {statusPage.scheduledMaintenance.length > 0 && (
+        {(statusPage.scheduledMaintenance || []).length > 0 && (
           <section className="space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-sky-400 flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -262,7 +262,7 @@ export function PublicStatusPage() {
             </h3>
 
             <div className="space-y-3">
-              {statusPage.scheduledMaintenance.map((m) => (
+              {(statusPage.scheduledMaintenance || []).map((m) => (
                 <div key={m.id} className="p-4 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-white">{m.title}</span>
@@ -274,7 +274,7 @@ export function PublicStatusPage() {
                   <div className="text-[11px] text-slate-400 flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 text-sky-400" />
                     <span>
-                      {new Date(m.startTimeUtc).toLocaleString()} — {new Date(m.endTimeUtc).toLocaleString()}
+                      {m.startTimeUtc ? new Date(m.startTimeUtc).toLocaleString() : "—"} — {m.endTimeUtc ? new Date(m.endTimeUtc).toLocaleString() : "—"}
                     </span>
                   </div>
                 </div>
@@ -288,13 +288,13 @@ export function PublicStatusPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
               <Layers className="h-4 w-4" />
-              System Components ({statusPage.components.length})
+              System Components ({(statusPage.components || []).length})
             </h3>
             <span className="text-xs text-slate-500">Live Telemetry Rollup</span>
           </div>
 
           <Card className="border-slate-800 bg-slate-900/60 divide-y divide-slate-800 overflow-hidden">
-            {statusPage.components.map((comp: StatusPageComponentDto) => (
+            {(statusPage.components || []).map((comp: StatusPageComponentDto) => (
               <div key={comp.id} className="p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
                 <div>
                   <div className="font-semibold text-xs sm:text-sm text-white">{comp.name}</div>
@@ -314,13 +314,13 @@ export function PublicStatusPage() {
             Past Incident History
           </h3>
 
-          {statusPage.pastIncidents.length === 0 ? (
+          {(statusPage.pastIncidents || []).length === 0 ? (
             <div className="p-6 rounded-lg bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-400">
               No incidents reported in the last 30 days. System reliability is 100%.
             </div>
           ) : (
             <div className="space-y-3">
-              {statusPage.pastIncidents.map((incident: StatusPageIncidentDto) => (
+              {(statusPage.pastIncidents || []).map((incident: StatusPageIncidentDto) => (
                 <div key={incident.id} className="p-4 rounded-lg bg-slate-900/50 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-xs sm:text-sm text-slate-200">{incident.title}</span>
@@ -332,9 +332,9 @@ export function PublicStatusPage() {
                     <span>
                       Resolved: {incident.resolvedAtUtc ? new Date(incident.resolvedAtUtc).toLocaleString() : "Recently"}
                     </span>
-                    <span>{incident.updates.length} updates logged</span>
+                    <span>{(incident.updates || []).length} updates logged</span>
                   </div>
-                  {incident.updates.length > 0 && (
+                  {(incident.updates || []).length > 0 && (
                     <p className="text-xs text-slate-300 pl-3 border-l border-slate-700 mt-2">
                       {incident.updates[0].message}
                     </p>

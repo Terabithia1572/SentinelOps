@@ -15,14 +15,24 @@ export function NotificationCenter() {
   // Connect to SignalR hub for live push notifications
   const { isConnected } = useAlertsHub();
 
-  const { data: notifications = [] } = useQuery({
+  const { data: rawNotifications } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const res = await apiClient.get<ApiResponse<InAppNotificationDto[]>>("/notifications?limit=30");
-      return res.data.data || [];
+      try {
+        const res = await apiClient.get<ApiResponse<InAppNotificationDto[]>>("/notifications?limit=30");
+        return res.data?.data || [];
+      } catch {
+        return [];
+      }
     },
     refetchInterval: 15000,
   });
+
+  const notifications: InAppNotificationDto[] = Array.isArray(rawNotifications)
+    ? rawNotifications
+    : Array.isArray((rawNotifications as any)?.items)
+    ? (rawNotifications as any).items
+    : [];
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {

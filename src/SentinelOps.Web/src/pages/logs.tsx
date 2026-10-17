@@ -475,14 +475,14 @@ export function LogsPage() {
               />
             </div>
           ) : (
-            <div className="divide-y divide-[hsl(var(--border))] font-mono text-xs">
+            <div className="divide-y divide-[hsl(var(--border))] font-mono text-xs overflow-x-auto">
               {logs.map((log) => {
                 const isExpanded = expandedLogIds.has(log.id);
                 return (
                   <div key={log.id} className="transition-colors hover:bg-[hsl(var(--accent)/0.3)]">
                     {/* Log Row Summary */}
                     <div
-                      className="flex cursor-pointer items-start gap-3 p-3 select-none"
+                      className="flex cursor-pointer items-start gap-3 p-3 select-none min-w-[600px] md:min-w-0"
                       onClick={() => toggleRowExpanded(log.id)}
                     >
                       <button className="mt-0.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">

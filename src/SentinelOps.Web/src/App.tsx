@@ -7,6 +7,8 @@ import { TenantProvider } from "@/context/tenant-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { MainLayout } from "@/components/layout/main-layout";
 
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+
 // Eager public auth & external status pages for fast initial landing
 import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
@@ -65,66 +67,68 @@ function App() {
         <AuthProvider>
           <TenantProvider>
             <BrowserRouter>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  {/* Public Authentication & External Status Routes */}
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/status/:slug" element={<PublicStatusPage />} />
-                  <Route path="/design-prototypes" element={<DesignPrototypesPage />} />
-                  <Route path="/design-prototypes/:concept/:screen" element={<DesignPrototypesPage />} />
-                  <Route
-                    path="/onboarding"
-                    element={
-                      <ProtectedRoute>
-                        <OnboardingPage />
-                      </ProtectedRoute>
-                    }
-                  />
+              <ErrorBoundary fallbackTitle="Application Error Intercepted">
+                <Suspense fallback={<RouteFallback />}>
+                  <Routes>
+                    {/* Public Authentication & External Status Routes */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/status/:slug" element={<PublicStatusPage />} />
+                    <Route path="/design-prototypes" element={<DesignPrototypesPage />} />
+                    <Route path="/design-prototypes/:concept/:screen" element={<DesignPrototypesPage />} />
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Protected Platform Routes */}
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <MainLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<OverviewPage />} />
-                    <Route path="overview" element={<OverviewPage />} />
-                    <Route path="dashboards" element={<DashboardsPage />} />
-                    <Route path="apm" element={<ApmPage />} />
-                    <Route path="ai-observability" element={<AiObservabilityPage />} />
-                    <Route path="organizations" element={<OrganizationsPage />} />
-                    <Route path="applications" element={<ApplicationsPage />} />
-                    <Route path="api-keys" element={<ApiKeysPage />} />
-                    <Route path="services" element={<ServiceHealthPage />} />
-                    <Route path="logs" element={<LogsPage />} />
-                    <Route path="traces" element={<TracesPage />} />
-                    <Route path="metrics" element={<MetricsPage />} />
-                    <Route path="exceptions" element={<ExceptionsPage />} />
-                    <Route path="health" element={<ServiceHealthPage />} />
-                    <Route path="alerts" element={<AlertsPage />} />
-                    <Route path="alert-rules" element={<AlertRulesPage />} />
-                    <Route path="incidents" element={<IncidentsPage />} />
-                    <Route path="incidents/:id" element={<IncidentDetailPage />} />
-                    <Route path="status-pages" element={<StatusPagesPage />} />
-                    <Route path="slos" element={<SlosPage />} />
-                    <Route path="analytics" element={<ReportsPage />} />
-                    <Route path="reports" element={<ReportsPage />} />
-                    <Route path="team" element={<UsersPage />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="audit-logs" element={<AuditLogsPage />} />
-                    <Route path="billing" element={<BillingPage />} />
-                    <Route path="subscription" element={<BillingPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                  </Route>
+                    {/* Protected Platform Routes */}
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <MainLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<OverviewPage />} />
+                      <Route path="overview" element={<OverviewPage />} />
+                      <Route path="dashboards" element={<DashboardsPage />} />
+                      <Route path="apm" element={<ApmPage />} />
+                      <Route path="ai-observability" element={<AiObservabilityPage />} />
+                      <Route path="organizations" element={<OrganizationsPage />} />
+                      <Route path="applications" element={<ApplicationsPage />} />
+                      <Route path="api-keys" element={<ApiKeysPage />} />
+                      <Route path="services" element={<ServiceHealthPage />} />
+                      <Route path="logs" element={<LogsPage />} />
+                      <Route path="traces" element={<TracesPage />} />
+                      <Route path="metrics" element={<MetricsPage />} />
+                      <Route path="exceptions" element={<ExceptionsPage />} />
+                      <Route path="health" element={<ServiceHealthPage />} />
+                      <Route path="alerts" element={<AlertsPage />} />
+                      <Route path="alert-rules" element={<AlertRulesPage />} />
+                      <Route path="incidents" element={<IncidentsPage />} />
+                      <Route path="incidents/:id" element={<IncidentDetailPage />} />
+                      <Route path="status-pages" element={<StatusPagesPage />} />
+                      <Route path="slos" element={<SlosPage />} />
+                      <Route path="analytics" element={<ReportsPage />} />
+                      <Route path="reports" element={<ReportsPage />} />
+                      <Route path="team" element={<UsersPage />} />
+                      <Route path="users" element={<UsersPage />} />
+                      <Route path="audit-logs" element={<AuditLogsPage />} />
+                      <Route path="billing" element={<BillingPage />} />
+                      <Route path="subscription" element={<BillingPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                    </Route>
 
-                  {/* Catch-all 404 Route */}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-              </Suspense>
+                    {/* Catch-all 404 Route */}
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </BrowserRouter>
           </TenantProvider>
         </AuthProvider>

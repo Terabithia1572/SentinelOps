@@ -145,8 +145,8 @@ export function IncidentDetailPage() {
     );
   }
 
-  const getSeverityBadge = (sev: string) => {
-    switch (sev.toLowerCase()) {
+  const getSeverityBadge = (sev?: string) => {
+    switch (sev?.toLowerCase()) {
       case "critical":
         return <Badge variant="danger">Critical (P1)</Badge>;
       case "error":
@@ -154,12 +154,12 @@ export function IncidentDetailPage() {
       case "warning":
         return <Badge variant="warning">Warning (P3)</Badge>;
       default:
-        return <Badge variant="secondary">{sev}</Badge>;
+        return <Badge variant="secondary">{sev || "Normal"}</Badge>;
     }
   };
 
-  const getStatusBadge = (st: string) => {
-    switch (st.toLowerCase()) {
+  const getStatusBadge = (st?: string) => {
+    switch (st?.toLowerCase()) {
       case "open":
         return <Badge variant="danger" className="animate-pulse">Open</Badge>;
       case "investigating":
@@ -171,7 +171,7 @@ export function IncidentDetailPage() {
       case "closed":
         return <Badge variant="secondary">Closed</Badge>;
       default:
-        return <Badge variant="secondary">{st}</Badge>;
+        return <Badge variant="secondary">{st || "Open"}</Badge>;
     }
   };
 
@@ -423,23 +423,23 @@ export function IncidentDetailPage() {
               <div className="pt-2 border-t border-[hsl(var(--border))] space-y-1.5 text-[11px] text-[hsl(var(--muted-foreground))]">
                 <div className="flex justify-between">
                   <span>Created:</span>
-                  <span className="text-foreground">{new Date(incident.createdAtUtc).toLocaleString()}</span>
+                  <span className="text-foreground">{incident.createdAtUtc ? new Date(incident.createdAtUtc).toLocaleString() : "—"}</span>
                 </div>
                 {incident.acknowledgedAtUtc && (
                   <div className="flex justify-between">
-                    <span>Acknowledged by {incident.acknowledgedBy}:</span>
+                    <span>Acknowledged by {incident.acknowledgedBy || "Responder"}:</span>
                     <span className="text-foreground">{new Date(incident.acknowledgedAtUtc).toLocaleString()}</span>
                   </div>
                 )}
                 {incident.mitigatedAtUtc && (
                   <div className="flex justify-between">
-                    <span>Mitigated by {incident.mitigatedBy}:</span>
+                    <span>Mitigated by {incident.mitigatedBy || "Responder"}:</span>
                     <span className="text-foreground">{new Date(incident.mitigatedAtUtc).toLocaleString()}</span>
                   </div>
                 )}
                 {incident.resolvedAtUtc && (
                   <div className="flex justify-between">
-                    <span>Resolved by {incident.resolvedBy}:</span>
+                    <span>Resolved by {incident.resolvedBy || "Responder"}:</span>
                     <span className="text-foreground">{new Date(incident.resolvedAtUtc).toLocaleString()}</span>
                   </div>
                 )}
@@ -699,7 +699,7 @@ export function IncidentDetailPage() {
             <CardHeader className="p-4 border-b border-[hsl(var(--border))]">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <History className="h-4 w-4 text-sky-400" />
-                Audit Trail & Incident Timeline ({incident.timelineEvents?.length || 0})
+                Audit Trail & Incident Timeline ({((incident.timelineEvents || (incident as any).timeline) || []).length})
               </CardTitle>
               <CardDescription className="text-xs">
                 Immutable event stream of all status changes, severity updates, and triage steps
@@ -707,22 +707,22 @@ export function IncidentDetailPage() {
             </CardHeader>
             <CardContent className="p-4">
               <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[hsl(var(--border))]">
-                {incident.timelineEvents && incident.timelineEvents.length > 0 ? (
-                  incident.timelineEvents.map((evt) => (
+                {((incident.timelineEvents || (incident as any).timeline) || []).length > 0 ? (
+                  ((incident.timelineEvents || (incident as any).timeline) || []).map((evt: any) => (
                     <div key={evt.id} className="relative flex items-start gap-3">
                       <div className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-sky-400 border-2 border-[hsl(var(--card))]" />
                       <div className="flex-1 rounded-md bg-[hsl(var(--accent)/0.3)] p-3 border border-[hsl(var(--border))]">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-foreground">{evt.title}</span>
                           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                            {new Date(evt.timestampUtc).toLocaleString()}
+                            {evt.timestampUtc ? new Date(evt.timestampUtc).toLocaleString() : "—"}
                           </span>
                         </div>
                         <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
                           {evt.description}
                         </p>
                         <span className="text-[10px] text-sky-400/80 mt-1 block">
-                          Actor: {evt.actorName}
+                          Actor: {evt.actorName || "System"}
                         </span>
                       </div>
                     </div>
@@ -739,23 +739,23 @@ export function IncidentDetailPage() {
             <CardHeader className="p-4 border-b border-[hsl(var(--border))]">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-amber-400" />
-                Responder Communication & Notes ({incident.comments?.length || 0})
+                Responder Communication & Notes ({(incident.comments || []).length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {/* Existing comments */}
               <div className="space-y-3">
-                {incident.comments && incident.comments.length > 0 ? (
-                  incident.comments.map((comment) => (
+                {(incident.comments || []).length > 0 ? (
+                  (incident.comments || []).map((comment: any) => (
                     <div
                       key={comment.id}
                       className="p-3 rounded-md bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-xs"
                     >
                       <div className="flex items-center justify-between text-[11px] text-[hsl(var(--muted-foreground))] pb-1 border-b border-border/40">
-                        <span className="font-semibold text-foreground">{comment.userName}</span>
-                        <span>{new Date(comment.createdAtUtc).toLocaleString()}</span>
+                        <span className="font-semibold text-foreground">{comment.userName || comment.authorName || "Responder"}</span>
+                        <span>{comment.createdAtUtc ? new Date(comment.createdAtUtc).toLocaleString() : "—"}</span>
                       </div>
-                      <p className="mt-2 text-foreground whitespace-pre-wrap">{comment.commentText}</p>
+                      <p className="mt-2 text-foreground whitespace-pre-wrap">{comment.commentText || comment.text}</p>
                     </div>
                   ))
                 ) : (

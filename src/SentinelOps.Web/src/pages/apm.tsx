@@ -245,7 +245,7 @@ export const ApmPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-indigo-400" />
-                  Live Topology Graph ({serviceMap?.nodes.length || 0} Monitored Services)
+                  Live Topology Graph ({(serviceMap?.nodes || []).length} Monitored Services)
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Click any service node to inspect inbound callers, outbound downstream dependencies, and latency percentiles.
@@ -273,7 +273,7 @@ export const ApmPage: React.FC = () => {
                   <Skeleton key={i} className="h-36 rounded-xl" />
                 ))}
               </div>
-            ) : !serviceMap || serviceMap.nodes.length === 0 ? (
+            ) : !serviceMap || !serviceMap.nodes || serviceMap.nodes.length === 0 ? (
               <EmptyState
                 icon={Network}
                 title="No Active Topology Graph"
@@ -281,7 +281,7 @@ export const ApmPage: React.FC = () => {
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                {serviceMap.nodes.map((node) => {
+                {(serviceMap.nodes || []).map((node) => {
                 const isSelected = selectedNode?.id === node.id;
                 const statusBorder =
                   node.healthStatus === "Critical"
@@ -327,29 +327,29 @@ export const ApmPage: React.FC = () => {
                       <div>
                         <span className="text-[10px] text-slate-500 block">Throughput</span>
                         <span className="font-mono font-semibold text-slate-200">
-                          {node.throughput} req/m
+                          {node.throughput ?? 0} req/m
                         </span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 block">P95 Latency</span>
                         <span className="font-mono font-semibold text-amber-400">
-                          {node.p95LatencyMs}ms
+                          {node.p95LatencyMs ?? 0}ms
                         </span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 block">Error Rate</span>
                         <span
                           className={`font-mono font-semibold ${
-                            node.errorRate > 1.0 ? "text-rose-400" : "text-slate-300"
+                            (node.errorRate ?? 0) > 1.0 ? "text-rose-400" : "text-slate-300"
                           }`}
                         >
-                          {node.errorRate}%
+                          {node.errorRate ?? 0}%
                         </span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 block">Total Calls</span>
                         <span className="font-mono text-slate-400">
-                          {node.totalCalls.toLocaleString()}
+                          {((node.totalCalls ?? (node as any).callVolume ?? 0)).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -402,18 +402,18 @@ export const ApmPage: React.FC = () => {
                       <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
                       Inbound Dependencies (Who calls {selectedNode.displayName})
                     </h4>
-                    {nodeDependencies?.inbound.length === 0 ? (
+                    {(!nodeDependencies?.inbound || nodeDependencies.inbound.length === 0) ? (
                       <p className="text-xs text-slate-500 italic">No inbound callers recorded in this window.</p>
                     ) : (
                       <div className="space-y-2">
-                        {nodeDependencies?.inbound.map((edge) => (
+                        {(nodeDependencies.inbound || []).map((edge) => (
                           <div
                             key={edge.sourceService}
                             className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs"
                           >
                             <span className="font-semibold text-slate-200">{edge.sourceService}</span>
                             <div className="flex items-center gap-3 font-mono text-slate-400 text-[11px]">
-                              <span>{edge.callCount.toLocaleString()} calls</span>
+                              <span>{(edge.callCount ?? 0).toLocaleString()} calls</span>
                               <span className="text-amber-400">{edge.avgLatencyMs}ms avg</span>
                               <span className={edge.errorRate > 0 ? "text-rose-400" : "text-emerald-400"}>
                                 {edge.errorRate}% err
@@ -431,18 +431,18 @@ export const ApmPage: React.FC = () => {
                       <ArrowRight className="w-3.5 h-3.5 text-indigo-400" />
                       Outbound Dependencies (Who {selectedNode.displayName} calls)
                     </h4>
-                    {nodeDependencies?.outbound.length === 0 ? (
+                    {(!nodeDependencies?.outbound || nodeDependencies.outbound.length === 0) ? (
                       <p className="text-xs text-slate-500 italic">No outbound downstream services recorded.</p>
                     ) : (
                       <div className="space-y-2">
-                        {nodeDependencies?.outbound.map((edge) => (
+                        {(nodeDependencies.outbound || []).map((edge) => (
                           <div
                             key={edge.targetService}
                             className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs"
                           >
                             <span className="font-semibold text-slate-200">{edge.targetService}</span>
                             <div className="flex items-center gap-3 font-mono text-slate-400 text-[11px]">
-                              <span>{edge.callCount.toLocaleString()} calls</span>
+                              <span>{(edge.callCount ?? 0).toLocaleString()} calls</span>
                               <span className="text-amber-400">{edge.avgLatencyMs}ms avg</span>
                               <span className={edge.errorRate > 0 ? "text-rose-400" : "text-emerald-400"}>
                                 {edge.errorRate}% err
@@ -463,7 +463,7 @@ export const ApmPage: React.FC = () => {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Zap className="w-4 h-4 text-indigo-400" />
-                Cross-Service Directed Invocations ({serviceMap?.edges.length || 0} Connections)
+                Cross-Service Directed Invocations ({(serviceMap?.edges || []).length} Connections)
               </h3>
             </div>
             <div className="overflow-x-auto">
@@ -479,7 +479,7 @@ export const ApmPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {serviceMap?.edges.map((edge, i) => (
+                  {(serviceMap?.edges || []).map((edge, i) => (
                     <tr key={i} className="hover:bg-slate-800/40 transition-colors">
                       <td className="px-5 py-3 font-semibold text-slate-200">{edge.sourceService}</td>
                       <td className="px-5 py-3 font-semibold text-indigo-300 flex items-center gap-1.5">
@@ -521,7 +521,7 @@ export const ApmPage: React.FC = () => {
                 />
               </div>
               <span className="text-xs text-slate-400">
-                Showing {endpoints.length} aggregated endpoints
+                Showing {(endpoints || []).length} aggregated endpoints
               </span>
             </div>
 
@@ -542,7 +542,7 @@ export const ApmPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {endpoints.map((ep) => (
+                  {(endpoints || []).map((ep) => (
                     <tr key={ep.endpointKey} className="hover:bg-slate-800/40 transition-colors">
                       <td className="px-5 py-3">
                         <span
@@ -618,16 +618,16 @@ export const ApmPage: React.FC = () => {
                       Latency Histogram Distribution
                     </h4>
                     <div className="space-y-2">
-                      {endpointBreakdown?.latencyBuckets.map((bucket) => (
+                      {(endpointBreakdown?.latencyBuckets || []).map((bucket) => (
                         <div key={bucket.rangeLabel} className="space-y-1">
                           <div className="flex justify-between text-[11px] text-slate-300 font-mono">
                             <span>{bucket.rangeLabel}</span>
-                            <span className="text-slate-400">{bucket.count.toLocaleString()} calls</span>
+                            <span className="text-slate-400">{(bucket.count ?? 0).toLocaleString()} calls</span>
                           </div>
                           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                             <div
                               className="bg-indigo-500 h-1.5 rounded-full"
-                              style={{ width: `${Math.min(100, Math.max(5, (bucket.count / 1000) * 100))}%` }}
+                              style={{ width: `${Math.min(100, Math.max(5, ((bucket.count ?? 0) / 1000) * 100))}%` }}
                             />
                           </div>
                         </div>
@@ -640,17 +640,17 @@ export const ApmPage: React.FC = () => {
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Error Categories
                     </h4>
-                    {endpointBreakdown?.errorBreakdown.length === 0 ? (
+                    {(!endpointBreakdown?.errorBreakdown || endpointBreakdown.errorBreakdown.length === 0) ? (
                       <p className="text-xs text-slate-500 italic">No errors detected on this endpoint.</p>
                     ) : (
                       <div className="space-y-2">
-                        {endpointBreakdown?.errorBreakdown.map((err) => (
+                        {(endpointBreakdown.errorBreakdown || []).map((err) => (
                           <div
                             key={err.statusCodeOrType}
                             className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-between text-xs"
                           >
                             <span className="text-rose-400 font-semibold">{err.statusCodeOrType}</span>
-                            <span className="font-mono text-slate-400">{err.count} occurrences</span>
+                            <span className="font-mono text-slate-400">{(err.count ?? 0)} occurrences</span>
                           </div>
                         ))}
                       </div>
@@ -663,7 +663,7 @@ export const ApmPage: React.FC = () => {
                       Sample Distributed Traces
                     </h4>
                     <div className="space-y-2">
-                      {endpointBreakdown?.sampleTraceIds.map((traceId) => (
+                      {(endpointBreakdown?.sampleTraceIds || []).map((traceId) => (
                         <a
                           key={traceId}
                           href={`/traces?search=${traceId}`}
@@ -712,7 +712,7 @@ export const ApmPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {externalDeps.map((dep, i) => (
+                  {(externalDeps || []).map((dep, i) => (
                     <tr key={i} className="hover:bg-slate-800/40 transition-colors">
                       <td className="px-5 py-3">
                         <span
@@ -728,7 +728,7 @@ export const ApmPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-3 font-semibold text-slate-200">{dep.targetHostOrSystem}</td>
                       <td className="px-5 py-3 font-mono text-slate-400">{dep.operationOrDb}</td>
-                      <td className="px-5 py-3 font-mono text-slate-200">{dep.callCount.toLocaleString()}</td>
+                      <td className="px-5 py-3 font-mono text-slate-200">{(dep.callCount ?? 0).toLocaleString()}</td>
                       <td className="px-5 py-3 font-mono">
                         <span className={dep.errorRate > 0.1 ? "text-rose-400 font-bold" : "text-slate-400"}>
                           {dep.errorRate}%

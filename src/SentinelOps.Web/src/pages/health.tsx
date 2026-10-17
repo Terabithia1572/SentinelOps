@@ -226,7 +226,7 @@ export function ServiceHealthPage() {
 
             return (
               <Card
-                key={`${svc.applicationId}-${svc.serviceName}-${svc.environmentName}`}
+                key={`${svc.applicationId || "app"}-${svc.serviceName}-${svc.environmentName || "env"}`}
                 className={`overflow-hidden transition-all ${
                   isUnhealthy
                     ? "border-rose-500/30"
@@ -247,7 +247,7 @@ export function ServiceHealthPage() {
                         {svc.serviceName}
                       </CardTitle>
                       <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {svc.applicationName} &bull; {svc.environmentName}
+                        {svc.applicationName || "Production Cluster"} &bull; {svc.environmentName || "production"}
                       </CardDescription>
                     </div>
 
@@ -255,7 +255,7 @@ export function ServiceHealthPage() {
                       variant={isUnhealthy ? "danger" : isDegraded ? "warning" : "success"}
                       className="text-[10px] uppercase font-bold py-0.5 px-2"
                     >
-                      {svc.status}
+                      {svc.status || "Healthy"}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -269,14 +269,14 @@ export function ServiceHealthPage() {
                       </span>
                       <span
                         className={`text-sm font-bold ${
-                          svc.errorRatePercent > 5
+                          (svc.errorRatePercent ?? 0) > 5
                             ? "text-rose-400"
-                            : svc.errorRatePercent > 1
+                            : (svc.errorRatePercent ?? 0) > 1
                             ? "text-amber-400"
                             : "text-emerald-400"
                         }`}
                       >
-                        {svc.errorRatePercent.toFixed(1)}%
+                        {(svc.errorRatePercent ?? 0).toFixed(1)}%
                       </span>
                     </div>
 
@@ -285,7 +285,7 @@ export function ServiceHealthPage() {
                         p95 Latency
                       </span>
                       <span className="text-sm font-bold text-[hsl(var(--foreground))]">
-                        {svc.p95DurationMs.toFixed(0)} ms
+                        {(svc.p95DurationMs ?? 0).toFixed(0)} ms
                       </span>
                     </div>
 
@@ -294,7 +294,7 @@ export function ServiceHealthPage() {
                         Total Reqs
                       </span>
                       <span className="text-sm font-bold text-[hsl(var(--foreground))]">
-                        {svc.totalRequests.toLocaleString()}
+                        {(svc.totalRequests ?? 0).toLocaleString()}
                       </span>
                     </div>
                   </div>

@@ -64,15 +64,21 @@ export function SlosPage() {
   });
 
   // SLOs Query
-  const { data: slos = [], isLoading, refetch } = useQuery({
+  const { data: rawSlosData, isLoading, refetch } = useQuery({
     queryKey: ["slos", selectedAppId],
     queryFn: async () => {
       const params = selectedAppId ? `?applicationId=${selectedAppId}` : "";
-      const res = await apiClient.get<ApiResponse<SloDto[]>>(`/slos${params}`);
-      return res.data.data || [];
+      const res = await apiClient.get<any>(`/slos${params}`);
+      return res.data.data;
     },
     refetchInterval: 30000,
   });
+
+  const slos: SloDto[] = Array.isArray(rawSlosData)
+    ? rawSlosData
+    : Array.isArray(rawSlosData?.items)
+    ? rawSlosData.items
+    : [];
 
   // SLO Compliance History for Selected SLO
   const { data: historyData, isLoading: isHistoryLoading } = useQuery({

@@ -82,10 +82,12 @@ export function AuditLogsPage() {
         fromUtc,
       });
 
-      setEvents(res.items);
-      setTotalCount(res.totalCount);
-      setTotalPages(res.totalPages);
+      const items = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
+      setEvents(items);
+      setTotalCount(res?.totalCount ?? items.length);
+      setTotalPages(res?.totalPages ?? 1);
     } catch (err: any) {
+      setEvents([]);
       setErrorMessage(err.response?.data?.message || err.message || "Failed to load audit trail");
     } finally {
       setIsLoading(false);
@@ -301,15 +303,15 @@ export function AuditLogsPage() {
                       Streaming audit logs...
                     </td>
                   </tr>
-                ) : events.length === 0 ? (
+                ) : (!events || events.length === 0) ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-400">
                       No audit events match the query criteria.
                     </td>
                   </tr>
                 ) : (
-                  events.map((ev) => {
-                    const isSuccess = ev.outcome.toLowerCase() === "success";
+                  (events || []).map((ev) => {
+                    const isSuccess = (ev.outcome || "").toLowerCase() === "success";
                     return (
                       <tr key={ev.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="px-4 py-3 text-xs text-slate-400 font-mono">

@@ -1,10 +1,37 @@
 const path = require('path');
-const { chromium } = require(path.resolve(__dirname, '../src/SentinelOps.Web/node_modules/@playwright/test'));
+const http = require('http');
+const { spawn } = require('child_process');
 const fs = require('fs');
+const { chromium } = require(path.resolve(__dirname, '../src/SentinelOps.Web/node_modules/@playwright/test'));
 
+const webDir = path.resolve(__dirname, '../src/SentinelOps.Web');
 const outputDir = path.resolve(__dirname, '../docs/phase18/screenshots/redesign');
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
+}
+
+function waitForServer(url, timeoutMs = 20000) {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      http.get(url, (res) => {
+        resolve();
+      }).on('error', (err) => {
+        if (Date.now() - start > timeoutMs) {
+          reject(new Error(`Server at ${url} not responding within ${timeoutMs}ms: ${err.message}`));
+        } else {
+          setTimeout(check, 300);
+        }
+      });
+    };
+    check();
+  });
+}
+
+function isPortOpen(url) {
+  return new Promise((resolve) => {
+    http.get(url, () => resolve(true)).on('error', () => resolve(false));
+  });
 }
 
 const mockSummary = {
@@ -43,6 +70,7 @@ const mockOrgs = {
       planTier: "Enterprise",
       isActive: true,
       role: "Owner",
+      userRole: "Owner",
       memberCount: 28,
       applicationCount: 12
     }
@@ -55,6 +83,7 @@ const mockOrgDetail = {
     id: "org_enterprise_01",
     name: "Global FinTech Operations",
     slug: "global-fintech",
+    description: "Primary enterprise multi-region telemetry and security tenant.",
     planTier: "Enterprise",
     isActive: true,
     userRole: "Owner",
@@ -62,10 +91,68 @@ const mockOrgDetail = {
     applicationCount: 12,
     createdAtUtc: "2026-01-15T08:00:00Z",
     members: [
-      { id: "mem-01", userId: "usr_admin_01", userName: "admin", email: "admin@sentinelops.local", role: "Owner", joinedAtUtc: "2026-01-15T08:00:00Z" },
-      { id: "mem-02", userId: "usr_sre_02", userName: "alex.dev", email: "alex@sentinelops.local", role: "Admin", joinedAtUtc: "2026-02-01T10:00:00Z" },
-      { id: "mem-03", userId: "usr_noc_03", userName: "sarah.noc", email: "sarah@sentinelops.local", role: "Operator", joinedAtUtc: "2026-03-12T14:30:00Z" }
-    ]
+      { id: "mem-01", organizationId: "org_enterprise_01", userId: "usr_admin_01", userName: "admin", email: "admin@sentinelops.local", fullName: "Site Reliability Director", role: "Owner", joinedAtUtc: "2026-01-15T08:00:00Z" },
+      { id: "mem-02", organizationId: "org_enterprise_01", userId: "usr_sre_02", userName: "alex.dev", email: "alex@sentinelops.local", fullName: "Alex Chen", role: "Admin", joinedAtUtc: "2026-02-01T10:00:00Z" },
+      { id: "mem-03", organizationId: "org_enterprise_01", userId: "usr_noc_03", userName: "sarah.noc", email: "sarah@sentinelops.local", fullName: "Sarah Miller", role: "Operator", joinedAtUtc: "2026-03-12T14:30:00Z" }
+    ],
+    pendingInvitations: [
+      { id: "inv-01", organizationId: "org_enterprise_01", email: "secops.lead@sentinelops.local", role: "Admin", expiresAtUtc: new Date(Date.now() + 86400000 * 5).toISOString(), invitedByUserName: "admin", createdAtUtc: new Date().toISOString(), isPending: true }
+    ],
+    settings: {
+      allowMemberInvites: true,
+      requireTwoFactor: true,
+      defaultRetentionDays: 90,
+      planTier: "Enterprise Dedicated",
+      maxApplications: 999,
+      maxMembers: 100,
+      maxCustomDashboards: 50,
+      maxMonthlyLogs: 10000000,
+      maxMonthlyTraces: 5000000
+    },
+    usage: {
+      logsIngestedMonthToDate: 1842930,
+      tracesIngestedMonthToDate: 642810,
+      metricsIngestedMonthToDate: 4500000,
+      apiRequestsMonthToDate: 982000,
+      estimatedStorageBytes: 14289000000,
+      lastResetAtUtc: "2026-10-01T00:00:00Z"
+    }
+  }
+};
+
+const mockOrgQuota = {
+  success: true,
+  data: {
+    organizationId: "org_enterprise_01",
+    planTier: "Enterprise",
+    applicationsUsed: 12,
+    applicationsQuota: 100,
+    applicationsPercentUsed: 12,
+    isApplicationsExceeded: false,
+    isApplicationsWarning: false,
+    membersUsed: 3,
+    membersQuota: 50,
+    membersPercentUsed: 6,
+    isMembersExceeded: false,
+    isMembersWarning: false,
+    dashboardsUsed: 5,
+    dashboardsQuota: 30,
+    dashboardsPercentUsed: 16.7,
+    isDashboardsExceeded: false,
+    isDashboardsWarning: false,
+    logsUsed: 1842930,
+    logsQuota: 10000000,
+    logsPercentUsed: 18.4,
+    isLogsExceeded: false,
+    isLogsWarning: false,
+    tracesUsed: 642810,
+    tracesQuota: 5000000,
+    tracesPercentUsed: 12.8,
+    isTracesExceeded: false,
+    isTracesWarning: false,
+    estimatedStorageBytes: 14289000000,
+    hasAnyQuotaExceeded: false,
+    hasAnyQuotaWarning: false
   }
 };
 
@@ -177,13 +264,13 @@ const mockIncidentDetail = {
     createdAtUtc: new Date(Date.now() - 1800000).toISOString(),
     assignedToUserName: "Site Reliability Director",
     relatedTraceId: "4bf92f3577b34da6a3ce929d0e0e4736",
-    timeline: [
+    timelineEvents: [
       { id: "tl-01", timestampUtc: new Date(Date.now() - 1800000).toISOString(), title: "Threshold Breached", description: "Error rate exceeded 5.0% for 3 consecutive evaluation cycles.", actorName: "Alert Worker", eventType: "AlertFired" },
       { id: "tl-02", timestampUtc: new Date(Date.now() - 1500000).toISOString(), title: "Incident Declared & Paged", description: "P1 Incident declared. Primary SRE on-call paged via PagerDuty.", actorName: "System", eventType: "StatusChange" },
       { id: "tl-03", timestampUtc: new Date(Date.now() - 900000).toISOString(), title: "Investigation Underway", description: "Identified 504 Gateway Timeout responses from external Stripe endpoints.", actorName: "Site Reliability Director", eventType: "Mitigation" }
     ],
     comments: [
-      { id: "cm-01", createdAtUtc: new Date(Date.now() - 1200000).toISOString(), authorName: "Site Reliability Director", authorRole: "Admin", text: "Circuit breaker activated on payment-gateway to shedding non-critical transactions." }
+      { id: "cm-01", createdAtUtc: new Date(Date.now() - 1200000).toISOString(), userName: "Site Reliability Director", commentText: "Circuit breaker activated on payment-gateway to shedding non-critical transactions." }
     ],
     linkedAlerts: [
       { id: "al-01", name: "High Error Rate Breached (> 5.0%)", conditionType: "ErrorRateAboveThreshold" }
@@ -348,44 +435,153 @@ const mockAuditLogs = {
   }
 };
 
+const mockStatusPagesList = {
+  success: true,
+  data: [
+    {
+      id: "sp-01",
+      name: "Global Status Portal",
+      slug: "global-production",
+      description: "Real-time service health, incident updates, and SLA metrics for customer infrastructure.",
+      isPublic: true,
+      autoRollupEnabled: true,
+      activeIncidentsCount: 1,
+      components: [
+        { id: "c1", name: "Ingestion Ingress API", status: "Operational" },
+        { id: "c2", name: "Payment Gateway", status: "Degraded" },
+        { id: "c3", name: "Redis Stream Workers", status: "Operational" },
+        { id: "c4", name: "SignalR Push Service", status: "Operational" }
+      ]
+    },
+    {
+      id: "sp-02",
+      name: "Europe Regional Edge",
+      slug: "eu-west-edge",
+      description: "Frankfurt edge points-of-presence and data-sovereign telemetry collector nodes.",
+      isPublic: true,
+      autoRollupEnabled: true,
+      activeIncidentsCount: 0,
+      components: [
+        { id: "c5", name: "EU API Gateway", status: "Operational" },
+        { id: "c6", name: "EU Storage Mirror", status: "Operational" }
+      ]
+    }
+  ]
+};
+
 const mockPublicStatus = {
   success: true,
   data: {
-    title: "SentinelOps Global Telemetry Infrastructure",
-    overallStatus: "Degraded",
+    name: "SentinelOps Global Telemetry Infrastructure",
+    slug: "global-production",
+    description: "Real-time system operational metrics and service status.",
+    overallStatus: "Operational",
     components: [
-      { name: "Ingestion Ingress API", status: "Operational", uptimePercent: 99.99 },
-      { name: "Payment Gateway", status: "Degraded", uptimePercent: 98.42 },
-      { name: "Redis Stream Workers", status: "Operational", uptimePercent: 100.0 },
-      { name: "SignalR Push Service", status: "Operational", uptimePercent: 99.95 }
-    ]
+      { id: "c1", name: "Ingestion Ingress API", status: "Operational", uptimePercent: 99.99 },
+      { id: "c2", name: "Payment Gateway", status: "Operational", uptimePercent: 99.85 },
+      { id: "c3", name: "Redis Stream Workers", status: "Operational", uptimePercent: 100.0 },
+      { id: "c4", name: "SignalR Push Service", status: "Operational", uptimePercent: 99.95 }
+    ],
+    activeIncidents: [],
+    pastIncidents: [
+      { id: "inc-01", title: "Resolved: Ingestion Gateway Connection Saturation", status: "Resolved", severity: "Warning", message: "Traffic re-routed; database pool restored to standard headroom.", createdAtUtc: new Date(Date.now() - 86400000).toISOString() }
+    ],
+    scheduledMaintenance: [],
+    generatedAtUtc: new Date().toISOString()
   }
 };
 
 async function setupPageRoutes(page) {
+  // Catch-all fallback for any unmonitored API calls
+  await page.route('**/api/**', route => route.fulfill({ json: { success: true, data: [] } }));
+
   await page.route('**/api/auth/me', route => route.fulfill({ json: mockUser }));
   await page.route('**/api/dashboard/summary**', route => route.fulfill({ json: mockSummary }));
-  await page.route('**/api/organizations**', route => route.fulfill({ json: mockOrgs }));
+  await page.route('**/api/organizations/*/quota', route => route.fulfill({ json: mockOrgQuota }));
   await page.route('**/api/organizations/*', route => route.fulfill({ json: mockOrgDetail }));
+  await page.route('**/api/organizations', route => route.fulfill({ json: mockOrgs }));
   await page.route('**/api/tenants/plans', route => route.fulfill({ json: mockPlans }));
   await page.route('**/api/tenants/*/subscription', route => route.fulfill({ json: mockSubscription }));
   await page.route('**/api/tenants/*/usage', route => route.fulfill({ json: mockTenantUsage }));
   await page.route('**/api/logs**', route => route.fulfill({ json: mockLogs }));
   await page.route('**/api/traces**', route => route.fulfill({ json: mockTraces }));
-  await page.route('**/api/incidents/inc-01**', route => route.fulfill({ json: mockIncidentDetail }));
-  await page.route('**/api/incidents**', route => route.fulfill({ json: mockIncidents }));
+  await page.route(/\/api\/incidents\/inc-01(\?.*)?$/, route => route.fulfill({ json: mockIncidentDetail }));
+  await page.route(/\/api\/incidents(\?.*)?$/, route => route.fulfill({ json: mockIncidents }));
   await page.route('**/api/alerts/summary**', route => route.fulfill({ json: { success: true, data: { totalRules: 8, enabledRules: 7, firingAlerts: 2, criticalAlerts: 1, warningAlerts: 1 } } }));
   await page.route('**/api/alerts**', route => route.fulfill({ json: mockAlerts }));
   await page.route('**/api/alert-rules**', route => route.fulfill({ json: mockAlertRules }));
   await page.route('**/api/api-keys**', route => route.fulfill({ json: mockApiKeys }));
   await page.route('**/api/audit-logs**', route => route.fulfill({ json: mockAuditLogs }));
-  await page.route('**/api/status-pages**', route => route.fulfill({ json: mockPublicStatus }));
+  await page.route('**/api/audit/**', route => route.fulfill({ json: mockAuditLogs }));
+  await page.route('**/api/audit', route => route.fulfill({ json: mockAuditLogs }));
+  await page.route('**/api/system/health', route => route.fulfill({ json: {
+    success: true,
+    data: {
+      status: "Healthy",
+      checkedAtUtc: new Date().toISOString(),
+      version: "v18.1.0",
+      database: { name: "PostgreSQL Database", status: "Healthy", message: "Pool active (42/100 conn)", latencyMs: 2 },
+      redis: { name: "Redis Streams Engine", status: "Healthy", message: "Telemetry queues operational", latencyMs: 1 },
+      ingestionEngine: { name: "Telemetry Ingestion Ingress", status: "Healthy", message: "Throughput 14.2k eps nominal", latencyMs: 4 },
+      alertEvaluator: { name: "Prometheus Alert Evaluator", status: "Healthy", message: "Rule loop running on 10s tick", latencyMs: 3 },
+      notificationDispatcher: { name: "SignalR & Email Dispatcher", status: "Healthy", message: "Active subscribers: 48", latencyMs: 1 }
+    }
+  }}));
+  await page.route('**/api/system/settings', route => route.fulfill({ json: { success: true, data: { allowRegistration: true, maxTenants: 100, defaultRetentionDays: 90 } } }));
+  await page.route('**/api/system/retention', route => route.fulfill({ json: { success: true, data: { rawLogsRetentionDays: 30, aggregatedMetricsRetentionDays: 90, tracesRetentionDays: 14 } } }));
+  await page.route('**/api/apm/service-map**', route => route.fulfill({ json: {
+    success: true,
+    data: {
+      nodes: [
+        { id: "node-1", serviceName: "payment-gateway", displayName: "Payment Gateway", healthStatus: "Healthy", throughput: 210, avgLatencyMs: 42, p95LatencyMs: 78, errorRate: 0.1, totalCalls: 12400 },
+        { id: "node-2", serviceName: "order-service", displayName: "Order Service", healthStatus: "Healthy", throughput: 340, avgLatencyMs: 35, p95LatencyMs: 65, errorRate: 0.05, totalCalls: 18500 },
+        { id: "node-3", serviceName: "inventory-cache", displayName: "Inventory Cache", healthStatus: "Healthy", throughput: 620, avgLatencyMs: 8, p95LatencyMs: 18, errorRate: 0.0, totalCalls: 32000 }
+      ],
+      edges: [
+        { sourceService: "order-service", targetService: "payment-gateway", callCount: 12400, avgLatencyMs: 42, p95LatencyMs: 85, errorRate: 0.1 },
+        { sourceService: "order-service", targetService: "inventory-cache", callCount: 32000, avgLatencyMs: 8, p95LatencyMs: 18, errorRate: 0.0 }
+      ]
+    }
+  }}));
+  await page.route('**/api/status-pages/public/*', route => route.fulfill({ json: mockPublicStatus }));
+  await page.route('**/api/status/**', route => route.fulfill({ json: mockPublicStatus }));
+  await page.route('**/api/status-pages', route => route.fulfill({ json: mockStatusPagesList }));
   await page.route('**/api/metrics/**', route => route.fulfill({ json: { success: true, data: { points: [], avgLatencyMs: 46.8, p95LatencyMs: 120.4, overallErrorRate: 0.42, totalThroughputRps: 240, totalRequests: 750 } } }));
   await page.route('**/api/applications/**', route => route.fulfill({ json: { success: true, data: [{ id: "app-checkout", name: "Checkout Suite", displayName: "Checkout Suite", isActive: true }] } }));
+  await page.route('**/api/slos**', route => route.fulfill({ json: { success: true, data: [
+    { id: "slo-01", name: "Checkout Ingestion SLO", targetPercentage: 99.9, currentCompliancePercentage: 99.95, currentErrorBudgetRemaining: 78.4, burnRate: 0.8, isBreached: false, evaluationWindow: "Rolling24Hours", indicatorType: "Availability" },
+    { id: "slo-02", name: "Payment Gateway Latency p95", targetPercentage: 99.0, currentCompliancePercentage: 99.4, currentErrorBudgetRemaining: 65.0, burnRate: 1.1, isBreached: false, evaluationWindow: "Rolling24Hours", indicatorType: "Latency" }
+  ] } }));
+  await page.route('**/api/health**', route => route.fulfill({ json: { success: true, data: [{ id: "h1", serviceName: "payment-gateway", status: "Healthy", responseTimeMs: 42, checkedAtUtc: new Date().toISOString() }] } }));
+  await page.route('**/api/services**', route => route.fulfill({ json: {
+    success: true,
+    data: [
+      { id: "s1", serviceName: "payment-gateway", applicationName: "Checkout Suite", environmentName: "production", status: "Healthy", errorRatePercent: 0.12, p95DurationMs: 42.5, totalRequests: 184200, lastSeenAtUtc: new Date().toISOString() },
+      { id: "s2", serviceName: "order-service", applicationName: "Checkout Suite", environmentName: "production", status: "Healthy", errorRatePercent: 0.04, p95DurationMs: 35.1, totalRequests: 245000, lastSeenAtUtc: new Date().toISOString() },
+      { id: "s3", serviceName: "inventory-cache", applicationName: "Catalog Suite", environmentName: "production", status: "Healthy", errorRatePercent: 0.0, p95DurationMs: 8.2, totalRequests: 580000, lastSeenAtUtc: new Date().toISOString() }
+    ]
+  }}));
+  await page.route('**/api/notifications**', route => route.fulfill({ json: { success: true, data: [] } }));
   await page.route('**/hubs/**', route => route.abort());
 }
 
 async function run() {
+  console.log("Checking if Vite server is already running...");
+  let serverProcess = null;
+  const isRunning = await isPortOpen('http://localhost:3000');
+  if (!isRunning) {
+    console.log("Spawning Vite preview on port 3000...");
+    serverProcess = spawn('npx.cmd', ['vite', 'preview', '--port', '3000'], {
+      cwd: webDir,
+      stdio: 'pipe',
+      shell: true
+    });
+    await waitForServer('http://localhost:3000');
+    console.log("Vite preview server is ready!");
+  } else {
+    console.log("Using existing server on http://localhost:3000.");
+  }
+
   const browser = await chromium.launch({ headless: true });
 
   const desktopContext = await browser.newContext({
@@ -431,43 +627,97 @@ async function run() {
   });
 
   const targets = [
-    { url: "/login", name: "desktop-login.png", context: unauthDesktopContext },
-    { url: "/login", name: "mobile-login.png", context: unauthMobileContext },
-    { url: "/", name: "desktop-overview.png", context: desktopContext },
-    { url: "/", name: "mobile-overview.png", context: mobileContext },
-    { url: "/logs", name: "desktop-logs.png", context: desktopContext },
-    { url: "/logs", name: "mobile-logs.png", context: mobileContext },
-    { url: "/traces", name: "desktop-traces.png", context: desktopContext },
-    { url: "/metrics", name: "desktop-metrics.png", context: desktopContext },
-    { url: "/alerts", name: "desktop-alerts.png", context: desktopContext },
-    { url: "/alert-rules", name: "desktop-alert-rules.png", context: desktopContext },
-    { url: "/incidents", name: "desktop-incidents.png", context: desktopContext },
-    { url: "/incidents", name: "mobile-incidents.png", context: mobileContext },
-    { url: "/incidents/inc-01", name: "desktop-incident-detail.png", context: desktopContext },
-    { url: "/incidents/inc-01", name: "mobile-incident-detail.png", context: mobileContext },
-    { url: "/apm", name: "desktop-apm.png", context: desktopContext },
-    { url: "/ai-observability", name: "desktop-ai-observability.png", context: desktopContext },
-    { url: "/billing", name: "desktop-billing.png", context: desktopContext },
-    { url: "/organizations", name: "desktop-organizations.png", context: desktopContext },
-    { url: "/api-keys", name: "desktop-api-keys.png", context: desktopContext },
-    { url: "/audit-logs", name: "desktop-audit-logs.png", context: desktopContext },
-    { url: "/settings", name: "desktop-settings.png", context: desktopContext },
-    { url: "/status-pages", name: "desktop-status-pages.png", context: desktopContext },
-    { url: "/status-pages", name: "mobile-status-pages.png", context: mobileContext }
+    { url: "/login", name: "desktop-login.png", context: unauthDesktopContext, category: "Public Auth" },
+    { url: "/login", name: "mobile-login.png", context: unauthMobileContext, category: "Public Auth" },
+    { url: "/register", name: "desktop-register.png", context: unauthDesktopContext, category: "Public Auth" },
+    { url: "/status/global-production", name: "desktop-public-status.png", context: unauthDesktopContext, category: "Public Status" },
+    { url: "/", name: "desktop-overview.png", context: desktopContext, category: "Platform Operations" },
+    { url: "/", name: "mobile-overview.png", context: mobileContext, category: "Platform Operations" },
+    { url: "/logs", name: "desktop-logs.png", context: desktopContext, category: "Telemetry & Logs" },
+    { url: "/logs", name: "mobile-logs.png", context: mobileContext, category: "Telemetry & Logs" },
+    { url: "/traces", name: "desktop-traces.png", context: desktopContext, category: "APM & Traces" },
+    { url: "/metrics", name: "desktop-metrics.png", context: desktopContext, category: "Metrics & Time Series" },
+    { url: "/alerts", name: "desktop-alerts.png", context: desktopContext, category: "Alerting & On-Call" },
+    { url: "/alert-rules", name: "desktop-alert-rules.png", context: desktopContext, category: "Alerting & On-Call" },
+    { url: "/incidents", name: "desktop-incidents.png", context: desktopContext, category: "Incident Management" },
+    { url: "/incidents", name: "mobile-incidents.png", context: mobileContext, category: "Incident Management" },
+    { url: "/incidents/inc-01", name: "desktop-incident-detail.png", context: desktopContext, category: "Incident Management" },
+    { url: "/incidents/inc-01", name: "mobile-incident-detail.png", context: mobileContext, category: "Incident Management" },
+    { url: "/apm", name: "desktop-apm.png", context: desktopContext, category: "APM & Traces" },
+    { url: "/ai-observability", name: "desktop-ai-observability.png", context: desktopContext, category: "AI Intelligence" },
+    { url: "/billing", name: "desktop-billing.png", context: desktopContext, category: "Tenant Administration" },
+    { url: "/organizations", name: "desktop-organizations.png", context: desktopContext, category: "Tenant Administration" },
+    { url: "/api-keys", name: "desktop-api-keys.png", context: desktopContext, category: "Security & Keys" },
+    { url: "/audit-logs", name: "desktop-audit-logs.png", context: desktopContext, category: "Security & Keys" },
+    { url: "/settings", name: "desktop-settings.png", context: desktopContext, category: "Configuration" },
+    { url: "/status-pages", name: "desktop-status-pages.png", context: desktopContext, category: "Status & Portals" },
+    { url: "/status-pages", name: "mobile-status-pages.png", context: mobileContext, category: "Status & Portals" },
+    { url: "/slos", name: "desktop-slos.png", context: desktopContext, category: "Reliability & SLOs" },
+    { url: "/services", name: "desktop-services.png", context: desktopContext, category: "Platform Operations" },
+    { url: "/onboarding", name: "desktop-onboarding.png", context: desktopContext, category: "Onboarding" },
+    { url: "/design-prototypes", name: "desktop-prototypes.png", context: desktopContext, category: "Design Prototypes" }
   ];
+
+  const auditLog = [];
 
   for (const target of targets) {
     const page = await target.context.newPage();
     await setupPageRoutes(page);
+    
+    const errors = [];
+    const warnings = [];
+
+    page.on('pageerror', err => {
+      console.error(`PAGE ERROR on ${target.url} (${target.name}):`, err.message);
+      errors.push(err.message);
+    });
+
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        if (!msg.text().includes('Failed to fetch') && !msg.text().includes('net::ERR_FAILED')) {
+          errors.push(msg.text());
+        }
+      }
+    });
+
     try {
       console.log(`Navigating to ${target.url} -> ${target.name}`);
       await page.goto(`http://localhost:3000${target.url}`, { waitUntil: 'networkidle', timeout: 15000 });
       await page.waitForTimeout(600);
+
       const filePath = path.join(outputDir, target.name);
       await page.screenshot({ path: filePath, fullPage: false });
-      console.log(`✓ Saved: ${target.name}`);
+      
+      const stats = fs.statSync(filePath);
+      const bodyTextLength = await page.evaluate(() => document.body.innerText.length);
+      const isBlankScreen = stats.size <= 8600 && bodyTextLength < 100;
+
+      console.log(`✓ Saved: ${target.name} (${stats.size} bytes, text: ${bodyTextLength} chars)`);
+
+      auditLog.push({
+        name: target.name,
+        url: target.url,
+        category: target.category,
+        viewport: target.name.startsWith("mobile") ? "375x812" : "1920x1080",
+        fileSizeBytes: stats.size,
+        textChars: bodyTextLength,
+        errorsCount: errors.length,
+        errors: errors,
+        status: (errors.length === 0 && !isBlankScreen) ? "PASSED" : "FAILED"
+      });
     } catch (err) {
       console.error(`✕ Failed ${target.name}: ${err.message}`);
+      auditLog.push({
+        name: target.name,
+        url: target.url,
+        category: target.category,
+        viewport: target.name.startsWith("mobile") ? "375x812" : "1920x1080",
+        fileSizeBytes: 0,
+        textChars: 0,
+        errorsCount: errors.length + 1,
+        errors: [...errors, err.message],
+        status: "FAILED"
+      });
     } finally {
       await page.close();
     }
@@ -478,7 +728,18 @@ async function run() {
   await unauthDesktopContext.close();
   await unauthMobileContext.close();
   await browser.close();
-  console.log("All redesign screenshots captured successfully!");
+
+  if (serverProcess) {
+    serverProcess.kill('SIGTERM');
+    try {
+      spawn('taskkill', ['/pid', serverProcess.pid, '/f', '/t']);
+    } catch {}
+  }
+
+  // Write audit results
+  fs.writeFileSync(path.resolve(__dirname, 'audit-results.json'), JSON.stringify(auditLog, null, 2));
+  console.log("All redesign screenshots captured & audited successfully!");
+  process.exit(0);
 }
 
 run().catch(err => {

@@ -6,10 +6,15 @@ import { NotificationCenter } from "@/components/layout/notification-center";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { useAlertsHub } from "@/hooks/use-alerts-hub";
+import { useTenant } from "@/context/tenant-context";
 
 export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const { isConnected, status } = useAlertsHub();
+  const { activeOrg } = useTenant();
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#08090D] text-[#F0F3F9]">
@@ -78,22 +83,32 @@ export function MainLayout() {
               </kbd>
             </button>
 
-            {/* Environment Badge */}
+            {/* Environment Badge - Dynamic Tenant / Cluster Context */}
             <div className="hidden sm:flex items-center gap-1.5 rounded bg-[#10121A] border border-[#1E2333] px-2 py-0.5 text-[10px] font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-              <span className="text-rose-400 font-semibold tracking-wider">PROD</span>
+              <span className={`h-1.5 w-1.5 rounded-full ${activeOrg ? "bg-cyan-400" : "bg-slate-500"}`} />
+              <span className="text-[#00E5FF] font-semibold tracking-wider uppercase">
+                {(activeOrg as any)?.planTier ? `${(activeOrg as any).planTier}` : activeOrg?.slug ? activeOrg.slug.slice(0, 10).toUpperCase() : "CLUSTER"}
+              </span>
             </div>
 
-            {/* Live Telemetry Rate */}
+            {/* Dynamic Telemetry Ingestion State */}
             <div className="hidden xl:flex items-center gap-1.5 rounded bg-[#10121A] border border-[#1E2333] px-2 py-0.5 text-[10px] font-mono text-[#758498]">
-              <Activity className="h-3 w-3 text-[#00E5FF]" />
-              <span>14.2k eps</span>
+              <Activity className={`h-3 w-3 ${isConnected ? "text-[#00E5FF]" : "text-[#55657E]"}`} />
+              <span>{isConnected ? "TELEMETRY SYNC" : "STANDBY"}</span>
             </div>
 
-            {/* SignalR Connection Status */}
-            <div className="flex items-center gap-1.5 rounded bg-[#10121A] border border-[#1E2333] px-2 py-0.5 text-[10px] font-mono text-[#34D399]">
-              <Radio className="h-3 w-3 text-[#34D399]" />
-              <span className="hidden sm:inline">LIVE</span>
+            {/* Real-time Push State (SignalR / WebSocket) */}
+            <div className={`flex items-center gap-1.5 rounded bg-[#10121A] border border-[#1E2333] px-2 py-0.5 text-[10px] font-mono ${
+              isConnected
+                ? "text-emerald-400"
+                : status === "connecting" || status === "reconnecting"
+                ? "text-amber-400"
+                : "text-[#758498]"
+            }`}>
+              <Radio className={`h-3 w-3 ${isConnected ? "text-emerald-400 animate-pulse" : "text-[#55657E]"}`} />
+              <span className="hidden sm:inline">
+                {isConnected ? "LIVE" : status === "connecting" ? "CONNECTING" : "STANDBY"}
+              </span>
             </div>
 
             {/* Mobile Search Icon */}
@@ -115,7 +130,9 @@ export function MainLayout() {
         {/* Scrollable Page Body */}
         <main className="flex-1 overflow-y-auto bg-[#08090D]">
           <div className="container mx-auto max-w-7xl p-3 sm:p-4 md:p-6">
-            <Outlet />
+            <ErrorBoundary fallbackTitle="Page View Intercepted">
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

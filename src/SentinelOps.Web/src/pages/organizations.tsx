@@ -278,19 +278,19 @@ export const OrganizationsPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">
-              {activeOrg?.name.slice(0, 2).toUpperCase() || "SO"}
+              {activeOrg?.name ? activeOrg.name.slice(0, 2).toUpperCase() : "SO"}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white">{activeOrg?.name || "No Organization Selected"}</h2>
                 {activeOrg && (
                   <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-900/50 text-blue-300 border border-blue-700/50">
-                    Role: {detail?.userRole || activeOrg.userRole}
+                    Role: {detail?.userRole || activeOrg.userRole || (activeOrg as any)?.role || "Member"}
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5 font-mono">
-                Slug: <span className="text-slate-300">{activeOrg?.slug}</span> • ID: {activeOrg?.id}
+                Slug: <span className="text-slate-300">{activeOrg?.slug || "—"}</span> • ID: {activeOrg?.id || "—"}
               </p>
             </div>
           </div>
@@ -308,7 +308,7 @@ export const OrganizationsPage: React.FC = () => {
             >
               {organizations.map((org) => (
                 <option key={org.id} value={org.id}>
-                  {org.name} ({org.userRole})
+                  {org.name} ({org.userRole || (org as any)?.role || "Member"})
                 </option>
               ))}
             </select>
@@ -327,7 +327,7 @@ export const OrganizationsPage: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          Members ({detail?.members.length || 0})
+          Members ({detail?.members?.length || 0})
         </button>
         <button
           onClick={() => setActiveTab("invites")}
@@ -338,7 +338,7 @@ export const OrganizationsPage: React.FC = () => {
           }`}
         >
           <UserPlus className="w-4 h-4" />
-          Pending Invites ({detail?.pendingInvitations.length || 0})
+          Pending Invites ({detail?.pendingInvitations?.length || 0})
         </button>
         <button
           onClick={() => setActiveTab("settings")}
@@ -485,7 +485,7 @@ export const OrganizationsPage: React.FC = () => {
               </button>
             )}
           </div>
-          {detail?.pendingInvitations.length === 0 ? (
+          {(!detail?.pendingInvitations || detail.pendingInvitations.length === 0) ? (
             <div className="p-8 text-center text-slate-400 text-sm">No pending invitations.</div>
           ) : (
             <div className="overflow-x-auto">
@@ -499,7 +499,7 @@ export const OrganizationsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {detail?.pendingInvitations.map((inv) => (
+                  {(detail?.pendingInvitations || []).map((inv) => (
                     <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="px-6 py-4 font-medium text-white">{inv.email}</td>
                       <td className="px-6 py-4">
@@ -604,7 +604,7 @@ export const OrganizationsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-base text-white">SaaS Quotas & Resource Usage</span>
                   <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                    {quota?.planTier || detail?.settings.planTier || "Pro"} Plan
+                    {quota?.planTier || detail?.settings?.planTier || "Pro"} Plan
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -677,7 +677,7 @@ export const OrganizationsPage: React.FC = () => {
               </div>
               <div className="flex items-baseline justify-between">
                 <div className="text-2xl font-bold text-white">
-                  {(quota?.logsUsed ?? detail?.usage.logsIngestedMonthToDate ?? 0).toLocaleString()}
+                  {(quota?.logsUsed ?? detail?.usage?.logsIngestedMonthToDate ?? 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-slate-400 font-mono">
                   / {(quota?.logsQuota ?? 1000000).toLocaleString()} logs
@@ -719,7 +719,7 @@ export const OrganizationsPage: React.FC = () => {
               </div>
               <div className="flex items-baseline justify-between">
                 <div className="text-2xl font-bold text-white">
-                  {(quota?.tracesUsed ?? detail?.usage.tracesIngestedMonthToDate ?? 0).toLocaleString()}
+                  {(quota?.tracesUsed ?? detail?.usage?.tracesIngestedMonthToDate ?? 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-slate-400 font-mono">
                   / {(quota?.tracesQuota ?? 500000).toLocaleString()} spans
@@ -803,7 +803,7 @@ export const OrganizationsPage: React.FC = () => {
               </div>
               <div className="flex items-baseline justify-between">
                 <div className="text-2xl font-bold text-white">
-                  {quota?.membersUsed ?? detail?.members.length ?? 0}
+                  {quota?.membersUsed ?? detail?.members?.length ?? 0}
                 </div>
                 <div className="text-xs text-slate-400 font-mono">
                   / {quota?.membersQuota ?? 25} seats
@@ -840,7 +840,7 @@ export const OrganizationsPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-[11px] text-slate-400">
                 <span>PostgreSQL & Redis buffers</span>
-                <span>Retention: {detail?.settings.defaultRetentionDays ?? 30} days</span>
+                <span>Retention: {detail?.settings?.defaultRetentionDays ?? 30} days</span>
               </div>
             </div>
           </div>
