@@ -13,6 +13,8 @@ import {
   type ExternalDependencyDto
 } from "../lib/api-client";
 import { useTenant } from "../context/tenant-context";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Network,
   Activity,
@@ -265,8 +267,21 @@ export const ApmPage: React.FC = () => {
             </div>
 
             {/* Interactive Node Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              {serviceMap?.nodes.map((node) => {
+            {loading && !serviceMap ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-36 rounded-xl" />
+                ))}
+              </div>
+            ) : !serviceMap || serviceMap.nodes.length === 0 ? (
+              <EmptyState
+                icon={Network}
+                title="No Active Topology Graph"
+                description="No distributed services or traces were recorded in the selected temporal window."
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {serviceMap.nodes.map((node) => {
                 const isSelected = selectedNode?.id === node.id;
                 const statusBorder =
                   node.healthStatus === "Critical"
@@ -342,6 +357,7 @@ export const ApmPage: React.FC = () => {
                 );
               })}
             </div>
+            )}
           </div>
 
           {/* Node Detail Drawer / Dependency Inspector */}

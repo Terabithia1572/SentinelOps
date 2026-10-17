@@ -13,11 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   GitBranch,
   Search,
   RefreshCw,
-  AlertCircle,
   Layers,
   CheckCircle2,
   XCircle,
@@ -280,11 +282,9 @@ export function TracesPage() {
         </div>
 
         {isLoadingDetail || !traceDetail ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Loading trace waterfall...
-            </div>
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full rounded-lg" />
+            <Skeleton className="h-48 w-full rounded-lg" />
           </div>
         ) : (
           <div className="space-y-6">
@@ -634,10 +634,11 @@ export function TracesPage() {
 
       {/* Error Notice */}
       {errorMessage && (
-        <div className="rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-400 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
+        <ErrorState
+          title="Trace Collection Query Failed"
+          message={errorMessage}
+          onRetry={() => fetchTraces(page)}
+        />
       )}
 
       {/* Traces Table */}
@@ -656,19 +657,32 @@ export function TracesPage() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading && traces.length === 0 ? (
-            <div className="flex h-48 items-center justify-center">
-              <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Loading trace records...
-              </div>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 flex-1" />
+                </div>
+              ))}
             </div>
           ) : traces.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center p-6">
-              <GitBranch className="h-10 w-10 text-[hsl(var(--muted-foreground))] mb-2 opacity-50" />
-              <p className="text-sm font-medium text-[hsl(var(--foreground))]">No trace records found</p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] max-w-sm mt-1">
-                Generate requests through your instrumented applications to view distributed traces.
-              </p>
+            <div className="p-6">
+              <EmptyState
+                icon={GitBranch}
+                title="No trace records found"
+                description="Generate requests through your instrumented applications to view distributed traces."
+                actionLabel="Clear Filter Query"
+                onAction={() => {
+                  setSelectedAppId("");
+                  setSelectedService("");
+                  setErrorsOnly(false);
+                  setSearchQuery("");
+                  setMinDurationMs("");
+                  fetchTraces(1);
+                }}
+              />
             </div>
           ) : (
             <div className="divide-y divide-[hsl(var(--border))] font-mono text-xs">
