@@ -7,8 +7,10 @@ export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: LucideIcon;
   title: string;
   description?: string;
+  action?: React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
+  secondaryAction?: React.ReactNode;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
 }
@@ -17,8 +19,10 @@ export function EmptyState({
   icon: Icon = Inbox,
   title,
   description,
+  action,
   actionLabel,
   onAction,
+  secondaryAction,
   secondaryActionLabel,
   onSecondaryAction,
   className,
@@ -42,7 +46,12 @@ export function EmptyState({
           {description}
         </p>
       )}
-      {(actionLabel || secondaryActionLabel) && (
+      {action ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {action}
+          {secondaryAction}
+        </div>
+      ) : (actionLabel || secondaryActionLabel) && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           {actionLabel && onAction && (
             <Button size="sm" onClick={onAction}>

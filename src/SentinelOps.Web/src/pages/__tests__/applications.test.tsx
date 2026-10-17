@@ -63,4 +63,12 @@ describe("ApplicationsPage", () => {
     expect(screen.getByText("Production")).toBeInTheDocument();
     expect(screen.getByText("Web API")).toBeInTheDocument();
   });
+
+  it("renders quick action telemetry links (Keys, Health, Logs)", async () => {
+    renderWithProviders(<ApplicationsPage />);
+
+    expect(await screen.findByTitle("View API Keys")).toHaveAttribute("href", "/api-keys?app=app-1");
+    expect(screen.getByTitle("Service Health")).toHaveAttribute("href", "/services?app=app-1");
+    expect(screen.getByTitle("Application Logs")).toHaveAttribute("href", "/logs?app=orders-api");
+  });
 });

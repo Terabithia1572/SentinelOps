@@ -11,10 +11,12 @@ import { AlertTriangle } from "lucide-react";
 
 export interface ConfirmDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
   title: string;
   description: string;
   confirmLabel?: string;
+  confirmText?: string;
   cancelLabel?: string;
   variant?: "destructive" | "default";
   isLoading?: boolean;
@@ -24,17 +26,25 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog({
   open,
   onOpenChange,
+  onClose,
   title,
   description,
   confirmLabel = "Confirm",
+  confirmText,
   cancelLabel = "Cancel",
   variant = "destructive",
   isLoading = false,
   onConfirm,
 }: ConfirmDialogProps) {
+  const handleClose = () => {
+    onClose?.();
+    onOpenChange?.(false);
+  };
+  const activeConfirmLabel = confirmText ?? confirmLabel;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogClose onClose={() => onOpenChange(false)} />
+    <Dialog open={open} onOpenChange={onOpenChange} onClose={onClose}>
+      <DialogClose onClose={handleClose} />
       <DialogHeader>
         <div className="flex items-center gap-3">
           {variant === "destructive" && (
@@ -51,7 +61,7 @@ export function ConfirmDialog({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onOpenChange(false)}
+          onClick={handleClose}
           disabled={isLoading}
         >
           {cancelLabel}
@@ -63,7 +73,7 @@ export function ConfirmDialog({
           onClick={onConfirm}
           disabled={isLoading}
         >
-          {isLoading ? "Processing..." : confirmLabel}
+          {isLoading ? "Processing..." : activeConfirmLabel}
         </Button>
       </DialogFooter>
     </Dialog>

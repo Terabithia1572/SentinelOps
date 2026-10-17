@@ -4,15 +4,23 @@ import { X } from "lucide-react";
 
 export interface DialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  title?: string;
+  description?: string;
   children: React.ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, onClose, title, description, children }: DialogProps) {
+  const handleClose = () => {
+    onClose?.();
+    onOpenChange?.(false);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && open) {
-        onOpenChange(false);
+        handleClose();
       }
     };
     if (open) {
@@ -23,7 +31,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       document.body.style.overflow = "unset";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onOpenChange]);
+  }, [open, onClose, onOpenChange]);
 
   if (!open) return null;
 
@@ -36,11 +44,18 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity animate-in fade-in"
-        onClick={() => onOpenChange(false)}
+        onClick={handleClose}
         aria-hidden="true"
       />
       {/* Dialog Surface */}
       <div className="relative z-50 w-full max-w-lg rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <DialogClose onClose={handleClose} />
+        {title && (
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            {description && <DialogDescription>{description}</DialogDescription>}
+          </DialogHeader>
+        )}
         {children}
       </div>
     </div>
