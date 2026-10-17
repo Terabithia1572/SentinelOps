@@ -58,7 +58,7 @@ export function IncidentDetailPage() {
   const [feedbackState, setFeedbackState] = useState<Record<string, "up" | "down">>({});
 
   // Live WebSocket updates
-  useAlertsHub({
+  const { isConnected } = useAlertsHub({
     onIncidentUpdated: (inc) => {
       if (inc.id === id) {
         queryClient.invalidateQueries({ queryKey: ["incident", id] });
@@ -235,6 +235,12 @@ export function IncidentDetailPage() {
               </span>
               {getSeverityBadge(incident.severity)}
               {getStatusBadge(incident.status)}
+              {isConnected && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 ml-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Sync
+                </span>
+              )}
             </div>
             <h1 className="text-xl font-bold tracking-tight mt-0.5">{incident.title}</h1>
           </div>

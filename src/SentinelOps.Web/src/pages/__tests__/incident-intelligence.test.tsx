@@ -18,7 +18,7 @@ vi.mock("@/context/auth-context", () => ({
 }));
 
 vi.mock("@/hooks/use-alerts-hub", () => ({
-  useAlertsHub: () => {},
+  useAlertsHub: () => ({ isConnected: true, status: "connected" }),
 }));
 
 const mockIncidentData = {

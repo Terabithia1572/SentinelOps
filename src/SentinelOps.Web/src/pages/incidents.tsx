@@ -28,6 +28,7 @@ import {
   ExternalLink,
   RefreshCw,
 } from "lucide-react";
+import { useAlertsHub } from "@/hooks/use-alerts-hub";
 
 export function IncidentsPage() {
   const { isOperator, user } = useAuth();
@@ -40,6 +41,11 @@ export function IncidentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
+
+  // Real-time SignalR push notifications for incident lifecycle
+  const { isConnected } = useAlertsHub({
+    applicationId: selectedAppId || undefined,
+  });
 
   // Create Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -160,7 +166,20 @@ export function IncidentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Incident Management</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Incident Management</h1>
+            {isConnected ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live WebSocket
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground border border-border">
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                Polling
+              </span>
+            )}
+          </div>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
             Enterprise triage lifecycle: Open, Investigating, Mitigated, Resolved, Closed with audit timelines.
           </p>

@@ -3,6 +3,8 @@ import * as signalR from "@microsoft/signalr";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AlertEventDto, IncidentDto, InAppNotificationDto } from "@/lib/api-client";
 
+export type SignalRConnectionStatus = "connected" | "connecting" | "reconnecting" | "disconnected";
+
 interface UseAlertsHubOptions {
   applicationId?: string;
   onAlertFired?: (alert: AlertEventDto) => void;
@@ -13,6 +15,7 @@ interface UseAlertsHubOptions {
 
 export function useAlertsHub(options: UseAlertsHubOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
+  const [status, setStatus] = useState<SignalRConnectionStatus>("disconnected");
   const [lastAlert, setLastAlert] = useState<AlertEventDto | null>(null);
   const [lastIncident, setLastIncident] = useState<IncidentDto | null>(null);
   const [lastNotification, setLastNotification] = useState<InAppNotificationDto | null>(null);
@@ -25,8 +28,12 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
   useEffect(() => {
     const token = localStorage.getItem("sentinelops_token");
     if (!token) {
+      setStatus("disconnected");
+      setIsConnected(false);
       return;
     }
+
+    setStatus("connecting");
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("/hubs/alerts", {
@@ -44,6 +51,9 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert-summary"] });
       queryClient.invalidateQueries({ queryKey: ["alert-rules"] });
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["overview-incidents"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       optionsRef.current.onAlertFired?.(alert);
     });
@@ -53,6 +63,9 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert-summary"] });
       queryClient.invalidateQueries({ queryKey: ["alert-rules"] });
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["overview-incidents"] });
       optionsRef.current.onAlertResolved?.(alert);
     });
 
@@ -60,6 +73,9 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
       setLastIncident(incident);
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       queryClient.invalidateQueries({ queryKey: ["incident", incident.id] });
+      queryClient.invalidateQueries({ queryKey: ["alert-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["overview-incidents"] });
       optionsRef.current.onIncidentUpdated?.(incident);
     });
 
@@ -73,6 +89,7 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
       .start()
       .then(() => {
         setIsConnected(true);
+        setStatus("connected");
         if (optionsRef.current.applicationId) {
           connection.invoke("JoinApplicationGroup", optionsRef.current.applicationId).catch(() => {});
         }
@@ -87,10 +104,17 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
         }
         console.warn("SignalR connection error:", err);
         setIsConnected(false);
+        setStatus("disconnected");
       });
+
+    connection.onreconnecting(() => {
+      setIsConnected(false);
+      setStatus("reconnecting");
+    });
 
     connection.onreconnected(() => {
       setIsConnected(true);
+      setStatus("connected");
       if (optionsRef.current.applicationId) {
         connection.invoke("JoinApplicationGroup", optionsRef.current.applicationId).catch(() => {});
       }
@@ -98,6 +122,7 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
 
     connection.onclose(() => {
       setIsConnected(false);
+      setStatus("disconnected");
     });
 
     return () => {
@@ -118,6 +143,7 @@ export function useAlertsHub(options: UseAlertsHubOptions = {}) {
 
   return {
     isConnected,
+    status,
     lastAlert,
     lastIncident,
     lastNotification,
