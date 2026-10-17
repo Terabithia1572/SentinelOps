@@ -31,6 +31,10 @@ import {
   AlertTriangle,
   Sliders,
 } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const OrganizationsPage: React.FC = () => {
   const { organizations, activeOrg, setActiveOrg, refreshOrganizations } = useTenant();
@@ -69,6 +73,7 @@ export const OrganizationsPage: React.FC = () => {
   const [quotaMaxLogs, setQuotaMaxLogs] = useState(1000000);
   const [quotaMaxTraces, setQuotaMaxTraces] = useState(500000);
   const [quotaSaving, setQuotaSaving] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
 
   // Status message
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -182,7 +187,7 @@ export const OrganizationsPage: React.FC = () => {
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!activeOrg || !confirm("Are you sure you want to remove this member?")) return;
+    if (!activeOrg) return;
     try {
       await removeOrganizationMember(activeOrg.id, userId);
       fetchDetail(activeOrg.id);
@@ -388,14 +393,32 @@ export const OrganizationsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {detail?.members.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-white">{m.fullName || m.userName}</div>
-                        <div className="text-xs text-slate-400">{m.email}</div>
-                      </div>
+                {loading ? (
+                  <tr>
+                    <td colSpan={isOwner ? 4 : 3} className="p-4 space-y-2">
+                      <Skeleton className="h-8 w-full rounded" />
+                      <Skeleton className="h-8 w-full rounded" />
                     </td>
+                  </tr>
+                ) : !detail?.members || detail.members.length === 0 ? (
+                  <tr>
+                    <td colSpan={isOwner ? 4 : 3} className="py-6">
+                      <EmptyState
+                        icon={Users}
+                        title="No Members"
+                        description="This organization does not have any active members yet."
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  detail.members.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="font-medium text-white">{m.fullName || m.userName}</div>
+                          <div className="text-xs text-slate-400">{m.email}</div>
+                        </div>
+                      </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
@@ -426,7 +449,7 @@ export const OrganizationsPage: React.FC = () => {
                             <option value="Owner">Owner</option>
                           </select>
                           <button
-                            onClick={() => handleRemoveMember(m.userId)}
+                            onClick={() => setMemberToRemove({ id: m.userId, name: m.userName || m.email })}
                             className="p-1 hover:text-red-400 text-slate-500 transition-colors"
                             title="Remove Member"
                           >
@@ -436,7 +459,8 @@ export const OrganizationsPage: React.FC = () => {
                       </td>
                     )}
                   </tr>
-                ))}
+                ))
+              )}
               </tbody>
             </table>
           </div>
@@ -824,297 +848,301 @@ export const OrganizationsPage: React.FC = () => {
       )}
 
       {/* Create Org Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-4">Create New Organization</h3>
-            <form onSubmit={handleCreateOrg} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Organization Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Acme Corporation"
-                  value={newOrgName}
-                  onChange={(e) => setNewOrgName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Slug (URL identifier)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. acme-corp"
-                  value={newOrgSlug}
-                  onChange={(e) => setNewOrgSlug(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="Optional brief description"
-                  value={newOrgDesc}
-                  onChange={(e) => setNewOrgDesc(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-sm text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createSubmitting}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
-                >
-                  {createSubmitting ? "Creating..." : "Create Organization"}
-                </button>
-              </div>
-            </form>
+      <Dialog
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        title="Create New Organization"
+      >
+        <form onSubmit={handleCreateOrg} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Organization Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Acme Corporation"
+              value={newOrgName}
+              onChange={(e) => setNewOrgName(e.target.value)}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Slug (URL identifier)</label>
+            <input
+              type="text"
+              placeholder="e.g. acme-corp"
+              value={newOrgSlug}
+              onChange={(e) => setNewOrgSlug(e.target.value)}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Description</label>
+            <textarea
+              rows={2}
+              placeholder="Optional brief description"
+              value={newOrgDesc}
+              onChange={(e) => setNewOrgDesc(e.target.value)}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createSubmitting}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
+            >
+              {createSubmitting ? "Creating..." : "Create Organization"}
+            </button>
+          </div>
+        </form>
+      </Dialog>
 
       {/* Invite Member Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-2">Invite Organization Member</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Generate a cryptographic invitation link to onboard a new team member to this tenant.
-            </p>
-
-            {inviteResult ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-lg">
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold mb-1">
-                    <CheckCircle2 className="w-4 h-4" /> Invitation Token Generated!
-                  </div>
-                  <p className="text-xs text-slate-300">
-                    Send this invitation token to <strong>{inviteResult.email}</strong>. It expires in 7 days and can be used once.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Raw Invitation Token (One-Time Display)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={inviteResult.rawToken}
-                      className="w-full bg-slate-950 border border-slate-800 font-mono text-xs text-amber-300 p-2.5 rounded-lg select-all"
-                    />
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(inviteResult.rawToken);
-                        setCopiedToken(true);
-                        setTimeout(() => setCopiedToken(false), 2000);
-                      }}
-                      className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
-                      title="Copy Token"
-                    >
-                      {copiedToken ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => {
-                      setShowInviteModal(false);
-                      setInviteResult(null);
-                    }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
-                  >
-                    Done
-                  </button>
-                </div>
+      <Dialog
+        open={showInviteModal}
+        onOpenChange={setShowInviteModal}
+        title="Invite Organization Member"
+        description="Generate a cryptographic invitation link to onboard a new team member to this tenant."
+      >
+        {inviteResult ? (
+          <div className="space-y-4">
+            <div className="p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-lg">
+              <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold mb-1">
+                <CheckCircle2 className="w-4 h-4" /> Invitation Token Generated!
               </div>
-            ) : (
-              <form onSubmit={handleInvite} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Member Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="teammate@company.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Assigned Role</label>
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Viewer">Viewer (Read-only)</option>
-                    <option value="Member">Member (Edit alerts & dashboards)</option>
-                    <option value="Admin">Admin (Manage apps & members)</option>
-                    {isOwner && <option value="Owner">Owner (Full control)</option>}
-                  </select>
-                </div>
-                <div className="flex justify-end gap-3 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowInviteModal(false)}
-                    className="px-4 py-2 text-sm text-slate-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={inviteSubmitting}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
-                  >
-                    {inviteSubmitting ? "Generating..." : "Generate Invitation"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Plan Quotas Configuration Modal */}
-      {showQuotaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-sky-400" />
-                Configure Organization Plan Quotas
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Adjust resource capacity ceilings and billing tier for {detail?.name || activeOrg?.name}.
+              <p className="text-xs text-slate-300">
+                Send this invitation token to <strong>{inviteResult.email}</strong>. It expires in 7 days and can be used once.
               </p>
             </div>
 
-            <form onSubmit={handleUpdateQuota} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-medium text-slate-300">Plan Tier</label>
-                <select
-                  value={quotaTier}
-                  onChange={(e) => {
-                    const tier = e.target.value;
-                    setQuotaTier(tier);
-                    if (tier === "Starter") {
-                      setQuotaMaxApps(5);
-                      setQuotaMaxMembers(5);
-                      setQuotaMaxDashboards(3);
-                      setQuotaMaxLogs(100000);
-                      setQuotaMaxTraces(50000);
-                    } else if (tier === "Pro") {
-                      setQuotaMaxApps(20);
-                      setQuotaMaxMembers(25);
-                      setQuotaMaxDashboards(15);
-                      setQuotaMaxLogs(1000000);
-                      setQuotaMaxTraces(500000);
-                    } else if (tier === "Enterprise") {
-                      setQuotaMaxApps(100);
-                      setQuotaMaxMembers(100);
-                      setQuotaMaxDashboards(50);
-                      setQuotaMaxLogs(10000000);
-                      setQuotaMaxTraces(5000000);
-                    }
-                  }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
-                >
-                  <option value="Starter">Starter (5 apps, 100K logs/mo)</option>
-                  <option value="Pro">Pro (20 apps, 1M logs/mo)</option>
-                  <option value="Enterprise">Enterprise (100 apps, 10M logs/mo)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-medium text-slate-300">Max Applications</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quotaMaxApps}
-                    onChange={(e) => setQuotaMaxApps(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-medium text-slate-300">Max Team Seats</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quotaMaxMembers}
-                    onChange={(e) => setQuotaMaxMembers(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-medium text-slate-300">Max Custom Dashboards</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quotaMaxDashboards}
-                    onChange={(e) => setQuotaMaxDashboards(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-medium text-slate-300">Monthly Logs Ceiling</label>
-                  <input
-                    type="number"
-                    min="1000"
-                    step="100000"
-                    value={quotaMaxLogs}
-                    onChange={(e) => setQuotaMaxLogs(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-medium text-slate-300">Monthly Distributed Traces Ceiling</label>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                Raw Invitation Token (One-Time Display)
+              </label>
+              <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  min="1000"
-                  step="50000"
-                  value={quotaMaxTraces}
-                  onChange={(e) => setQuotaMaxTraces(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                  type="text"
+                  readOnly
+                  value={inviteResult.rawToken}
+                  className="w-full bg-slate-950 border border-slate-800 font-mono text-xs text-amber-300 p-2.5 rounded-lg select-all"
                 />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowQuotaModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inviteResult.rawToken);
+                    setCopiedToken(true);
+                    setTimeout(() => setCopiedToken(false), 2000);
+                  }}
+                  className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
+                  title="Copy Token"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={quotaSaving}
-                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg"
-                >
-                  {quotaSaving ? "Saving..." : "Save Quota Configuration"}
+                  {copiedToken ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-            </form>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setInviteResult(null);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
+              >
+                Done
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Member Email *</label>
+              <input
+                type="email"
+                required
+                placeholder="teammate@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Assigned Role</label>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="Viewer">Viewer (Read-only)</option>
+                <option value="Member">Member (Edit alerts & dashboards)</option>
+                <option value="Admin">Admin (Manage apps & members)</option>
+                {isOwner && <option value="Owner">Owner (Full control)</option>}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowInviteModal(false)}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={inviteSubmitting}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg"
+              >
+                {inviteSubmitting ? "Generating..." : "Generate Invitation"}
+              </button>
+            </div>
+          </form>
+        )}
+      </Dialog>
+
+      {/* Plan Quotas Configuration Modal */}
+      <Dialog
+        open={showQuotaModal}
+        onOpenChange={setShowQuotaModal}
+        title="Configure Organization Plan Quotas"
+        description={`Adjust resource capacity ceilings and billing tier for ${detail?.name || activeOrg?.name}.`}
+      >
+        <form onSubmit={handleUpdateQuota} className="space-y-4 text-xs">
+          <div className="space-y-1">
+            <label className="font-medium text-slate-300">Plan Tier</label>
+            <select
+              value={quotaTier}
+              onChange={(e) => {
+                const tier = e.target.value;
+                setQuotaTier(tier);
+                if (tier === "Starter") {
+                  setQuotaMaxApps(5);
+                  setQuotaMaxMembers(5);
+                  setQuotaMaxDashboards(3);
+                  setQuotaMaxLogs(100000);
+                  setQuotaMaxTraces(50000);
+                } else if (tier === "Pro") {
+                  setQuotaMaxApps(20);
+                  setQuotaMaxMembers(25);
+                  setQuotaMaxDashboards(15);
+                  setQuotaMaxLogs(1000000);
+                  setQuotaMaxTraces(500000);
+                } else if (tier === "Enterprise") {
+                  setQuotaMaxApps(100);
+                  setQuotaMaxMembers(100);
+                  setQuotaMaxDashboards(50);
+                  setQuotaMaxLogs(10000000);
+                  setQuotaMaxTraces(5000000);
+                }
+              }}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white"
+            >
+              <option value="Starter">Starter (5 apps, 100K logs/mo)</option>
+              <option value="Pro">Pro (20 apps, 1M logs/mo)</option>
+              <option value="Enterprise">Enterprise (100 apps, 10M logs/mo)</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Max Applications</label>
+              <input
+                type="number"
+                min="1"
+                value={quotaMaxApps}
+                onChange={(e) => setQuotaMaxApps(Number(e.target.value))}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Max Team Seats</label>
+              <input
+                type="number"
+                min="1"
+                value={quotaMaxMembers}
+                onChange={(e) => setQuotaMaxMembers(Number(e.target.value))}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Max Custom Dashboards</label>
+              <input
+                type="number"
+                min="1"
+                value={quotaMaxDashboards}
+                onChange={(e) => setQuotaMaxDashboards(Number(e.target.value))}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-medium text-slate-300">Monthly Logs Ceiling</label>
+              <input
+                type="number"
+                min="1000"
+                step="100000"
+                value={quotaMaxLogs}
+                onChange={(e) => setQuotaMaxLogs(Number(e.target.value))}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="font-medium text-slate-300">Monthly Distributed Traces Ceiling</label>
+            <input
+              type="number"
+              min="1000"
+              step="50000"
+              value={quotaMaxTraces}
+              onChange={(e) => setQuotaMaxTraces(Number(e.target.value))}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowQuotaModal(false)}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={quotaSaving}
+              className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg"
+            >
+              {quotaSaving ? "Saving..." : "Save Quota Configuration"}
+            </button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Confirm Member Removal Dialog */}
+      <ConfirmDialog
+        open={!!memberToRemove}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+        title="Remove Organization Member"
+        description={`Are you sure you want to remove ${memberToRemove?.name} from ${activeOrg?.name}? They will immediately lose access to all applications and resources in this tenant.`}
+        confirmLabel="Remove Member"
+        variant="destructive"
+        onConfirm={() => {
+          if (memberToRemove) {
+            handleRemoveMember(memberToRemove.id);
+            setMemberToRemove(null);
+          }
+        }}
+      />
     </div>
   );
 };

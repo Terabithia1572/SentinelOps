@@ -14,6 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Users,
   Shield,
@@ -379,15 +383,20 @@ export function UsersPage() {
               <tbody className="divide-y divide-slate-800/60">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-sky-400 mb-2" />
-                      Loading user directory...
+                    <td colSpan={5} className="p-4 space-y-2">
+                      <Skeleton className="h-10 w-full rounded" />
+                      <Skeleton className="h-10 w-full rounded" />
+                      <Skeleton className="h-10 w-full rounded" />
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400">
-                      No users match the selected search or filter criteria.
+                    <td colSpan={5} className="py-8">
+                      <EmptyState
+                        icon={Users}
+                        title="No Users Found"
+                        description="No platform accounts match the active search term or role/status filters."
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -629,16 +638,13 @@ export function UsersPage() {
 
       {/* Role Assignment Modal */}
       {roleModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-400" />
-              Update Roles for {roleModalUser.userName}
-            </h3>
-            <p className="text-xs text-slate-400">
-              Select the administrative or operational role for this user account.
-            </p>
-
+        <Dialog
+          open={!!roleModalUser}
+          onOpenChange={(open) => !open && setRoleModalUser(null)}
+          title={`Update Roles for ${roleModalUser.userName}`}
+          description="Select the administrative or operational role for this user account."
+        >
+          <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-300">Assign Platform Role</label>
               <select
@@ -657,26 +663,25 @@ export function UsersPage() {
               <span>Guardrail: Removing the Administrator role from the last active admin is strictly prohibited.</span>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setRoleModalUser(null)}>Cancel</Button>
-              <Button onClick={handleUpdateRole} disabled={isSubmittingRole}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button variant="ghost" size="sm" onClick={() => setRoleModalUser(null)}>Cancel</Button>
+              <Button size="sm" onClick={handleUpdateRole} disabled={isSubmittingRole}>
                 {isSubmittingRole ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Save Role
               </Button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Status Modal */}
       {statusModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-amber-400" />
-              Manage Account Status: {statusModalUser.userName}
-            </h3>
-
+        <Dialog
+          open={!!statusModalUser}
+          onOpenChange={(open) => !open && setStatusModalUser(null)}
+          title={`Manage Account Status: ${statusModalUser.userName}`}
+        >
+          <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-300">Status Action</label>
               <select
@@ -691,52 +696,37 @@ export function UsersPage() {
               </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setStatusModalUser(null)}>Cancel</Button>
-              <Button onClick={handleUpdateStatus} disabled={isSubmittingStatus}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button variant="ghost" size="sm" onClick={() => setStatusModalUser(null)}>Cancel</Button>
+              <Button size="sm" onClick={handleUpdateStatus} disabled={isSubmittingStatus}>
                 {isSubmittingStatus ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Confirm Status
               </Button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Revoke Sessions Modal */}
-      {revokeModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-rose-400 flex items-center gap-2">
-              <LogOut className="w-5 h-5" />
-              Revoke User Sessions
-            </h3>
-            <p className="text-sm text-slate-300">
-              Are you sure you want to forcibly revoke all active sessions for <strong>{revokeModalUser.userName}</strong>?
-            </p>
-            <p className="text-xs text-slate-400">
-              This invalidates all refresh tokens and triggers security stamp renewal. The user will be required to log in again immediately.
-            </p>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setRevokeModalUser(null)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleRevokeSessions} disabled={isSubmittingRevoke}>
-                {isSubmittingRevoke ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Revoke All Sessions
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!revokeModalUser}
+        onOpenChange={(open) => !open && setRevokeModalUser(null)}
+        title="Revoke User Sessions"
+        description={`Are you sure you want to forcibly revoke all active sessions for ${revokeModalUser?.userName}? This invalidates all refresh tokens and triggers security stamp renewal. The user will be required to log in again immediately.`}
+        confirmLabel="Revoke All Sessions"
+        variant="destructive"
+        isLoading={isSubmittingRevoke}
+        onConfirm={handleRevokeSessions}
+      />
 
       {/* Admin Reset Password Modal */}
       {pwdModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-emerald-400" />
-              Reset Password: {pwdModalUser.userName}
-            </h3>
-
+        <Dialog
+          open={!!pwdModalUser}
+          onOpenChange={(open) => !open && setPwdModalUser(null)}
+          title={`Reset Password: ${pwdModalUser.userName}`}
+        >
+          <div className="space-y-4">
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-slate-300 mb-1 block">New Password</label>
@@ -761,15 +751,15 @@ export function UsersPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setPwdModalUser(null)}>Cancel</Button>
-              <Button onClick={handleResetPassword} disabled={isSubmittingPwd}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button variant="ghost" size="sm" onClick={() => setPwdModalUser(null)}>Cancel</Button>
+              <Button size="sm" onClick={handleResetPassword} disabled={isSubmittingPwd}>
                 {isSubmittingPwd ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Reset Password
               </Button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
