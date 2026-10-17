@@ -37,6 +37,7 @@ const StatusPagesPage = lazy(() => import("@/pages/status-pages").then(m => ({ d
 const AiObservabilityPage = lazy(() => import("@/pages/ai-observability").then(m => ({ default: m.AiObservabilityPage })));
 const OnboardingPage = lazy(() => import("@/pages/onboarding").then(m => ({ default: m.OnboardingPage })));
 const BillingPage = lazy(() => import("@/pages/billing").then(m => ({ default: m.BillingPage })));
+const NotFoundPage = lazy(() => import("@/pages/not-found").then(m => ({ default: m.NotFoundPage })));
 
 function RouteFallback() {
   return (
@@ -117,6 +118,8 @@ function App() {
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
+                  {/* Catch-all 404 Route */}
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </BrowserRouter>
