@@ -14,13 +14,16 @@ public class OrganizationsController : ControllerBase
 {
     private readonly IOrganizationService _organizationService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ICurrentTenantService _tenantService;
 
     public OrganizationsController(
         IOrganizationService organizationService,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICurrentTenantService tenantService)
     {
         _organizationService = organizationService;
         _currentUserService = currentUserService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -206,6 +209,38 @@ public class OrganizationsController : ControllerBase
             return BadRequest(ApiResponse<object>.Fail(error ?? "Failed to update organization settings."));
 
         return Ok(ApiResponse<object>.Ok(new { message = "Settings updated successfully." }));
+    }
+
+    [HttpGet("current/usage")]
+    public async Task<ActionResult<ApiResponse<OrganizationQuotaStatusDto>>> GetCurrentUsage(CancellationToken ct)
+    {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(ApiResponse<OrganizationQuotaStatusDto>.Fail("Unauthorized."));
+
+        Guid orgId;
+        if (_tenantService.OrganizationId.HasValue && _tenantService.OrganizationId.Value != Guid.Empty)
+        {
+            orgId = _tenantService.OrganizationId.Value;
+        }
+        else
+        {
+            var userOrgs = await _organizationService.GetUserOrganizationsAsync(userId, ct);
+            var firstOrg = userOrgs.FirstOrDefault();
+            if (firstOrg == null)
+            {
+                return NotFound(ApiResponse<OrganizationQuotaStatusDto>.Fail("No active organization found for user."));
+            }
+            orgId = firstOrg.Id;
+        }
+
+        var status = await _organizationService.GetQuotaStatusAsync(orgId, userId, ct);
+        if (status == null)
+        {
+            return NotFound(ApiResponse<OrganizationQuotaStatusDto>.Fail("Organization quota not found or access denied."));
+        }
+
+        return Ok(ApiResponse<OrganizationQuotaStatusDto>.Ok(status));
     }
 
     [HttpGet("{id:guid}/quota")]

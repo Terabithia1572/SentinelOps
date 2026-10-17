@@ -4,5 +4,7 @@ public enum NotificationChannelType
 {
     Email,
     Webhook,
-    InApp
+    InApp,
+    Slack,
+    Teams
 }

@@ -99,6 +99,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<IRetentionService, RetentionService>();
+        services.AddScoped<ISavedLogQueryService, SavedLogQueryService>();
         services.AddScoped<IAlertEvaluationService, Services.Alerting.AlertEvaluationService>();
         services.AddScoped<IRealtimeNotifier, Services.NullRealtimeNotifier>();
 
@@ -128,6 +129,8 @@ public static class DependencyInjection
             });
         services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.EmailNotificationProvider>();
         services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.WebhookNotificationProvider>();
+        services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.SlackNotificationProvider>();
+        services.AddScoped<Services.Notifications.INotificationProvider, Services.Notifications.TeamsNotificationProvider>();
         services.AddScoped<Services.Notifications.INotificationDispatcherService, Services.Notifications.NotificationDispatcherService>();
 
         // SLO Monitoring

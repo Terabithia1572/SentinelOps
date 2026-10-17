@@ -10,6 +10,7 @@ public class ApiKeyAuthFilter : IAsyncActionFilter
 {
     public const string ApplicationIdItemKey = "ApplicationId";
     public const string ApplicationNameItemKey = "ApplicationName";
+    public const string OrganizationIdItemKey = "OrganizationId";
 
     private readonly IApplicationDbContext _dbContext;
     private readonly IApiKeyService _apiKeyService;
@@ -60,6 +61,10 @@ public class ApiKeyAuthFilter : IAsyncActionFilter
 
         context.HttpContext.Items[ApplicationIdItemKey] = apiKey.ApplicationId;
         context.HttpContext.Items[ApplicationNameItemKey] = apiKey.Application.Name;
+        if (apiKey.Application.OrganizationId.HasValue)
+        {
+            context.HttpContext.Items[OrganizationIdItemKey] = apiKey.Application.OrganizationId.Value;
+        }
 
         await next();
     }

@@ -552,7 +552,8 @@ public class OrganizationService : IOrganizationService
 
         settings.AllowMemberInvites = request.AllowMemberInvites;
         settings.RequireTwoFactor = request.RequireTwoFactor;
-        settings.DefaultRetentionDays = Math.Clamp(request.DefaultRetentionDays, 7, 365);
+        var maxRetentionDays = RetentionService.GetPlanRetentionCap(settings.PlanTier);
+        settings.DefaultRetentionDays = Math.Clamp(request.DefaultRetentionDays, 1, maxRetentionDays);
         settings.UpdatedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(ct);
@@ -601,6 +602,11 @@ public class OrganizationService : IOrganizationService
 
         var logsUsed = Math.Max(org.Usage?.LogsIngestedMonthToDate ?? 0, actualLogs);
         var tracesUsed = Math.Max(org.Usage?.TracesIngestedMonthToDate ?? 0, actualTraces);
+        var metricsUsed = org.Usage?.MetricsIngestedMonthToDate ?? 0;
+        var alertRulesUsed = appIds.Count > 0 
+            ? await _context.AlertRules.CountAsync(r => appIds.Contains(r.ApplicationId), ct)
+            : 0;
+        var aiTokensUsed = org.Usage?.AiTokensUsedMonthToDate ?? 0;
 
         var settings = org.Settings ?? new OrganizationSettings();
         var planTier = string.IsNullOrWhiteSpace(settings.PlanTier) ? "Pro" : settings.PlanTier;
@@ -609,17 +615,40 @@ public class OrganizationService : IOrganizationService
         var appsQuota = Math.Max(settings.MaxApplications, 1);
         var membersQuota = Math.Max(settings.MaxMembers, 1);
         var dashboardsQuota = Math.Max(settings.MaxCustomDashboards, 1);
+        var aiTokensQuota = Math.Max(settings.MaxMonthlyAiTokens, 1);
+        var metricsQuota = planTier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) ? 5_000_000L :
+                           planTier.Equals("Starter", StringComparison.OrdinalIgnoreCase) ? 50_000L : 500_000L;
+        var alertRulesQuota = planTier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) ? 250 :
+                              planTier.Equals("Starter", StringComparison.OrdinalIgnoreCase) ? 10 : 50;
 
         var logsPct = Math.Round((double)logsUsed / logsQuota * 100.0, 1);
         var tracesPct = Math.Round((double)tracesUsed / tracesQuota * 100.0, 1);
+        var metricsPct = Math.Round((double)metricsUsed / metricsQuota * 100.0, 1);
+        var alertRulesPct = Math.Round((double)alertRulesUsed / alertRulesQuota * 100.0, 1);
+        var aiTokensPct = Math.Round((double)aiTokensUsed / aiTokensQuota * 100.0, 1);
         var appsPct = Math.Round((double)appsUsed / appsQuota * 100.0, 1);
         var membersPct = Math.Round((double)membersUsed / membersQuota * 100.0, 1);
         var dashboardsPct = Math.Round((double)dashboardsUsed / dashboardsQuota * 100.0, 1);
 
-        var isLogsWarning = logsPct >= 80.0;
+        var isLogsWarning80 = logsPct >= 80.0;
+        var isLogsCritical95 = logsPct >= 95.0;
         var isLogsExceeded = logsPct >= 100.0;
-        var isTracesWarning = tracesPct >= 80.0;
+
+        var isTracesWarning80 = tracesPct >= 80.0;
+        var isTracesCritical95 = tracesPct >= 95.0;
         var isTracesExceeded = tracesPct >= 100.0;
+
+        var isMetricsWarning80 = metricsPct >= 80.0;
+        var isMetricsCritical95 = metricsPct >= 95.0;
+        var isMetricsExceeded = metricsPct >= 100.0;
+
+        var isAlertRulesWarning80 = alertRulesPct >= 80.0;
+        var isAlertRulesCritical95 = alertRulesPct >= 95.0;
+        var isAlertRulesExceeded = alertRulesPct >= 100.0;
+
+        var isAiTokensWarning80 = aiTokensPct >= 80.0;
+        var isAiTokensCritical95 = aiTokensPct >= 95.0;
+        var isAiTokensExceeded = aiTokensPct >= 100.0;
 
         return new OrganizationQuotaStatusDto
         {
@@ -629,13 +658,35 @@ public class OrganizationService : IOrganizationService
             LogsUsed = logsUsed,
             LogsQuota = logsQuota,
             LogsPercentUsed = logsPct,
-            IsLogsWarning = isLogsWarning,
+            IsLogsWarning = isLogsWarning80,
+            IsLogsWarning80 = isLogsWarning80,
+            IsLogsCritical95 = isLogsCritical95,
             IsLogsExceeded = isLogsExceeded,
             TracesUsed = tracesUsed,
             TracesQuota = tracesQuota,
             TracesPercentUsed = tracesPct,
-            IsTracesWarning = isTracesWarning,
+            IsTracesWarning = isTracesWarning80,
+            IsTracesWarning80 = isTracesWarning80,
+            IsTracesCritical95 = isTracesCritical95,
             IsTracesExceeded = isTracesExceeded,
+            MetricsUsed = metricsUsed,
+            MetricsQuota = metricsQuota,
+            MetricsPercentUsed = metricsPct,
+            IsMetricsWarning80 = isMetricsWarning80,
+            IsMetricsCritical95 = isMetricsCritical95,
+            IsMetricsExceeded = isMetricsExceeded,
+            AlertRulesUsed = alertRulesUsed,
+            AlertRulesQuota = alertRulesQuota,
+            AlertRulesPercentUsed = alertRulesPct,
+            IsAlertRulesWarning80 = isAlertRulesWarning80,
+            IsAlertRulesCritical95 = isAlertRulesCritical95,
+            IsAlertRulesExceeded = isAlertRulesExceeded,
+            AiTokensUsed = aiTokensUsed,
+            AiTokensQuota = aiTokensQuota,
+            AiTokensPercentUsed = aiTokensPct,
+            IsAiTokensWarning80 = isAiTokensWarning80,
+            IsAiTokensCritical95 = isAiTokensCritical95,
+            IsAiTokensExceeded = isAiTokensExceeded,
             ApplicationsUsed = appsUsed,
             ApplicationsQuota = appsQuota,
             ApplicationsPercentUsed = appsPct,
@@ -646,8 +697,10 @@ public class OrganizationService : IOrganizationService
             MembersQuota = membersQuota,
             MembersPercentUsed = membersPct,
             EstimatedStorageBytes = org.Usage?.EstimatedStorageBytes ?? 0,
-            HasAnyQuotaWarning = isLogsWarning || isTracesWarning || appsPct >= 80.0 || membersPct >= 80.0 || dashboardsPct >= 80.0,
-            HasAnyQuotaExceeded = isLogsExceeded || isTracesExceeded || appsPct >= 100.0 || membersPct >= 100.0 || dashboardsPct >= 100.0
+            HasAnyQuotaWarning = isLogsWarning80 || isTracesWarning80 || isMetricsWarning80 || isAlertRulesWarning80 || isAiTokensWarning80 || appsPct >= 80.0 || membersPct >= 80.0 || dashboardsPct >= 80.0,
+            HasAnyQuotaWarning80 = isLogsWarning80 || isTracesWarning80 || isMetricsWarning80 || isAlertRulesWarning80 || isAiTokensWarning80 || appsPct >= 80.0 || membersPct >= 80.0 || dashboardsPct >= 80.0,
+            HasAnyQuotaCritical95 = isLogsCritical95 || isTracesCritical95 || isMetricsCritical95 || isAlertRulesCritical95 || isAiTokensCritical95 || appsPct >= 95.0 || membersPct >= 95.0 || dashboardsPct >= 95.0,
+            HasAnyQuotaExceeded = isLogsExceeded || isTracesExceeded || isMetricsExceeded || isAlertRulesExceeded || isAiTokensExceeded || appsPct >= 100.0 || membersPct >= 100.0 || dashboardsPct >= 100.0
         };
     }
 

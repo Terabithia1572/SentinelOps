@@ -9,8 +9,35 @@ public record NotificationChannelDto
     public string Destination { get; init; } = string.Empty;
     public bool IsEnabled { get; init; }
     public Guid? ApplicationId { get; init; }
+    public Guid? OrganizationId { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime CreatedAtUtc { get; init; }
+}
+
+public record NotificationHistoryDto
+{
+    public Guid Id { get; init; }
+    public Guid ChannelId { get; init; }
+    public string EventType { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Subject { get; init; } = string.Empty;
+    public string Message { get; init; } = string.Empty;
+    public int RetryCount { get; init; }
+    public int MaxRetries { get; init; }
+    public DateTime? NextRetryAtUtc { get; init; }
+    public DateTime? LastAttemptedAtUtc { get; init; }
+    public DateTime? DeliveredAtUtc { get; init; }
+    public string? ErrorMessage { get; init; }
+    public string? TraceId { get; init; }
+    public DateTime CreatedAtUtc { get; init; }
+}
+
+public record NotificationTestResultDto
+{
+    public bool Success { get; init; }
+    public string? Message { get; init; }
+    public string? ErrorMessage { get; init; }
+    public DateTime TestedAtUtc { get; init; }
 }
 
 public record InAppNotificationDto
@@ -24,3 +51,4 @@ public record InAppNotificationDto
     public DateTime? ReadAtUtc { get; init; }
     public DateTime CreatedAtUtc { get; init; }
 }
+

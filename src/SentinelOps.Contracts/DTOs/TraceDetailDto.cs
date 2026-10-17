@@ -8,4 +8,6 @@ public record TraceDetailDto
     public IReadOnlyList<string> Services { get; init; } = [];
     public int MaxDepth { get; init; }
     public double TotalDurationMs { get; init; }
+    public IReadOnlyList<string> SlowestSpanIds { get; init; } = [];
+    public bool HasMissingParents { get; init; }
 }

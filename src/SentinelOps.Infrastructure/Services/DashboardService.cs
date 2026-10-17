@@ -82,7 +82,7 @@ public class DashboardService : IDashboardService
         }
 
         var tagsJson = request.Tags != null ? JsonSerializer.Serialize(request.Tags) : "[]";
-        var layoutJson = string.IsNullOrWhiteSpace(request.LayoutJson) ? "[]" : request.LayoutJson;
+        var layoutJson = ValidateAndSanitizeLayoutJson(request.LayoutJson);
 
         var dashboard = new CustomDashboard(
             organizationId: orgId,
@@ -130,7 +130,7 @@ public class DashboardService : IDashboardService
 
         if (!string.IsNullOrWhiteSpace(request.LayoutJson))
         {
-            dashboard.LayoutJson = request.LayoutJson;
+            dashboard.LayoutJson = ValidateAndSanitizeLayoutJson(request.LayoutJson);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -238,6 +238,49 @@ public class DashboardService : IDashboardService
         foreach (var d in existingDefaults)
         {
             d.IsDefault = false;
+        }
+    }
+
+    public async Task<DashboardDetailDto?> SetDefaultDashboardAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var orgId = await GetRequiredOrganizationIdAsync(cancellationToken);
+        var dashboard = await _context.Dashboards
+            .FirstOrDefaultAsync(d => d.Id == id && d.OrganizationId == orgId, cancellationToken);
+
+        if (dashboard == null) return null;
+
+        await ClearExistingDefaultAsync(orgId, cancellationToken);
+        dashboard.IsDefault = true;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return MapToDetailDto(dashboard);
+    }
+
+    private static readonly HashSet<string> AllowedWidgetTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "timeseries", "kpi", "error_rate", "latency", "throughput",
+        "log_severity", "service_health", "alerts", "incidents", "slo"
+    };
+
+    private static string ValidateAndSanitizeLayoutJson(string? layoutJson)
+    {
+        if (string.IsNullOrWhiteSpace(layoutJson) || layoutJson.Trim() == "[]")
+        {
+            return "[]";
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(layoutJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return "[]";
+            }
+            return layoutJson;
+        }
+        catch
+        {
+            return "[]";
         }
     }
 

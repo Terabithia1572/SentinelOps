@@ -58,20 +58,44 @@ public class RetentionCleanupService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
-        var deletedLogs = await context.LogEntries
-            .Where(l => l.Timestamp < logCutoff)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        var deletedTraces = await context.TraceRecords
-            .Where(t => t.StartedAtUtc < traceCutoff)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        var deletedMetrics = await context.MetricRecords
-            .Where(m => m.Timestamp < metricCutoff)
-            .ExecuteDeleteAsync(cancellationToken);
+        var deletedLogs = await DeleteBatchAsync(context.LogEntries.Where(l => l.Timestamp < logCutoff), context.LogEntries, context, cancellationToken);
+        var deletedTraces = await DeleteBatchAsync(context.TraceRecords.Where(t => t.StartedAtUtc < traceCutoff), context.TraceRecords, context, cancellationToken);
+        var deletedMetrics = await DeleteBatchAsync(context.MetricRecords.Where(m => m.Timestamp < metricCutoff), context.MetricRecords, context, cancellationToken);
 
         _logger.LogInformation(
             "Telemetry retention cleanup completed. Deleted {Logs} logs older than {LogCutoff}, {Traces} traces older than {TraceCutoff}, {Metrics} metrics older than {MetricCutoff}",
             deletedLogs, logCutoff, deletedTraces, traceCutoff, deletedMetrics, metricCutoff);
+    }
+
+    private static async Task<long> DeleteBatchAsync<T>(IQueryable<T> query, DbSet<T> dbSet, IApplicationDbContext context, CancellationToken ct) where T : class
+    {
+        const int BatchSize = 500;
+        long totalDeleted = 0;
+
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var batchDeleted = await query.Take(BatchSize).ExecuteDeleteAsync(ct);
+                totalDeleted += batchDeleted;
+                if (batchDeleted < BatchSize) break;
+            }
+            return totalDeleted;
+        }
+        catch (Exception)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var batch = await query.Take(BatchSize).ToListAsync(ct);
+                if (batch.Count == 0) break;
+
+                dbSet.RemoveRange(batch);
+                await context.SaveChangesAsync(ct);
+                totalDeleted += batch.Count;
+
+                if (batch.Count < BatchSize) break;
+            }
+            return totalDeleted;
+        }
     }
 }

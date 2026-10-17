@@ -54,6 +54,7 @@ public interface IApplicationDbContext
     DbSet<InvoiceLineItem> InvoiceLineItems { get; }
     DbSet<PaymentTransaction> PaymentTransactions { get; }
     DbSet<PaymentWebhookEvent> PaymentWebhookEvents { get; }
+    DbSet<SavedLogQuery> SavedLogQueries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

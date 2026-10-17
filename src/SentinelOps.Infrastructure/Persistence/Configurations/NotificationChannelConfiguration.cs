@@ -35,6 +35,12 @@ public class NotificationChannelConfiguration : IEntityTypeConfiguration<Notific
             .HasMaxLength(100);
 
         builder.HasIndex(c => c.ApplicationId);
+        builder.HasIndex(c => c.OrganizationId);
         builder.HasIndex(c => c.IsEnabled);
+
+        builder.HasOne(c => c.Organization)
+            .WithMany()
+            .HasForeignKey(c => c.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

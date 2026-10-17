@@ -69,9 +69,19 @@ public class GetTraceByIdQueryHandler : IRequestHandler<GetTraceByIdQuery, Trace
 
         var detailedSpans = new List<SpanDetailDto>(spans.Count);
         var maxDepth = 0;
+        var hasMissingParents = false;
+
+        var slowestSpanIds = spans
+            .OrderByDescending(s => s.Duration.TotalMilliseconds)
+            .Take(3)
+            .Select(s => s.SpanId)
+            .ToHashSet();
 
         foreach (var span in spans)
         {
+            var isOrphan = !string.IsNullOrEmpty(span.ParentSpanId) && !spanDict.ContainsKey(span.ParentSpanId);
+            if (isOrphan) hasMissingParents = true;
+
             var depth = CalculateDepth(span.ParentSpanId, new HashSet<string>());
             if (depth > maxDepth) maxDepth = depth;
 
@@ -96,7 +106,9 @@ public class GetTraceByIdQueryHandler : IRequestHandler<GetTraceByIdQuery, Trace
                 Depth = depth,
                 OffsetMs = offsetMs,
                 OffsetPercent = Math.Round(offsetPercent, 2),
-                DurationPercent = Math.Round(durationPercent, 2)
+                DurationPercent = Math.Round(durationPercent, 2),
+                IsOrphanedParent = isOrphan,
+                IsSlowestSpan = slowestSpanIds.Contains(span.SpanId)
             });
         }
 
@@ -114,7 +126,9 @@ public class GetTraceByIdQueryHandler : IRequestHandler<GetTraceByIdQuery, Trace
             CorrelatedLogs = logs,
             Services = services,
             MaxDepth = maxDepth,
-            TotalDurationMs = totalDurationMs
+            TotalDurationMs = totalDurationMs,
+            SlowestSpanIds = slowestSpanIds.ToList(),
+            HasMissingParents = hasMissingParents
         };
     }
 }

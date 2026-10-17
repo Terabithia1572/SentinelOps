@@ -8,6 +8,7 @@ import {
   duplicateDashboard,
   importDashboard,
   instantiateDashboardTemplate,
+  setDefaultDashboard,
   type DashboardSummaryItemDto,
   type DashboardDetailDto,
   type DashboardWidgetDto
@@ -33,7 +34,8 @@ import {
   CheckCircle,
   FileCode,
   PieChart as PieIcon,
-  Check
+  Check,
+  Star,
 } from "lucide-react";
 
 export const WIDGET_CATALOG = [
@@ -232,6 +234,29 @@ export const DashboardsPage: React.FC = () => {
       setSaving(false);
     }
   };
+
+  const [settingDefault, setSettingDefault] = useState(false);
+
+  const handleSetDefault = async () => {
+    if (!selectedDashboard) return;
+    try {
+      setSettingDefault(true);
+      await setDefaultDashboard(selectedDashboard.id);
+      setStatusMessage({ text: "Dashboard set as default for organization.", type: "success" });
+      setSelectedDashboard({ ...selectedDashboard, isDefault: true });
+      setDashboards((prev) =>
+        prev.map((d) => ({
+          ...d,
+          isDefault: d.id === selectedDashboard.id,
+        }))
+      );
+    } catch {
+      setStatusMessage({ text: "Failed to set default dashboard.", type: "error" });
+    } finally {
+      setSettingDefault(false);
+    }
+  };
+
 
   // Widget Actions
   const handleAddOrUpdateWidget = (e: React.FormEvent) => {
@@ -458,6 +483,22 @@ export const DashboardsPage: React.FC = () => {
                 </span>
               ))}
             </div>
+
+            {selectedDashboard.isDefault ? (
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Default
+              </span>
+            ) : (
+              <button
+                onClick={handleSetDefault}
+                disabled={settingDefault}
+                className="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-amber-400 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                title="Set as default dashboard for organization"
+              >
+                <Star className="w-3.5 h-3.5" />
+                {settingDefault ? "Setting..." : "Set as Default"}
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

@@ -6,6 +6,8 @@ import apiClient, {
   type LogEntryDto,
   type LogMetadataDto,
   type ApplicationDto,
+  type SavedLogQueryDto,
+  type CreateSavedLogQueryRequest,
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { Dialog } from "@/components/ui/dialog";
 import {
   Search,
   RefreshCw,
@@ -24,6 +27,9 @@ import {
   Copy,
   Check,
   Pause,
+  Bookmark,
+  Download,
+  Clock,
 } from "lucide-react";
 
 const SEVERITIES = ["All", "Trace", "Debug", "Information", "Warning", "Error", "Critical"] as const;
@@ -60,6 +66,119 @@ export function LogsPage() {
   // Expanded log rows state
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Saved queries state
+  const [savedQueries, setSavedQueries] = useState<SavedLogQueryDto[]>([]);
+  const [selectedSavedQueryId, setSelectedSavedQueryId] = useState<string>("");
+  const [showSaveModal, setShowSaveModal] = useState<boolean>(false);
+  const [newQueryName, setNewQueryName] = useState<string>("");
+  const [newQueryDesc, setNewQueryDesc] = useState<string>("");
+  const [isSavingQuery, setIsSavingQuery] = useState<boolean>(false);
+
+  // Query performance indicator
+  const [queryDurationMs, setQueryDurationMs] = useState<number | null>(null);
+
+  // Export state
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  const loadSavedQueries = useCallback(async () => {
+    try {
+      const res = await apiClient.get<ApiResponse<SavedLogQueryDto[]>>("/logs/saved");
+      if (res.data.success && res.data.data) {
+        setSavedQueries(res.data.data);
+      }
+    } catch {
+      // Handled silently
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSavedQueries();
+  }, [loadSavedQueries]);
+
+  const handleSelectSavedQuery = (queryId: string) => {
+    setSelectedSavedQueryId(queryId);
+    if (!queryId) return;
+
+    const sq = savedQueries.find((q) => q.id === queryId);
+    if (!sq) return;
+
+    if (sq.searchTerm !== undefined) setSearchQuery(sq.searchTerm || "");
+    if (sq.severity) setSelectedSeverity(sq.severity);
+    if (sq.serviceName) setSelectedService(sq.serviceName);
+    if (sq.environmentName) setSelectedEnv(sq.environmentName);
+    if (sq.timeWindow) setTimeWindow(sq.timeWindow);
+  };
+
+  const handleSaveQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQueryName.trim()) return;
+
+    try {
+      setIsSavingQuery(true);
+      const payload: CreateSavedLogQueryRequest = {
+        name: newQueryName.trim(),
+        description: newQueryDesc.trim() || undefined,
+        searchTerm: searchQuery.trim() || undefined,
+        severity: selectedSeverity !== "All" ? selectedSeverity : undefined,
+        serviceName: selectedService || undefined,
+        environmentName: selectedEnv || undefined,
+        timeWindow: timeWindow,
+      };
+
+      const res = await apiClient.post<ApiResponse<SavedLogQueryDto>>("/logs/saved", payload);
+      if (res.data.success && res.data.data) {
+        setShowSaveModal(false);
+        setNewQueryName("");
+        setNewQueryDesc("");
+        await loadSavedQueries();
+        setSelectedSavedQueryId(res.data.data.id);
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to save log query.");
+    } finally {
+      setIsSavingQuery(false);
+    }
+  };
+
+  const handleExport = async (format: "csv" | "json") => {
+    try {
+      setIsExporting(true);
+      const { fromUtc, toUtc } = getTimeRangeUtc();
+      const params = new URLSearchParams({
+        format,
+        limit: "5000",
+        fromUtc,
+        toUtc,
+      });
+
+      if (selectedAppId) params.append("applicationId", selectedAppId);
+      if (selectedService) params.append("serviceName", selectedService);
+      if (selectedEnv) params.append("environmentName", selectedEnv);
+      if (selectedSeverity !== "All") params.append("severity", selectedSeverity);
+      if (searchQuery.trim()) params.append("search", searchQuery.trim());
+
+      const res = await apiClient.get(`/logs/export?${params.toString()}`, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([res.data], {
+        type: format === "csv" ? "text/csv" : "application/json",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sentinelops-logs-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: unknown) {
+      alert("Failed to export logs: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Fetch applications list on mount
   useEffect(() => {
@@ -149,7 +268,11 @@ export function LogsPage() {
         if (searchQuery.trim()) params.search = searchQuery.trim();
         if (traceIdFilter.trim()) params.traceId = traceIdFilter.trim();
 
+        const startTime = performance.now();
         const res = await apiClient.get<ApiResponse<PagedResponse<LogEntryDto>>>("/logs", { params });
+        const serverDuration = res.headers?.["x-query-duration-ms"];
+        setQueryDurationMs(serverDuration ? Number(serverDuration) : Math.round(performance.now() - startTime));
+
         if (res.data.success && res.data.data) {
           setLogs(res.data.data.items || []);
           setTotalCount(res.data.data.totalCount || 0);
@@ -419,6 +542,59 @@ export function LogsPage() {
               })}
             </div>
           </div>
+
+          {/* Actions & Saved Queries Row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[hsl(var(--border))] text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">Saved Queries:</span>
+              <select
+                value={selectedSavedQueryId}
+                onChange={(e) => handleSelectSavedQuery(e.target.value)}
+                className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+              >
+                <option value="">Select query...</option>
+                {savedQueries.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.isPinned ? "📌 " : ""}{q.name}
+                  </option>
+                ))}
+              </select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setShowSaveModal(true)}
+              >
+                <Bookmark className="h-3.5 w-3.5 text-zinc-400" />
+                Save Current Query
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                disabled={isExporting}
+                onClick={() => handleExport("csv")}
+              >
+                <Download className="h-3.5 w-3.5 text-zinc-400" />
+                {isExporting ? "Exporting..." : "Export CSV"}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                disabled={isExporting}
+                onClick={() => handleExport("json")}
+              >
+                <Download className="h-3.5 w-3.5 text-zinc-400" />
+                {isExporting ? "Exporting..." : "Export JSON"}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -440,6 +616,12 @@ export function LogsPage() {
             <span className="text-xs font-normal text-[hsl(var(--muted-foreground))]">
               ({totalCount.toLocaleString()} total entries)
             </span>
+            {queryDurationMs !== null && (
+              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 flex items-center gap-1">
+                <Clock className="h-3 w-3 text-zinc-500" />
+                {queryDurationMs}ms
+              </span>
+            )}
           </CardTitle>
           <div className="text-xs text-[hsl(var(--muted-foreground))]">
             Page {page} of {Math.max(1, totalPages)}
@@ -708,6 +890,67 @@ export function LogsPage() {
           </div>
         )}
       </Card>
+
+      {/* Save Query Modal Dialog */}
+      <Dialog
+        open={showSaveModal}
+        onOpenChange={setShowSaveModal}
+        title="Save Log Query"
+        description="Persist the current log filter configuration for your team."
+      >
+        <form onSubmit={handleSaveQuery} className="space-y-4 pt-2 text-xs">
+          <div>
+            <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1 block">
+              Query Name *
+            </label>
+            <Input
+              placeholder="e.g., Production 500 Errors in Billing Service"
+              value={newQueryName}
+              onChange={(e) => setNewQueryName(e.target.value)}
+              required
+              className="text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[hsl(var(--foreground))] mb-1 block">
+              Description (Optional)
+            </label>
+            <Input
+              placeholder="Operational context or runbook link"
+              value={newQueryDesc}
+              onChange={(e) => setNewQueryDesc(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          <div className="rounded border border-[hsl(var(--border))] bg-zinc-950/60 p-3 space-y-1 font-mono text-[11px] text-zinc-300">
+            <div><span className="text-zinc-500">Search:</span> {searchQuery || "(empty)"}</div>
+            <div><span className="text-zinc-500">Severity:</span> {selectedSeverity}</div>
+            <div><span className="text-zinc-500">Service:</span> {selectedService || "All"}</div>
+            <div><span className="text-zinc-500">Environment:</span> {selectedEnv || "All"}</div>
+            <div><span className="text-zinc-500">Window:</span> {timeWindow}</div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSaveModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSavingQuery || !newQueryName.trim()}
+            >
+              {isSavingQuery ? "Saving..." : "Save Query"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

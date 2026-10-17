@@ -13,6 +13,8 @@ public class NotificationChannel : Entity
     public string? CustomHeadersJson { get; set; }
     public bool IsEnabled { get; set; } = true;
     public Guid? ApplicationId { get; set; }
+    public Guid? OrganizationId { get; set; }
+    public Organization? Organization { get; set; }
     public string? CreatedBy { get; set; }
 
     public ICollection<AlertRuleNotificationChannel> AlertRules { get; set; } = new List<AlertRuleNotificationChannel>();

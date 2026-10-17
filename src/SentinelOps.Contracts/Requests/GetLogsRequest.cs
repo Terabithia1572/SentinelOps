@@ -8,6 +8,7 @@ public record GetLogsRequest
     public string? Severity { get; init; }
     public string? TraceId { get; init; }
     public string? Search { get; init; }
+    public string? PropertyFilter { get; init; }
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
     public int Page { get; init; } = 1;

@@ -86,13 +86,38 @@ public class OrganizationQuotaStatusDto
     public long LogsQuota { get; set; }
     public double LogsPercentUsed { get; set; }
     public bool IsLogsWarning { get; set; }
+    public bool IsLogsWarning80 { get; set; }
+    public bool IsLogsCritical95 { get; set; }
     public bool IsLogsExceeded { get; set; }
 
     public long TracesUsed { get; set; }
     public long TracesQuota { get; set; }
     public double TracesPercentUsed { get; set; }
     public bool IsTracesWarning { get; set; }
+    public bool IsTracesWarning80 { get; set; }
+    public bool IsTracesCritical95 { get; set; }
     public bool IsTracesExceeded { get; set; }
+
+    public long MetricsUsed { get; set; }
+    public long MetricsQuota { get; set; }
+    public double MetricsPercentUsed { get; set; }
+    public bool IsMetricsWarning80 { get; set; }
+    public bool IsMetricsCritical95 { get; set; }
+    public bool IsMetricsExceeded { get; set; }
+
+    public int AlertRulesUsed { get; set; }
+    public int AlertRulesQuota { get; set; }
+    public double AlertRulesPercentUsed { get; set; }
+    public bool IsAlertRulesWarning80 { get; set; }
+    public bool IsAlertRulesCritical95 { get; set; }
+    public bool IsAlertRulesExceeded { get; set; }
+
+    public long AiTokensUsed { get; set; }
+    public long AiTokensQuota { get; set; }
+    public double AiTokensPercentUsed { get; set; }
+    public bool IsAiTokensWarning80 { get; set; }
+    public bool IsAiTokensCritical95 { get; set; }
+    public bool IsAiTokensExceeded { get; set; }
 
     public int ApplicationsUsed { get; set; }
     public int ApplicationsQuota { get; set; }
@@ -108,6 +133,8 @@ public class OrganizationQuotaStatusDto
 
     public long EstimatedStorageBytes { get; set; }
     public bool HasAnyQuotaWarning { get; set; }
+    public bool HasAnyQuotaWarning80 { get; set; }
+    public bool HasAnyQuotaCritical95 { get; set; }
     public bool HasAnyQuotaExceeded { get; set; }
 }
 

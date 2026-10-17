@@ -1,21 +1,115 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using SentinelOps.Application.Common.Interfaces;
 using SentinelOps.Contracts.DTOs;
 using SentinelOps.Contracts.Requests;
 using SentinelOps.Contracts.Responses;
+using SentinelOps.Domain.Entities;
 using Xunit;
+using ApplicationEntity = SentinelOps.Domain.Entities.Application;
 
 namespace SentinelOps.Api.IntegrationTests;
 
 public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public ApmIntegrationTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
+    }
+
+    private async Task SeedApmTelemetryAsync(Guid orgId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+
+        var app = new ApplicationEntity
+        {
+            Id = Guid.NewGuid(),
+            OrganizationId = orgId,
+            Name = "test-apm-app",
+            DisplayName = "Test APM App",
+            CreatedAtUtc = DateTime.UtcNow
+        };
+        context.Applications.Add(app);
+
+        var traceId = Guid.NewGuid().ToString("N")[..16];
+        var trace = new TraceRecord
+        {
+            Id = Guid.NewGuid(),
+            TraceId = traceId,
+            ApplicationId = app.Id,
+            ServiceName = "api-gateway",
+            RootSpanName = "GET /api/orders",
+            Duration = TimeSpan.FromMilliseconds(120),
+            SpanCount = 3,
+            HasErrors = false,
+            StartedAtUtc = DateTime.UtcNow.AddMinutes(-5)
+        };
+        context.TraceRecords.Add(trace);
+
+        var parentSpanId = Guid.NewGuid().ToString("N")[..16];
+        var parentSpan = new SpanRecord
+        {
+            Id = Guid.NewGuid(),
+            SpanId = parentSpanId,
+            TraceId = traceId,
+            ServiceName = "api-gateway",
+            OperationName = "GET /api/orders",
+            Duration = TimeSpan.FromMilliseconds(120),
+            Status = "Ok",
+            StartedAtUtc = DateTime.UtcNow.AddMinutes(-5),
+            Attributes = "{}"
+        };
+
+        var childSpanId = Guid.NewGuid().ToString("N")[..16];
+        var childSpan = new SpanRecord
+        {
+            Id = Guid.NewGuid(),
+            SpanId = childSpanId,
+            TraceId = traceId,
+            ParentSpanId = parentSpanId,
+            ServiceName = "orders-service",
+            OperationName = "POST /api/orders",
+            Duration = TimeSpan.FromMilliseconds(85),
+            Status = "Ok",
+            StartedAtUtc = DateTime.UtcNow.AddMinutes(-5),
+            Attributes = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                ["http.url"] = "https://payment-provider.example.com/charge",
+                ["peer.service"] = "payment-gateway"
+            })
+        };
+
+        var dbSpanId = Guid.NewGuid().ToString("N")[..16];
+        var dbSpan = new SpanRecord
+        {
+            Id = Guid.NewGuid(),
+            SpanId = dbSpanId,
+            TraceId = traceId,
+            ParentSpanId = childSpanId,
+            ServiceName = "orders-service",
+            OperationName = "SELECT orders",
+            Duration = TimeSpan.FromMilliseconds(15),
+            Status = "Ok",
+            StartedAtUtc = DateTime.UtcNow.AddMinutes(-5),
+            Attributes = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                ["db.system"] = "postgresql",
+                ["db.name"] = "orders_db",
+                ["db.operation"] = "SELECT"
+            })
+        };
+
+        context.SpanRecords.AddRange(parentSpan, childSpan, dbSpan);
+        await context.SaveChangesAsync(CancellationToken.None);
     }
 
     private async Task<(string Token, Guid OrgId)> RegisterAndCreateOrgAsync(string prefix = "apm")
@@ -55,6 +149,7 @@ public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetServiceMap_ShouldReturnNodesAndDirectedEdges()
     {
         var (token, orgId) = await RegisterAndCreateOrgAsync("map_test");
+        await SeedApmTelemetryAsync(orgId);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         _client.DefaultRequestHeaders.Remove("X-Organization-Id");
         _client.DefaultRequestHeaders.Add("X-Organization-Id", orgId.ToString());
@@ -73,6 +168,7 @@ public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetServiceDependencies_ShouldReturnInboundAndOutbound()
     {
         var (token, orgId) = await RegisterAndCreateOrgAsync("dep_test");
+        await SeedApmTelemetryAsync(orgId);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         _client.DefaultRequestHeaders.Remove("X-Organization-Id");
         _client.DefaultRequestHeaders.Add("X-Organization-Id", orgId.ToString());
@@ -90,6 +186,7 @@ public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetEndpoints_ShouldReturnEndpointsWithThroughputAndPercentiles()
     {
         var (token, orgId) = await RegisterAndCreateOrgAsync("ep_test");
+        await SeedApmTelemetryAsync(orgId);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         _client.DefaultRequestHeaders.Remove("X-Organization-Id");
         _client.DefaultRequestHeaders.Add("X-Organization-Id", orgId.ToString());
@@ -107,6 +204,7 @@ public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetEndpointBreakdown_ShouldReturnLatencyBucketsAndErrors()
     {
         var (token, orgId) = await RegisterAndCreateOrgAsync("bk_test");
+        await SeedApmTelemetryAsync(orgId);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         _client.DefaultRequestHeaders.Remove("X-Organization-Id");
         _client.DefaultRequestHeaders.Add("X-Organization-Id", orgId.ToString());
@@ -124,6 +222,7 @@ public class ApmIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetExternalDependencies_ShouldReturnDatabaseAndHttpTargets()
     {
         var (token, orgId) = await RegisterAndCreateOrgAsync("ext_test");
+        await SeedApmTelemetryAsync(orgId);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         _client.DefaultRequestHeaders.Remove("X-Organization-Id");
         _client.DefaultRequestHeaders.Add("X-Organization-Id", orgId.ToString());

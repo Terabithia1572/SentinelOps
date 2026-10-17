@@ -277,6 +277,12 @@ export function TracesPage() {
                 <span className="text-[hsl(var(--muted-foreground))] block">Services</span>
                 <span className="font-bold">{traceDetail.services.length}</span>
               </div>
+              {traceDetail.hasMissingParents && (
+                <div className="border-l border-[hsl(var(--border))] pl-3">
+                  <span className="text-purple-400 block font-semibold">Context</span>
+                  <span className="text-[10px] text-purple-300 font-mono">Missing Parents</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -345,6 +351,16 @@ export function TracesPage() {
                           <span className="font-mono text-xs truncate text-[hsl(var(--foreground))]">
                             {span.operationName}
                           </span>
+                          {span.isSlowestSpan && (
+                            <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 text-[9px] font-semibold shrink-0">
+                              Slowest
+                            </span>
+                          )}
+                          {span.isOrphanedParent && (
+                            <span className="bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded px-1.5 py-0.5 text-[9px] font-semibold shrink-0">
+                              Orphaned
+                            </span>
+                          )}
                         </div>
 
                         {/* Right Side: Waterfall Timeline Bar */}

@@ -293,22 +293,46 @@ public class RetentionService : IRetentionService
         }
     }
 
+    public static int GetPlanRetentionCap(string? planTier)
+    {
+        return planTier?.ToLowerInvariant() switch
+        {
+            "starter" => 7,
+            "pro" => 30,
+            "enterprise" => 90,
+            _ => 30
+        };
+    }
+
     private async Task<long> DeleteRangeAsync<T>(IQueryable<T> query, DbSet<T> dbSet, CancellationToken ct) where T : class
     {
+        const int BatchSize = 500;
+        long totalDeleted = 0;
+
         try
         {
-            return await query.ExecuteDeleteAsync(ct);
-        }
-        catch (InvalidOperationException)
-        {
-            // InMemory EF Core provider does not support ExecuteDeleteAsync
-            var items = await query.ToListAsync(ct);
-            if (items.Count > 0)
+            while (!ct.IsCancellationRequested)
             {
-                dbSet.RemoveRange(items);
-                await _context.SaveChangesAsync(ct);
+                var batchDeleted = await query.Take(BatchSize).ExecuteDeleteAsync(ct);
+                totalDeleted += batchDeleted;
+                if (batchDeleted < BatchSize) break;
             }
-            return items.Count;
+            return totalDeleted;
+        }
+        catch (Exception)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var batch = await query.Take(BatchSize).ToListAsync(ct);
+                if (batch.Count == 0) break;
+
+                dbSet.RemoveRange(batch);
+                await _context.SaveChangesAsync(ct);
+                totalDeleted += batch.Count;
+
+                if (batch.Count < BatchSize) break;
+            }
+            return totalDeleted;
         }
     }
 }

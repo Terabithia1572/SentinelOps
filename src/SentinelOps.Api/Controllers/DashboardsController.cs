@@ -91,6 +91,17 @@ public class DashboardsController : ControllerBase
         return Ok(ApiResponse<DashboardDetailDto>.SuccessResponse(duplicated, "Dashboard duplicated successfully."));
     }
 
+    [HttpPut("{id:guid}/default")]
+    public async Task<ActionResult<ApiResponse<DashboardDetailDto>>> SetDefault(Guid id, CancellationToken cancellationToken)
+    {
+        var dashboard = await _dashboardService.SetDefaultDashboardAsync(id, cancellationToken);
+        if (dashboard == null)
+        {
+            return NotFound(ApiResponse<DashboardDetailDto>.FailureResponse("Dashboard not found or access denied."));
+        }
+        return Ok(ApiResponse<DashboardDetailDto>.SuccessResponse(dashboard, "Dashboard set as organization default."));
+    }
+
     [HttpPost("import")]
     public async Task<ActionResult<ApiResponse<DashboardDetailDto>>> ImportDashboard(
         [FromBody] ImportDashboardRequest request,

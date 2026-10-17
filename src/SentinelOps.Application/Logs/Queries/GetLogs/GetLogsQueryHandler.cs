@@ -89,6 +89,25 @@ public class GetLogsQueryHandler : IRequestHandler<GetLogsQuery, PagedResponse<L
                                      l.Properties.Contains(term));
         }
 
+        if (!string.IsNullOrWhiteSpace(req.PropertyFilter))
+        {
+            var filter = req.PropertyFilter.Trim();
+            if (filter.Contains('='))
+            {
+                var parts = filter.Split('=', 2);
+                var key = parts[0].Trim();
+                var val = parts[1].Trim();
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(val))
+                {
+                    query = query.Where(l => l.Properties.Contains(key) && l.Properties.Contains(val));
+                }
+            }
+            else
+            {
+                query = query.Where(l => l.Properties.Contains(filter));
+            }
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         // Sorting

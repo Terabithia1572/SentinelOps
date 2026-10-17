@@ -41,5 +41,6 @@ public class SpanRecordConfiguration : IEntityTypeConfiguration<SpanRecord>
         builder.HasIndex(s => s.TraceId);
         builder.HasIndex(s => s.SpanId);
         builder.HasIndex(s => s.ParentSpanId);
+        builder.HasIndex(s => new { s.TraceId, s.StartedAtUtc });
     }
 }

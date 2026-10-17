@@ -16,6 +16,8 @@ public record SpanDetailDto
     public double OffsetMs { get; init; }
     public double OffsetPercent { get; init; }
     public double DurationPercent { get; init; }
+    public bool IsOrphanedParent { get; init; }
+    public bool IsSlowestSpan { get; init; }
     public bool HasError => !string.Equals(Status, "Ok", StringComparison.OrdinalIgnoreCase) &&
                            !string.Equals(Status, "Unset", StringComparison.OrdinalIgnoreCase);
 }

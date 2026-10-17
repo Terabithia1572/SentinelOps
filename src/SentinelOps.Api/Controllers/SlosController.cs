@@ -19,15 +19,18 @@ public class SlosController : BaseApiController
     private readonly IApplicationDbContext _context;
     private readonly ISloEvaluationService _sloEvaluationService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ICurrentTenantService _tenantService;
 
     public SlosController(
         IApplicationDbContext context,
         ISloEvaluationService sloEvaluationService,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        ICurrentTenantService tenantService)
     {
         _context = context;
         _sloEvaluationService = sloEvaluationService;
         _currentUserService = currentUserService;
+        _tenantService = tenantService;
     }
 
     [HttpGet]
@@ -36,6 +39,16 @@ public class SlosController : BaseApiController
         [FromQuery] string? serviceName)
     {
         var query = _context.ServiceLevelObjectives.AsNoTracking().AsQueryable();
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var tenantOrgId = _tenantService.OrganizationId.Value;
+            var tenantAppIds = _context.Applications
+                .Where(a => a.OrganizationId == tenantOrgId)
+                .Select(a => a.Id);
+
+            query = query.Where(s => tenantAppIds.Contains(s.ApplicationId));
+        }
 
         if (applicationId.HasValue && applicationId.Value != Guid.Empty)
         {
@@ -68,6 +81,16 @@ public class SlosController : BaseApiController
             return NotFound(ApiResponse<SloDto>.FailureResponse("SLO not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isAppOwned = await _context.Applications
+                .AnyAsync(a => a.Id == slo.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isAppOwned)
+            {
+                return NotFound(ApiResponse<SloDto>.FailureResponse("SLO not found or access denied."));
+            }
+        }
+
         return Ok(ApiResponse<SloDto>.SuccessResponse(slo.ToDto()));
     }
 
@@ -89,6 +112,11 @@ public class SlosController : BaseApiController
         if (app == null)
         {
             return BadRequest(ApiResponse<SloDto>.FailureResponse("Application not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue && app.OrganizationId != _tenantService.OrganizationId.Value)
+        {
+            return BadRequest(ApiResponse<SloDto>.FailureResponse("Application does not belong to the current organization."));
         }
 
         if (!Enum.TryParse<SloIndicatorType>(request.IndicatorType, true, out var indicatorType))
@@ -136,6 +164,16 @@ public class SlosController : BaseApiController
             return NotFound(ApiResponse<SloDto>.FailureResponse("SLO not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isAppOwned = await _context.Applications
+                .AnyAsync(a => a.Id == slo.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isAppOwned)
+            {
+                return NotFound(ApiResponse<SloDto>.FailureResponse("SLO not found or access denied."));
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             return BadRequest(ApiResponse<SloDto>.FailureResponse("SLO name is required."));
@@ -169,6 +207,16 @@ public class SlosController : BaseApiController
             return NotFound(ApiResponse<bool>.FailureResponse("SLO not found."));
         }
 
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isAppOwned = await _context.Applications
+                .AnyAsync(a => a.Id == slo.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isAppOwned)
+            {
+                return NotFound(ApiResponse<bool>.FailureResponse("SLO not found or access denied."));
+            }
+        }
+
         _context.ServiceLevelObjectives.Remove(slo);
         await _context.SaveChangesAsync();
         return Ok(ApiResponse<bool>.SuccessResponse(true, "SLO deleted successfully."));
@@ -184,6 +232,16 @@ public class SlosController : BaseApiController
         if (slo == null)
         {
             return NotFound(ApiResponse<SloComplianceHistoryDto>.FailureResponse("SLO not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isAppOwned = await _context.Applications
+                .AnyAsync(a => a.Id == slo.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isAppOwned)
+            {
+                return NotFound(ApiResponse<SloComplianceHistoryDto>.FailureResponse("SLO not found or access denied."));
+            }
         }
 
         var history = await _context.SloEvaluations
@@ -221,6 +279,25 @@ public class SlosController : BaseApiController
     [HttpPost("{id:guid}/evaluate")]
     public async Task<ActionResult<ApiResponse<SloEvaluationResult>>> EvaluateSlo(Guid id)
     {
+        var slo = await _context.ServiceLevelObjectives
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (slo == null)
+        {
+            return NotFound(ApiResponse<SloEvaluationResult>.FailureResponse("SLO not found."));
+        }
+
+        if (_tenantService.OrganizationId.HasValue)
+        {
+            var isAppOwned = await _context.Applications
+                .AnyAsync(a => a.Id == slo.ApplicationId && a.OrganizationId == _tenantService.OrganizationId.Value);
+            if (!isAppOwned)
+            {
+                return NotFound(ApiResponse<SloEvaluationResult>.FailureResponse("SLO not found or access denied."));
+            }
+        }
+
         var result = await _sloEvaluationService.EvaluateSloAsync(id);
         if (!result.Evaluated)
         {

@@ -53,7 +53,13 @@ public class ApmService : IApmService
 
         if (spans.Count == 0)
         {
-            return GenerateBaselineServiceMap(timeRange, environment);
+            return new ServiceMapDto
+            {
+                Nodes = [],
+                Edges = [],
+                ComputedAtUtc = DateTime.UtcNow,
+                TimeRange = timeRange
+            };
         }
 
         var spanDict = spans.ToDictionary(s => s.SpanId, s => s);
@@ -212,7 +218,7 @@ public class ApmService : IApmService
 
         if (spans.Count == 0)
         {
-            return GenerateBaselineEndpoints(service, search);
+            return [];
         }
 
         var groups = spans
@@ -343,53 +349,110 @@ public class ApmService : IApmService
 
     public async Task<List<ExternalDependencyDto>> GetExternalDependenciesAsync(string timeRange = "1h", CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult<List<ExternalDependencyDto>>(
-        [
-            new ExternalDependencyDto
+        var orgId = await GetRequiredOrganizationIdAsync(cancellationToken);
+        var appIds = await _context.Applications
+            .Where(a => a.OrganizationId == orgId)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken);
+
+        var duration = ParseTimeRange(timeRange);
+        var cutoff = DateTime.UtcNow - duration;
+
+        var traceIds = await _context.TraceRecords
+            .AsNoTracking()
+            .Where(t => appIds.Contains(t.ApplicationId) && t.StartedAtUtc >= cutoff)
+            .Select(t => t.TraceId)
+            .ToListAsync(cancellationToken);
+
+        var spans = await _context.SpanRecords
+            .AsNoTracking()
+            .Where(s => traceIds.Contains(s.TraceId) && !string.IsNullOrEmpty(s.Attributes) && s.Attributes != "{}")
+            .ToListAsync(cancellationToken);
+
+        if (spans.Count == 0)
+        {
+            return [];
+        }
+
+        var deps = new Dictionary<string, (string Type, string Target, string Operation, List<double> Durations, long Errors)>();
+
+        foreach (var s in spans)
+        {
+            try
             {
-                Type = "Database",
-                TargetHostOrSystem = "PostgreSQL (Primary Cluster)",
-                OperationOrDb = "sentinelops_db",
-                CallCount = 48200,
-                ErrorCount = 12,
-                ErrorRate = 0.02,
-                AvgDurationMs = 3.8,
-                P95DurationMs = 12.4
-            },
-            new ExternalDependencyDto
-            {
-                Type = "Database",
-                TargetHostOrSystem = "Redis (Cache & Streams)",
-                OperationOrDb = "sentinelops_redis:6379",
-                CallCount = 124500,
-                ErrorCount = 0,
-                ErrorRate = 0.0,
-                AvgDurationMs = 0.8,
-                P95DurationMs = 2.1
-            },
-            new ExternalDependencyDto
-            {
-                Type = "ExternalHttp",
-                TargetHostOrSystem = "api.stripe.com",
-                OperationOrDb = "POST /v1/charges",
-                CallCount = 2840,
-                ErrorCount = 8,
-                ErrorRate = 0.28,
-                AvgDurationMs = 184.2,
-                P95DurationMs = 390.0
-            },
-            new ExternalDependencyDto
-            {
-                Type = "ExternalHttp",
-                TargetHostOrSystem = "auth.identity.provider",
-                OperationOrDb = "POST /oauth/token",
-                CallCount = 5900,
-                ErrorCount = 2,
-                ErrorRate = 0.03,
-                AvgDurationMs = 42.1,
-                P95DurationMs = 95.0
+                using var doc = System.Text.Json.JsonDocument.Parse(s.Attributes);
+                var root = doc.RootElement;
+
+                string? depType = null;
+                string? targetSystem = null;
+                string? operation = null;
+
+                if (root.TryGetProperty("db.system", out var dbSys))
+                {
+                    depType = "Database";
+                    targetSystem = dbSys.GetString() ?? "Database";
+                    if (root.TryGetProperty("db.name", out var dbName)) targetSystem += $" ({dbName.GetString()})";
+                    operation = root.TryGetProperty("db.operation", out var op) ? op.GetString() : s.OperationName;
+                }
+                else if (root.TryGetProperty("http.url", out var httpUrl))
+                {
+                    depType = "ExternalHttp";
+                    var uriStr = httpUrl.GetString();
+                    if (Uri.TryCreate(uriStr, UriKind.Absolute, out var uri))
+                    {
+                        targetSystem = uri.Host;
+                        operation = uri.AbsolutePath;
+                    }
+                    else
+                    {
+                        targetSystem = uriStr ?? "External HTTP";
+                        operation = s.OperationName;
+                    }
+                }
+                else if (root.TryGetProperty("peer.service", out var peerSvc))
+                {
+                    depType = "RemoteService";
+                    targetSystem = peerSvc.GetString() ?? "RemoteService";
+                    operation = s.OperationName;
+                }
+
+                if (depType != null && targetSystem != null)
+                {
+                    var key = $"{depType}:{targetSystem}:{operation ?? s.OperationName}";
+                    if (!deps.TryGetValue(key, out var val))
+                    {
+                        val = (depType, targetSystem, operation ?? s.OperationName, new List<double>(), 0);
+                    }
+                    val.Durations.Add(s.Duration.TotalMilliseconds);
+                    if (string.Equals(s.Status, "Error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        val.Errors++;
+                    }
+                    deps[key] = val;
+                }
             }
-        ]);
+            catch
+            {
+                // Non-fatal attribute parsing skip
+            }
+        }
+
+        return deps.Values.Select(d =>
+        {
+            var sorted = d.Durations.OrderBy(x => x).ToList();
+            var total = sorted.Count;
+            return new ExternalDependencyDto
+            {
+                Type = d.Type,
+                TargetHostOrSystem = d.Target,
+                OperationOrDb = d.Operation,
+                CallCount = total,
+                ErrorCount = d.Errors,
+                ErrorRate = total > 0 ? Math.Round((double)d.Errors / total * 100.0, 2) : 0,
+                AvgDurationMs = total > 0 ? Math.Round(sorted.Average(), 2) : 0,
+                P95DurationMs = Math.Round(ComputePercentile(sorted, 0.95), 2)
+            };
+        }).ToList();
     }
 
     private async Task<Guid> GetRequiredOrganizationIdAsync(CancellationToken cancellationToken)
@@ -473,54 +536,5 @@ public class ApmService : IApmService
             return (parts[0], parts[1]);
         }
         return ("GET", operationName.StartsWith('/') ? operationName : "/" + operationName);
-    }
-
-    private static ServiceMapDto GenerateBaselineServiceMap(string timeRange, string? env)
-    {
-        var environment = env ?? "Production";
-        return new ServiceMapDto
-        {
-            ComputedAtUtc = DateTime.UtcNow,
-            TimeRange = timeRange,
-            Nodes =
-            [
-                new ServiceMapNodeDto { Id = "api-gateway", ServiceName = "api-gateway", DisplayName = "API Gateway", EnvironmentName = environment, Throughput = 450.0, ErrorRate = 0.2, AvgLatencyMs = 18.4, P95LatencyMs = 45.0, HealthStatus = "Healthy", TotalCalls = 27000, ErrorCount = 54 },
-                new ServiceMapNodeDto { Id = "orders-service", ServiceName = "orders-service", DisplayName = "Orders Service", EnvironmentName = environment, Throughput = 210.0, ErrorRate = 0.5, AvgLatencyMs = 34.2, P95LatencyMs = 82.0, HealthStatus = "Healthy", TotalCalls = 12600, ErrorCount = 63 },
-                new ServiceMapNodeDto { Id = "payments-service", ServiceName = "payments-service", DisplayName = "Payments Service", EnvironmentName = environment, Throughput = 95.0, ErrorRate = 1.2, AvgLatencyMs = 92.5, P95LatencyMs = 210.0, HealthStatus = "Degraded", TotalCalls = 5700, ErrorCount = 68 },
-                new ServiceMapNodeDto { Id = "inventory-service", ServiceName = "inventory-service", DisplayName = "Inventory Service", EnvironmentName = environment, Throughput = 160.0, ErrorRate = 0.05, AvgLatencyMs = 12.1, P95LatencyMs = 28.0, HealthStatus = "Healthy", TotalCalls = 9600, ErrorCount = 5 },
-                new ServiceMapNodeDto { Id = "notification-worker", ServiceName = "notification-worker", DisplayName = "Notification Worker", EnvironmentName = environment, Throughput = 80.0, ErrorRate = 0.0, AvgLatencyMs = 6.4, P95LatencyMs = 14.0, HealthStatus = "Healthy", TotalCalls = 4800, ErrorCount = 0 }
-            ],
-            Edges =
-            [
-                new ServiceMapEdgeDto { SourceService = "api-gateway", TargetService = "orders-service", CallCount = 12600, ErrorCount = 63, ErrorRate = 0.5, AvgLatencyMs = 34.2, P95LatencyMs = 82.0 },
-                new ServiceMapEdgeDto { SourceService = "orders-service", TargetService = "payments-service", CallCount = 5700, ErrorCount = 68, ErrorRate = 1.2, AvgLatencyMs = 92.5, P95LatencyMs = 210.0 },
-                new ServiceMapEdgeDto { SourceService = "orders-service", TargetService = "inventory-service", CallCount = 9600, ErrorCount = 5, ErrorRate = 0.05, AvgLatencyMs = 12.1, P95LatencyMs = 28.0 },
-                new ServiceMapEdgeDto { SourceService = "orders-service", TargetService = "notification-worker", CallCount = 4800, ErrorCount = 0, ErrorRate = 0.0, AvgLatencyMs = 6.4, P95LatencyMs = 14.0 }
-            ]
-        };
-    }
-
-    private static List<EndpointPerformanceDto> GenerateBaselineEndpoints(string? service, string? search)
-    {
-        var list = new List<EndpointPerformanceDto>
-        {
-            new EndpointPerformanceDto { EndpointKey = "POST:/api/orders:orders-service", Method = "POST", Route = "/api/orders", ServiceName = "orders-service", EnvironmentName = "Production", ThroughputPerMin = 210.0, TotalCalls = 12600, ErrorCount = 63, ErrorRate = 0.5, AvgDurationMs = 45.2, P50DurationMs = 32.0, P95DurationMs = 95.0, P99DurationMs = 240.0 },
-            new EndpointPerformanceDto { EndpointKey = "GET:/api/orders/{id}:orders-service", Method = "GET", Route = "/api/orders/{id}", ServiceName = "orders-service", EnvironmentName = "Production", ThroughputPerMin = 420.0, TotalCalls = 25200, ErrorCount = 12, ErrorRate = 0.05, AvgDurationMs = 14.1, P50DurationMs = 10.0, P95DurationMs = 28.0, P99DurationMs = 65.0 },
-            new EndpointPerformanceDto { EndpointKey = "POST:/api/payments/charge:payments-service", Method = "POST", Route = "/api/payments/charge", ServiceName = "payments-service", EnvironmentName = "Production", ThroughputPerMin = 95.0, TotalCalls = 5700, ErrorCount = 68, ErrorRate = 1.2, AvgDurationMs = 98.4, P50DurationMs = 75.0, P95DurationMs = 215.0, P99DurationMs = 490.0 },
-            new EndpointPerformanceDto { EndpointKey = "GET:/api/inventory/items:inventory-service", Method = "GET", Route = "/api/inventory/items", ServiceName = "inventory-service", EnvironmentName = "Production", ThroughputPerMin = 310.0, TotalCalls = 18600, ErrorCount = 8, ErrorRate = 0.04, AvgDurationMs = 9.8, P50DurationMs = 7.0, P95DurationMs = 19.0, P99DurationMs = 42.0 },
-            new EndpointPerformanceDto { EndpointKey = "GET:/health/ready:api-gateway", Method = "GET", Route = "/health/ready", ServiceName = "api-gateway", EnvironmentName = "Production", ThroughputPerMin = 60.0, TotalCalls = 3600, ErrorCount = 0, ErrorRate = 0.0, AvgDurationMs = 2.1, P50DurationMs = 1.5, P95DurationMs = 4.0, P99DurationMs = 8.0 }
-        };
-
-        if (!string.IsNullOrEmpty(service))
-        {
-            list = list.Where(e => string.Equals(e.ServiceName, service, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            list = list.Where(e => e.Route.Contains(search, StringComparison.OrdinalIgnoreCase) || e.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        return list;
     }
 }

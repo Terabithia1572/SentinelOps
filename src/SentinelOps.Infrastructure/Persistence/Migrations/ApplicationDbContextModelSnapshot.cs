@@ -1549,6 +1549,9 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -1566,6 +1569,8 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.HasIndex("ApplicationId");
 
                     b.HasIndex("IsEnabled");
+
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("NotificationChannels", (string)null);
                 });
@@ -2271,6 +2276,89 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.ToTable("SaaSInvoices", (string)null);
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.SavedLogQuery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CreatedByUserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("EnvironmentName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PropertyFiltersJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SearchTerm")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ServiceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Severity")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TagsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("TimeRange")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("OrganizationId", "ApplicationId");
+
+                    b.HasIndex("OrganizationId", "IsShared");
+
+                    b.ToTable("SavedLogQueries", (string)null);
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.Service", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2493,6 +2581,8 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.HasIndex("SpanId");
 
                     b.HasIndex("TraceId");
+
+                    b.HasIndex("TraceId", "StartedAtUtc");
 
                     b.ToTable("SpanRecords", (string)null);
                 });
@@ -3341,6 +3431,16 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
                 });
 
+            modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationChannel", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("SentinelOps.Domain.Entities.NotificationOutbox", b =>
                 {
                     b.HasOne("SentinelOps.Domain.Entities.NotificationChannel", "Channel")
@@ -3460,6 +3560,24 @@ namespace SentinelOps.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
 
                     b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("SentinelOps.Domain.Entities.SavedLogQuery", b =>
+                {
+                    b.HasOne("SentinelOps.Domain.Entities.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SentinelOps.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("SentinelOps.Domain.Entities.Service", b =>

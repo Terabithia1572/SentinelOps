@@ -294,10 +294,43 @@ public static class MappingExtensions
             Destination = entity.Destination,
             IsEnabled = entity.IsEnabled,
             ApplicationId = entity.ApplicationId,
+            OrganizationId = entity.OrganizationId,
             CreatedBy = entity.CreatedBy,
             CreatedAtUtc = entity.CreatedAtUtc
         };
     }
+
+    public static NotificationHistoryDto ToHistoryDto(this NotificationOutbox entity)
+    {
+        string statusStr = entity.Status switch
+        {
+            NotificationStatus.Pending => "QUEUED",
+            NotificationStatus.Sending => "ATTEMPTED",
+            NotificationStatus.Delivered => "DELIVERED",
+            NotificationStatus.Failed => entity.RetryCount < entity.MaxRetries ? "RETRYING" : "FAILED",
+            NotificationStatus.DeadLetter => "FAILED",
+            _ => entity.Status.ToString().ToUpperInvariant()
+        };
+
+        return new NotificationHistoryDto
+        {
+            Id = entity.Id,
+            ChannelId = entity.ChannelId,
+            EventType = entity.EventType.ToString(),
+            Status = statusStr,
+            Subject = entity.Subject,
+            Message = entity.Message,
+            RetryCount = entity.RetryCount,
+            MaxRetries = entity.MaxRetries,
+            NextRetryAtUtc = entity.NextRetryAtUtc,
+            LastAttemptedAtUtc = entity.LastAttemptedAtUtc,
+            DeliveredAtUtc = entity.DeliveredAtUtc,
+            ErrorMessage = entity.ErrorMessage,
+            TraceId = entity.TraceId,
+            CreatedAtUtc = entity.CreatedAtUtc
+        };
+    }
+
 
     public static InAppNotificationDto ToDto(this InAppNotification entity)
     {
@@ -335,6 +368,42 @@ public static class MappingExtensions
             IsBreached = entity.IsBreached,
             LastEvaluatedAtUtc = entity.LastEvaluatedAtUtc,
             CreatedAtUtc = entity.CreatedAtUtc
+        };
+    }
+
+    public static SavedLogQueryDto ToDto(this SavedLogQuery entity)
+    {
+        List<string> tags;
+        try
+        {
+            tags = System.Text.Json.JsonSerializer.Deserialize<List<string>>(entity.TagsJson) ?? [];
+        }
+        catch
+        {
+            tags = [];
+        }
+
+        return new SavedLogQueryDto
+        {
+            Id = entity.Id,
+            OrganizationId = entity.OrganizationId,
+            ApplicationId = entity.ApplicationId,
+            ApplicationName = entity.Application?.DisplayName ?? entity.Application?.Name,
+            Name = entity.Name,
+            Description = entity.Description,
+            SearchTerm = entity.SearchTerm,
+            Severity = entity.Severity,
+            ServiceName = entity.ServiceName,
+            EnvironmentName = entity.EnvironmentName,
+            TraceId = entity.TraceId,
+            PropertyFiltersJson = entity.PropertyFiltersJson,
+            TimeRange = entity.TimeRange,
+            CreatedByUserId = entity.CreatedByUserId,
+            CreatedByUserName = entity.CreatedByUserName,
+            IsShared = entity.IsShared,
+            Tags = tags,
+            CreatedAtUtc = entity.CreatedAtUtc,
+            UpdatedAtUtc = entity.UpdatedAtUtc
         };
     }
 }

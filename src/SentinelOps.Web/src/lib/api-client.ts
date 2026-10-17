@@ -188,6 +188,8 @@ export interface SpanDetailDto {
   offsetMs: number;
   offsetPercent: number;
   durationPercent: number;
+  isOrphanedParent?: boolean;
+  isSlowestSpan?: boolean;
 }
 
 export interface TraceDetailDto {
@@ -197,7 +199,37 @@ export interface TraceDetailDto {
   services: string[];
   maxDepth: number;
   totalDurationMs: number;
+  slowestSpanIds?: string[];
+  hasMissingParents?: boolean;
 }
+
+export interface SavedLogQueryDto {
+  id: string;
+  name: string;
+  description?: string;
+  searchTerm?: string;
+  severity?: string;
+  serviceName?: string;
+  environmentName?: string;
+  timeWindow?: string;
+  propertyFiltersJson?: string;
+  isPinned: boolean;
+  createdAtUtc: string;
+  updatedAtUtc?: string;
+}
+
+export interface CreateSavedLogQueryRequest {
+  name: string;
+  description?: string;
+  searchTerm?: string;
+  severity?: string;
+  serviceName?: string;
+  environmentName?: string;
+  timeWindow?: string;
+  propertyFiltersJson?: string;
+  isPinned?: boolean;
+}
+
 
 export interface MetricTimeSeriesPointDto {
   timestamp: string;
@@ -1119,6 +1151,12 @@ export async function instantiateDashboardTemplate(templateKey: string): Promise
   const res = await apiClient.post<ApiResponse<DashboardDetailDto>>(`/dashboards/templates/${templateKey}/instantiate`);
   return res.data.data;
 }
+
+export async function setDefaultDashboard(id: string): Promise<boolean> {
+  const res = await apiClient.put<ApiResponse<boolean>>(`/dashboards/${id}/default`);
+  return res.data.success;
+}
+
 
 // ==========================================
 // Advanced APM & Service Map APIs

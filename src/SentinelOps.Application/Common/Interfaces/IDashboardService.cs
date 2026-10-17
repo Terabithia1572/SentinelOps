@@ -12,4 +12,5 @@ public interface IDashboardService
     Task<DashboardDetailDto?> DuplicateDashboardAsync(Guid id, CancellationToken cancellationToken = default);
     Task<DashboardDetailDto> ImportDashboardAsync(ImportDashboardRequest request, CancellationToken cancellationToken = default);
     Task<DashboardDetailDto?> InstantiateTemplateAsync(string templateKey, CancellationToken cancellationToken = default);
+    Task<DashboardDetailDto?> SetDefaultDashboardAsync(Guid id, CancellationToken cancellationToken = default);
 }
