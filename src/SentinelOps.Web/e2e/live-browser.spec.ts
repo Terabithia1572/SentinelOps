@@ -11,7 +11,7 @@ test.describe('SentinelOps Live Platform Browser Audit', () => {
 
     await page.goto('/');
     await expect(page).toHaveURL(/.*login/);
-    await expect(page.locator('h1')).toContainText('SentinelOps');
+    await expect(page.locator('h1').first()).toContainText('SentinelOps');
     await expect(page.locator('#emailOrUser')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
 

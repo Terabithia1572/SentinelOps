@@ -177,7 +177,7 @@ export function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="flex items-start gap-2 rounded border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs text-rose-400 font-mono">
+                <div role="alert" className="flex items-start gap-2 rounded border border-rose-500/20 bg-rose-500/10 p-2.5 text-xs text-rose-400 font-mono">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>

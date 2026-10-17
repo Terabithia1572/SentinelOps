@@ -35,7 +35,7 @@ test.describe('Authentication & Session Lifecycle', () => {
 
     // Should stay on login and display error message
     await expect(page).toHaveURL(/.*login/);
-    await expect(page.locator('.border-rose-500\\/20')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.border-rose-500\\/20, [role="alert"]')).toBeVisible({ timeout: 5000 });
 
     await context.close();
   });
