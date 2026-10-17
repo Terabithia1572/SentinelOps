@@ -18,6 +18,9 @@ import { useAlertsHub } from "@/hooks/use-alerts-hub";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -523,22 +526,31 @@ export function IncidentDetailPage() {
 
             <CardContent className="p-4 space-y-4">
               {aiLoading ? (
-                <div className="text-center py-6 text-xs text-purple-300 flex flex-col items-center gap-2">
-                  <RefreshCw className="h-5 w-5 animate-spin text-purple-400" />
-                  <span>Synthesizing error logs, trace waterfalls, and metric deviations...</span>
+                <div className="space-y-3 py-2">
+                  <div className="flex items-center gap-2 text-xs text-purple-400">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>Synthesizing error logs, trace waterfalls, and metric deviations...</span>
+                  </div>
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                  <Skeleton className="h-28 w-full rounded-lg" />
                 </div>
               ) : !aiAnalysis && !aiRemediation ? (
-                <div className="text-center py-5 text-xs text-[hsl(var(--muted-foreground))] space-y-2">
-                  <p>Click &quot;Analyze Incident&quot; to execute automated AI heuristic correlation.</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs text-purple-300 border-purple-500/40"
-                    onClick={handleAnalyze}
-                  >
-                    Run Automated Analysis
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={Sparkles}
+                  title="Automated Diagnostic Assistant"
+                  description="Execute heuristic correlation across telemetry signals to determine root cause hypotheses and suggested remediation."
+                  action={
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-purple-300 border-purple-500/40 hover:bg-purple-950/30"
+                      onClick={handleAnalyze}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      Run Automated Analysis
+                    </Button>
+                  }
+                />
               ) : (
                 <div className="space-y-4">
                   {/* Summary */}
@@ -780,102 +792,80 @@ export function IncidentDetailPage() {
       </div>
 
       {/* Resolve Incident Modal */}
-      {showResolveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in zoom-in-95">
-            <h3 className="text-base font-semibold">Resolve Incident</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-              Provide resolution notes and root cause summary for auditing and SLA tracking.
-            </p>
+      <Dialog
+        open={showResolveModal}
+        onOpenChange={setShowResolveModal}
+        title="Resolve Incident"
+        description="Provide resolution notes and root cause summary for auditing and SLA tracking."
+      >
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-300">Root Cause Summary *</label>
+            <textarea
+              rows={2}
+              value={rootCauseInput}
+              onChange={(e) => setRootCauseInput(e.target.value)}
+              placeholder="e.g. Memory leak in background worker cache caused OOM pod restart"
+              className="w-full rounded-md border border-slate-800 bg-slate-950/80 p-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
 
-            <div className="mt-4 space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-medium">Root Cause Summary *</label>
-                <textarea
-                  rows={2}
-                  value={rootCauseInput}
-                  onChange={(e) => setRootCauseInput(e.target.value)}
-                  placeholder="e.g. Memory leak in background worker cache caused OOM pod restart"
-                  className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2 text-xs"
-                />
-              </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-300">Resolution Notes *</label>
+            <textarea
+              rows={3}
+              value={resolutionInput}
+              onChange={(e) => setResolutionInput(e.target.value)}
+              placeholder="e.g. Rolled back deployment to v1.4.2; cache expiration verified in Redis"
+              className="w-full rounded-md border border-slate-800 bg-slate-950/80 p-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
 
-              <div className="space-y-1">
-                <label className="font-medium">Resolution Notes *</label>
-                <textarea
-                  rows={3}
-                  value={resolutionInput}
-                  onChange={(e) => setResolutionInput(e.target.value)}
-                  placeholder="e.g. Rolled back deployment to v1.4.2; cache expiration verified in Redis"
-                  className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2 text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2 border-t border-[hsl(var(--border))] pt-3">
-              <Button variant="ghost" size="sm" onClick={() => setShowResolveModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={!rootCauseInput.trim() || !resolutionInput.trim() || transitionMutation.isPending}
-                onClick={() =>
-                  transitionMutation.mutate({
-                    status: "Resolved",
-                    rootCauseSummary: rootCauseInput,
-                    resolutionNotes: resolutionInput,
-                  })
-                }
-              >
-                {transitionMutation.isPending ? "Resolving..." : "Confirm Resolution"}
-              </Button>
-            </div>
+          <div className="mt-4 flex justify-end gap-2 border-t border-slate-800 pt-3">
+            <Button variant="ghost" size="sm" onClick={() => setShowResolveModal(false)} className="text-xs text-slate-300">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
+              disabled={!rootCauseInput.trim() || !resolutionInput.trim() || transitionMutation.isPending}
+              onClick={() =>
+                transitionMutation.mutate({
+                  status: "Resolved",
+                  rootCauseSummary: rootCauseInput,
+                  resolutionNotes: resolutionInput,
+                })
+              }
+            >
+              {transitionMutation.isPending ? "Resolving..." : "Confirm Resolution"}
+            </Button>
           </div>
         </div>
-      )}
+      </Dialog>
 
       {/* AI Generated Postmortem Modal */}
-      {showPostmortemModal && aiPostmortem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-lg border border-purple-500/30 bg-[hsl(var(--card))] shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-[hsl(var(--border))] p-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-purple-400" />
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">
-                    Incident Postmortem Report
-                  </h3>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    Generated: {new Date(aiPostmortem.generatedAtUtc).toLocaleString()} • AI Diagnostic Engine
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPostmortemModal(false)}
-                className="h-8 w-8 p-0"
-              >
-                ✕
-              </Button>
+      {aiPostmortem && (
+        <Dialog
+          open={showPostmortemModal}
+          onOpenChange={setShowPostmortemModal}
+          title="Incident Postmortem Report"
+          description={`Generated: ${new Date(aiPostmortem.generatedAtUtc).toLocaleString()} • AI Diagnostic Engine`}
+          className="max-w-3xl"
+        >
+          <div className="space-y-4">
+            <div className="max-h-[60vh] overflow-y-auto rounded-md border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-200 whitespace-pre-wrap selection:bg-purple-800">
+              {aiPostmortem.markdownContent}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="rounded-md border border-[hsl(var(--border))] bg-slate-950 p-4 font-mono text-xs text-slate-200 whitespace-pre-wrap selection:bg-purple-800">
-                {aiPostmortem.markdownContent}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-[hsl(var(--border))] p-4">
-              <div className="text-[11px] text-[hsl(var(--muted-foreground))]">
+            <div className="flex items-center justify-between border-t border-slate-800 pt-3">
+              <div className="text-[11px] text-slate-400">
                 Ready for export to GitHub, Jira, or Confluence.
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-1.5 text-xs"
+                  className="gap-1.5 text-xs text-slate-200 border-slate-700 hover:bg-slate-800"
                   onClick={() => {
                     navigator.clipboard.writeText(aiPostmortem.markdownContent);
                     setCopiedPostmortem(true);
@@ -887,7 +877,7 @@ export function IncidentDetailPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="default"
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs"
                   onClick={() => setShowPostmortemModal(false)}
                 >
                   Close
@@ -895,7 +885,7 @@ export function IncidentDetailPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

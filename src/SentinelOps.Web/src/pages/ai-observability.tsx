@@ -41,6 +41,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function AiObservabilityPage() {
   const queryClient = useQueryClient();
@@ -356,12 +358,17 @@ export function AiObservabilityPage() {
             </Button>
           </div>
 
-          {anomalies.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                No active anomalies detected for this application. Baseline telemetry metrics are within expected standard deviation.
-              </CardContent>
-            </Card>
+          {isLoadingAnomalies ? (
+            <div className="space-y-3">
+              <Skeleton className="h-28 w-full rounded-lg" />
+              <Skeleton className="h-28 w-full rounded-lg" />
+            </div>
+          ) : anomalies.length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title="No Active Anomalies"
+              description="No active anomalies detected for this application. Baseline telemetry metrics are within expected standard deviation."
+            />
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {anomalies.map((anomaly) => (
@@ -454,12 +461,17 @@ export function AiObservabilityPage() {
             </div>
           </div>
 
-          {logPatterns.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                No log patterns extracted yet. Click "Analyze Last 1h" to cluster incoming log streams.
-              </CardContent>
-            </Card>
+          {isLoadingPatterns ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          ) : logPatterns.length === 0 ? (
+            <EmptyState
+              icon={FileCode}
+              title="No Log Patterns Extracted"
+              description="No log patterns extracted yet. Click 'Analyze Last 1h' or 'Analyze 24h' to cluster incoming log streams."
+            />
           ) : (
             <div className="space-y-3">
               {logPatterns.map((pattern) => (
@@ -526,6 +538,21 @@ export function AiObservabilityPage() {
               </Button>
             </div>
           </Card>
+
+          {rcaMutation.isPending && (
+            <div className="space-y-3">
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          )}
+
+          {!rcaResult && !rcaMutation.isPending && (
+            <EmptyState
+              icon={Brain}
+              title="Ready for Root Cause Analysis"
+              description="Provide an Incident GUID above or trigger analysis from an active incident to correlate logs, metric anomalies, and trace waterfalls."
+            />
+          )}
 
           {rcaResult && (
             <div className="space-y-4">
@@ -745,12 +772,17 @@ export function AiObservabilityPage() {
               </Button>
             </div>
 
-            {forecasts.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                  No active predictive forecasts. Click "Evaluate OLS" above to compute linear regressions for services.
-                </CardContent>
-              </Card>
+            {isLoadingForecasts ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+              </div>
+            ) : forecasts.length === 0 ? (
+              <EmptyState
+                icon={TrendingUp}
+                title="No Active Capacity Projections"
+                description="No active predictive forecasts. Click 'Evaluate OLS' above to compute linear regressions for services."
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {forecasts.map((f) => (

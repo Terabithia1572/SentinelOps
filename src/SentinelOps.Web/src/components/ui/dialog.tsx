@@ -8,10 +8,11 @@ export interface DialogProps {
   onClose?: () => void;
   title?: string;
   description?: string;
+  className?: string;
   children: React.ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, onClose, title, description, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, onClose, title, description, className, children }: DialogProps) {
   const handleClose = () => {
     onClose?.();
     onOpenChange?.(false);
@@ -48,7 +49,7 @@ export function Dialog({ open, onOpenChange, onClose, title, description, childr
         aria-hidden="true"
       />
       {/* Dialog Surface */}
-      <div className="relative z-50 w-full max-w-lg rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+      <div className={cn("relative z-50 w-full max-w-lg rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150", className)}>
         <DialogClose onClose={handleClose} />
         {title && (
           <DialogHeader>
