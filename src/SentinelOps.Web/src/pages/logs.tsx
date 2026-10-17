@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   Search,
   RefreshCw,
@@ -20,7 +23,6 @@ import {
   ChevronDown,
   Copy,
   Check,
-  AlertCircle,
   Pause,
 } from "lucide-react";
 
@@ -66,13 +68,20 @@ export function LogsPage() {
         const res = await apiClient.get<ApiResponse<ApplicationDto[]>>("/applications");
         if (res.data.success && res.data.data) {
           setApplications(res.data.data);
+          const appParam = searchParams.get("app");
+          if (appParam) {
+            const matched = res.data.data.find(
+              (a) => a.name.toLowerCase() === appParam.toLowerCase() || a.id === appParam
+            );
+            if (matched) setSelectedAppId(matched.id);
+          }
         }
       } catch {
         // Handled silently
       }
     }
     loadApps();
-  }, []);
+  }, [searchParams]);
 
   // Fetch metadata whenever selectedAppId changes
   useEffect(() => {
@@ -415,10 +424,11 @@ export function LogsPage() {
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="rounded-md border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-400 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
+        <ErrorState
+          title="Telemetry Stream Ingestion Failed"
+          message={errorMessage}
+          onRetry={() => fetchLogs(page)}
+        />
       )}
 
       {/* Logs Table */}
@@ -437,19 +447,32 @@ export function LogsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading && logs.length === 0 ? (
-            <div className="flex h-48 items-center justify-center">
-              <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Loading logs...
-              </div>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 flex-1" />
+                </div>
+              ))}
             </div>
           ) : logs.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center p-6">
-              <FileText className="h-10 w-10 text-[hsl(var(--muted-foreground))] mb-2 opacity-50" />
-              <p className="text-sm font-medium text-[hsl(var(--foreground))]">No log entries found</p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] max-w-sm mt-1">
-                Try widening your search terms, time window, or severity filter.
-              </p>
+            <div className="p-6">
+              <EmptyState
+                icon={FileText}
+                title="No log entries found"
+                description="No telemetry logs matched the active application, severity, or temporal filters."
+                actionLabel="Clear Filter Query"
+                onAction={() => {
+                  setSelectedAppId("");
+                  setSelectedService("");
+                  setSelectedSeverity("All");
+                  setSearchQuery("");
+                  setTraceIdFilter("");
+                  fetchLogs(1);
+                }}
+              />
             </div>
           ) : (
             <div className="divide-y divide-[hsl(var(--border))] font-mono text-xs">
