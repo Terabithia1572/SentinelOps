@@ -15,6 +15,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useTenant } from "@/context/tenant-context";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -817,11 +821,18 @@ export function BillingPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {invoices.length === 0 ? (
-                <div className="py-12 text-center text-xs text-[hsl(var(--muted-foreground))] space-y-2">
-                  <FileText className="h-8 w-8 mx-auto text-[hsl(var(--muted-foreground)/0.5)]" />
-                  <p>No invoices generated yet for this billing account.</p>
+              {loading ? (
+                <div className="space-y-2 p-4">
+                  <Skeleton className="h-8 w-full rounded" />
+                  <Skeleton className="h-8 w-full rounded" />
+                  <Skeleton className="h-8 w-full rounded" />
                 </div>
+              ) : invoices.length === 0 ? (
+                <EmptyState
+                  icon={FileText}
+                  title="No Invoices Generated"
+                  description="No invoices or billing transactions have been generated yet for this account."
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
@@ -991,255 +1002,214 @@ export function BillingPage() {
       )}
 
       {/* MODAL: CHANGE PLAN CONFIRMATION */}
-      {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-w-md w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))]">
-            <CardHeader>
-              <CardTitle className="text-base font-bold">Confirm Plan Change</CardTitle>
-              <CardDescription className="text-xs">
-                Are you sure you want to switch to the <strong>{showPlanModal.name}</strong> plan?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <p className="text-[hsl(var(--muted-foreground))]">
-                New pricing: <strong>${showPlanModal.monthlyPrice}/mo</strong>. Your quota limits will be
-                immediately updated to {showPlanModal.maxApplications} applications, {showPlanModal.maxMembers} seats,
-                and {(showPlanModal.maxMonthlyLogs / 1000).toLocaleString()}k logs/mo.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPlanModal(null)}
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handlePlanChange(showPlanModal)}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? "Updating..." : "Confirm & Switch"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!showPlanModal}
+        onOpenChange={(open) => !open && setShowPlanModal(null)}
+        title="Confirm Plan Change"
+        description={`Are you sure you want to switch to the ${showPlanModal?.name} plan? New pricing: $${showPlanModal?.monthlyPrice}/mo. Your quota limits will be immediately updated to ${showPlanModal?.maxApplications} applications, ${showPlanModal?.maxMembers} seats, and ${(showPlanModal ? showPlanModal.maxMonthlyLogs / 1000 : 0).toLocaleString()}k logs/mo.`}
+        confirmLabel="Confirm & Switch"
+        variant="default"
+        isLoading={actionLoading}
+        onConfirm={() => {
+          if (showPlanModal) handlePlanChange(showPlanModal);
+        }}
+      />
 
       {/* MODAL: CANCEL SUBSCRIPTION CONFIRMATION */}
-      {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-w-md w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))]">
-            <CardHeader>
-              <CardTitle className="text-base font-bold text-rose-500">Cancel Subscription</CardTitle>
-              <CardDescription className="text-xs">
-                Please select how you would like your subscription canceled.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="cancelTiming"
-                    checked={!cancelImmediately}
-                    onChange={() => setCancelImmediately(false)}
-                    className="accent-[hsl(var(--primary))]"
-                  />
-                  <span>Cancel at end of current period (Keep access until renewal)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="cancelTiming"
-                    checked={cancelImmediately}
-                    onChange={() => setCancelImmediately(true)}
-                    className="accent-rose-500"
-                  />
-                  <span className="text-rose-400">Cancel immediately (Cease quota access now)</span>
-                </label>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCancelModal(false)}
-                  disabled={actionLoading}
-                >
-                  Keep Subscription
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelSubscription}
-                  disabled={actionLoading}
-                  className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10"
-                >
-                  {actionLoading ? "Processing..." : "Confirm Cancellation"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Dialog
+        open={showCancelModal}
+        onOpenChange={setShowCancelModal}
+        title="Cancel Subscription"
+        description="Please select how you would like your subscription canceled."
+      >
+        <div className="space-y-4 text-xs">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+              <input
+                type="radio"
+                name="cancelTiming"
+                checked={!cancelImmediately}
+                onChange={() => setCancelImmediately(false)}
+                className="accent-[hsl(var(--primary))]"
+              />
+              <span>Cancel at end of current period (Keep access until renewal)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelTiming"
+                checked={cancelImmediately}
+                onChange={() => setCancelImmediately(true)}
+                className="accent-rose-500"
+              />
+              <span className="text-rose-400">Cancel immediately (Cease quota access now)</span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[hsl(var(--border))]">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCancelModal(false)}
+              disabled={actionLoading}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelSubscription}
+              disabled={actionLoading}
+              className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10"
+            >
+              {actionLoading ? "Processing..." : "Confirm Cancellation"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* MODAL: OWNERSHIP TRANSFER CONFIRMATION */}
-      {showTransferModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-w-md w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))]">
-            <CardHeader>
-              <CardTitle className="text-base font-bold">Confirm Ownership Transfer</CardTitle>
-              <CardDescription className="text-xs">
-                This action will promote the selected member to <strong>Owner</strong> and demote your account to <strong>Admin</strong>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <p className="text-[hsl(var(--muted-foreground))]">
-                You will retain Admin access but will no longer be able to delete the organization or re-assign ownership.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTransferModal(false)}
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleTransferOwnership}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? "Transferring..." : "Confirm Transfer"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Dialog
+        open={showTransferModal}
+        onOpenChange={setShowTransferModal}
+        title="Confirm Ownership Transfer"
+        description="This action will promote the selected member to Owner and demote your account to Admin."
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-[hsl(var(--muted-foreground))]">
+            You will retain Admin access but will no longer be able to delete the organization or re-assign ownership.
+          </p>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[hsl(var(--border))]">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTransferModal(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleTransferOwnership}
+              disabled={actionLoading}
+            >
+              {actionLoading ? "Transferring..." : "Confirm Transfer"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* MODAL: DELETE ACCOUNT CONFIRMATION */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-w-md w-full bg-[hsl(var(--card))] border border-rose-500/40">
-            <CardHeader>
-              <CardTitle className="text-base font-bold text-rose-500">Soft-Delete Organization Account</CardTitle>
-              <CardDescription className="text-xs">
-                This is a guarded, audited deletion workflow. Type the phrase below to confirm:
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div className="p-2.5 rounded bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] font-mono text-[11px] select-all">
-                CONFIRM DELETE {activeOrg?.name}
-              </div>
-              <Input
-                placeholder={`CONFIRM DELETE ${activeOrg?.name}`}
-                value={deleteConfirmationPhrase}
-                onChange={(e) => setDeleteConfirmationPhrase(e.target.value)}
-                className="text-xs"
-              />
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteModal(false)}
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleDeleteAccount}
-                  disabled={
-                    deleteConfirmationPhrase.trim() !== `CONFIRM DELETE ${activeOrg?.name}` || actionLoading
-                  }
-                  className="bg-rose-600 hover:bg-rose-700 text-white"
-                >
-                  {actionLoading ? "Deleting..." : "Permanently Delete"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        title="Danger: Soft-Delete Organization Account"
+        description="This is a guarded, audited deletion workflow. Type the phrase below to confirm:"
+      >
+        <div className="space-y-4 text-xs">
+          <div className="p-2.5 rounded bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] font-mono text-[11px] select-all text-slate-200">
+            CONFIRM DELETE {activeOrg?.name}
+          </div>
+          <Input
+            placeholder={`CONFIRM DELETE ${activeOrg?.name}`}
+            value={deleteConfirmationPhrase}
+            onChange={(e) => setDeleteConfirmationPhrase(e.target.value)}
+            className="text-xs"
+          />
+          <div className="flex justify-end gap-2 pt-3 border-t border-[hsl(var(--border))]">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleDeleteAccount}
+              disabled={
+                deleteConfirmationPhrase.trim() !== `CONFIRM DELETE ${activeOrg?.name}` || actionLoading
+              }
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {actionLoading ? "Deleting..." : "Permanently Delete"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Dialog>
 
       {/* MODAL: INVOICE DETAILS */}
       {selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-w-lg w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle className="text-base font-bold font-mono">
-                  {selectedInvoice.invoiceNumber}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Itemized tax-compliant invoice breakdown
-                </CardDescription>
-              </div>
+        <Dialog
+          open={!!selectedInvoice}
+          onOpenChange={(open) => !open && setSelectedInvoice(null)}
+          title={`Invoice ${selectedInvoice.invoiceNumber}`}
+          description="Itemized tax-compliant invoice breakdown"
+          className="max-w-lg"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center justify-between pb-1 border-b border-[hsl(var(--border))]">
+              <span className="text-[hsl(var(--muted-foreground))]">Status:</span>
               <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-xs">
                 {selectedInvoice.status}
               </Badge>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs pt-2">
-              <div className="grid grid-cols-2 gap-2 text-[hsl(var(--muted-foreground))]">
-                <div>Date: {new Date(selectedInvoice.createdAtUtc).toLocaleDateString()}</div>
-                <div>Currency: {selectedInvoice.currency}</div>
-                <div>
-                  Period: {new Date(selectedInvoice.periodStartUtc).toLocaleDateString()} -{" "}
-                  {new Date(selectedInvoice.periodEndUtc).toLocaleDateString()}
-                </div>
-                <div>Due Date: {new Date(selectedInvoice.dueDateUtc).toLocaleDateString()}</div>
-              </div>
+            </div>
 
-              <div className="border rounded-md border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))]">
-                <div className="grid grid-cols-12 p-2 font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted)/0.2)]">
-                  <div className="col-span-8">Description</div>
-                  <div className="col-span-2 text-right">Qty</div>
-                  <div className="col-span-2 text-right">Amount</div>
-                </div>
-                {selectedInvoice.lineItems && selectedInvoice.lineItems.length > 0 ? (
-                  selectedInvoice.lineItems.map((item) => (
-                    <div key={item.id} className="grid grid-cols-12 p-2">
-                      <div className="col-span-8">{item.description}</div>
-                      <div className="col-span-2 text-right">{item.quantity}</div>
-                      <div className="col-span-2 text-right font-medium">
-                        ${item.amount.toFixed(2)}
-                      </div>
+            <div className="grid grid-cols-2 gap-2 text-[hsl(var(--muted-foreground))]">
+              <div>Date: {new Date(selectedInvoice.createdAtUtc).toLocaleDateString()}</div>
+              <div>Currency: {selectedInvoice.currency}</div>
+              <div>
+                Period: {new Date(selectedInvoice.periodStartUtc).toLocaleDateString()} -{" "}
+                {new Date(selectedInvoice.periodEndUtc).toLocaleDateString()}
+              </div>
+              <div>Due Date: {new Date(selectedInvoice.dueDateUtc).toLocaleDateString()}</div>
+            </div>
+
+            <div className="border rounded-md border-[hsl(var(--border))] divide-y divide-[hsl(var(--border))]">
+              <div className="grid grid-cols-12 p-2 font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted)/0.2)]">
+                <div className="col-span-8">Description</div>
+                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-2 text-right">Amount</div>
+              </div>
+              {selectedInvoice.lineItems && selectedInvoice.lineItems.length > 0 ? (
+                selectedInvoice.lineItems.map((item) => (
+                  <div key={item.id} className="grid grid-cols-12 p-2">
+                    <div className="col-span-8">{item.description}</div>
+                    <div className="col-span-2 text-right">{item.quantity}</div>
+                    <div className="col-span-2 text-right font-medium">
+                      ${item.amount.toFixed(2)}
                     </div>
-                  ))
-                ) : (
-                  <div className="p-2 text-center text-[hsl(var(--muted-foreground))]">
-                    Standard Subscription Tier Billing
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div className="p-2 text-center text-[hsl(var(--muted-foreground))]">
+                  Standard Subscription Tier Billing
+                </div>
+              )}
+            </div>
 
-              <div className="space-y-1 text-right pt-2">
-                <div className="flex justify-between text-[hsl(var(--muted-foreground))]">
-                  <span>Subtotal:</span>
-                  <span>${selectedInvoice.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[hsl(var(--muted-foreground))]">
-                  <span>Tax ({selectedInvoice.taxRatePercent}%):</span>
-                  <span>${selectedInvoice.taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-bold text-[hsl(var(--foreground))] pt-1 border-t border-[hsl(var(--border))]">
-                  <span>Total Amount Paid:</span>
-                  <span>${selectedInvoice.total.toFixed(2)} {selectedInvoice.currency}</span>
-                </div>
+            <div className="space-y-1 text-right pt-2">
+              <div className="flex justify-between text-[hsl(var(--muted-foreground))]">
+                <span>Subtotal:</span>
+                <span>${selectedInvoice.subtotal.toFixed(2)}</span>
               </div>
+              <div className="flex justify-between text-[hsl(var(--muted-foreground))]">
+                <span>Tax ({selectedInvoice.taxRatePercent}%):</span>
+                <span>${selectedInvoice.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-[hsl(var(--foreground))] pt-1 border-t border-[hsl(var(--border))]">
+                <span>Total Amount Paid:</span>
+                <span>${selectedInvoice.total.toFixed(2)} {selectedInvoice.currency}</span>
+              </div>
+            </div>
 
-              <div className="flex justify-end pt-3">
-                <Button size="sm" variant="outline" onClick={() => setSelectedInvoice(null)}>
-                  Close
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="flex justify-end pt-3 border-t border-[hsl(var(--border))]">
+              <Button size="sm" variant="outline" onClick={() => setSelectedInvoice(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       )}
     </div>
   );
